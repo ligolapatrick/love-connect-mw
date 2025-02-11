@@ -71,6 +71,53 @@
       text-align: left;
       font-size: 0.9em;
     }
+    @media (max-width: 768px) {
+  .user-card {
+    width: 300px; /* Decreased width for smaller screens */
+    margin: 10px 5px; /* Adjusted margin for better spacing */
+  }
+  .user-card img {
+    height: 300px; /* Decreased height for smaller screens */
+  }
+  .message-input {
+    flex-direction: column;
+  }
+  .message-input input {
+    margin-bottom: 5px;
+    width: 100%;
+  }
+  .message-input button {
+    width: 100%;
+  }
+  .user-info {
+    font-size: 0.8em;
+    padding: 5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-card {
+    width: 250px; /* Further decreased width for extra small screens */
+  }
+  .user-card img {
+    height: 250px; /* Further decreased height for extra small screens */
+  }
+  .message-input {
+    top: 5px;
+    padding: 3px;
+  }
+  .message-input input {
+    padding: 3px;
+  }
+  .message-input button {
+    padding: 3px 5px;
+  }
+  .user-info {
+    font-size: 0.7em;
+    padding: 3px;
+  }
+}
+
   </style>
 </head>
 <body>
