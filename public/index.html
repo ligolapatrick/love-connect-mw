@@ -177,14 +177,16 @@
   </footer>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-       // Extract username from query parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const username = urlParams.get('Username');
+   // Extract username from query parameter
+const urlParams = new URLSearchParams(window.location.search);
+const username = urlParams.get('username'); // Changed 'Username' to 'username'
+
+// Display username
+if (username) {
+  document.getElementById('username').textContent = username; // Ensure ID matches
+}
+
     
-    // Display username
-    if (username) {
-      document.getElementById('Username').textContent = username;
-    }
       // Function to fetch user data
       function fetchUserData() {
             fetch('/get-user-data')

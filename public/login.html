@@ -19,9 +19,9 @@
             background-color: rgba(0, 0, 0, 0.8);
             color: white;
             display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
         }
         .navbar img {
             height: 50px;
@@ -70,18 +70,6 @@
             text-align: left;
             margin-bottom: 5px;
         }
-        /* Form Sections */
-.form-section {
-    background-image: url('/images/Matches.jpg'); /* Your path */
-    background-size: cover;
-    background-position: cover;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    
-}
-
         .form-background input, .form-background select, .form-background button {
             width: 100%;
             padding: 10px;
@@ -97,7 +85,6 @@
         .form-background button:hover {
             background-color: #0056b3;
         }
-
         footer {
             text-align: center;
             padding: 10px;
@@ -108,6 +95,64 @@
             color: white;
             text-decoration: none;
             margin: 0 10px;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+            }
+            .nav-links li {
+                margin: 10px 0;
+            }
+            .form-section {
+                padding: 20px;
+            }
+            .form-background {
+                width: 90%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar {
+                flex-direction: column;
+                padding: 10px;
+            }
+            .nav-logo img {
+                height: 40px;
+            }
+            .nav-contact {
+                margin: 10px 0;
+            }
+            .nav-contact span {
+                display: block;
+                margin: 5px 0;
+            }
+            .nav-links {
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+            }
+            .nav-links li {
+                margin: 10px 0;
+            }
+            .form-background {
+                width: 90%;
+                padding: 15px;
+            }
+            .form-background h2 {
+                font-size: 1.5em;
+            }
+            .form-background input, .form-background button {
+                font-size: 1em;
+                padding: 8px;
+            }
+            footer {
+                font-size: 0.9em;
+                padding: 5px;
+            }
         }
     </style>
 </head>
@@ -131,19 +176,19 @@
     </nav>
     <header>
         <h1>LoveConnect. lets Connect</h1>
-      </header>
+    </header>
     <main>
         <section class="form-section">
             <div class="form-background">
                 <h2>Login</h2>
                 <form action="/login" method="post">
-                  <label for="username">Username:</label>
-                  <input type="text" id="username" name="username" required><br>
-                  <label for="password">Password:</label>
-                  <input type="password" id="password" name="password" required minlength="6"><br>
-                  <button type="submit">Login</button>
-                  <p id="error-message" style="color: red;"></p>
-                  <p>Don't have an account? <a href="registration.html">register here</a></p>
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required><br>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required minlength="6"><br>
+                    <button type="submit">Login</button>
+                    <p id="error-message" style="color: red;"></p>
+                    <p>Don't have an account? <a href="registration.html">register here</a></p>
                 </form>
                 <div class="fb-login-button" 
                      data-width="" 

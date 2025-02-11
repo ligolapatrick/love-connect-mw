@@ -5,9 +5,10 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const http = require('http');
 const socketIo = require('socket.io');
-const session = require('express-session'); // Import express-session
+const session = require('express-session');
 const { Sequelize, DataTypes, Op } = require('sequelize');
 const router = express.Router();
+const fs = require('fs');
 
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
@@ -16,7 +17,7 @@ const io = socketIo(server);
 // Initialize Sequelize with SQLite
 const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: 'database.sqlite'
+  storage: path.join(__dirname, 'database.sqlite')
 });
 
 // Define the User model
@@ -72,70 +73,69 @@ const User = sequelize.define('User', {
   },
   instantDate: {
     type: DataTypes.BOOLEAN,
-    defaultValue: false 
-
+    defaultValue: false
   },
   availableToday: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false
   },
-   searchingForRelationship: {
+  searchingForRelationship: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false
   },
   relationshipGoals: {
     type: DataTypes.STRING,
-    allowNull: true // Add this line for relationship goals
+    allowNull: true
   },
-  fitnessGoals: { // Add this line for fitness goals
+  fitnessGoals: {
     type: DataTypes.STRING,
     allowNull: true
   },
-    notifications: {
+  notifications: {
     type: DataTypes.STRING,
-    defaultValue: 'all',
+    defaultValue: 'all'
   },
   privacy: {
     type: DataTypes.STRING,
-    defaultValue: 'public',
+    defaultValue: 'public'
   },
   theme: {
     type: DataTypes.STRING,
-    defaultValue: 'light',
+    defaultValue: 'light'
   },
   language: {
     type: DataTypes.STRING,
-    defaultValue: 'en',
+    defaultValue: 'en'
   },
   subscription: {
     type: DataTypes.STRING,
-    defaultValue: 'monthly',
+    defaultValue: 'monthly'
   },
   fontSize: {
     type: DataTypes.STRING,
-    defaultValue: 'medium',
+    defaultValue: 'medium'
   },
   twoFactorAuth: {
     type: DataTypes.STRING,
-    defaultValue: 'disabled',
+    defaultValue: 'disabled'
   },
   onlineStatus: {
     type: DataTypes.STRING,
-    defaultValue: 'enabled',
+    defaultValue: 'enabled'
   },
   lastSeen: {
     type: DataTypes.STRING,
-    defaultValue: 'everyone',
+    defaultValue: 'everyone'
   },
   readReceipts: {
     type: DataTypes.STRING,
-    defaultValue: 'enabled',
+    defaultValue: 'enabled'
   },
   autoDownload: {
     type: DataTypes.STRING,
-    defaultValue: 'wifi',
+    defaultValue: 'wifi'
   }
 });
 
@@ -184,47 +184,14 @@ User.hasMany(Message, { as: 'ReceivedMessages', foreignKey: 'toUserId' });
 Message.belongsTo(User, { as: 'Sender', foreignKey: 'fromUserId' });
 Message.belongsTo(User, { as: 'Receiver', foreignKey: 'toUserId' });
 
-sequelize.sync();
-
-module.exports = { User, Message };
-
-
-// Define the Event model
-const Event = sequelize.define('Event', {
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  date: {
-    type: DataTypes.DATE,
-    allowNull: false
-  },
-  description: {
-    type: DataTypes.STRING,
-    allowNull: false
-  }
+sequelize.sync().then(() => {
+  console.log('Database & tables created!');
 });
-
-// Define the LiveStream model
-const LiveStream = sequelize.define('LiveStream', {
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  host: {
-    type: DataTypes.STRING,
-    allowNull: false
-  }
-});
-
-// Sync database
-sequelize.sync({ force: true }); // Drop and recreate the tables
 
 // Serve static files from the 'public' directory
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
-
 
 // Configure session middleware
 app.use(session({
@@ -249,14 +216,16 @@ const upload = multer({ storage: storage });
 app.post('/register', async (req, res) => {
   const { username, password, countryCode, phone } = req.body;
   if (password.length < 6) {
-    return res.send('Password must be at least 6 characters long.');
+    return res.status(400).send('Password must be at least 6 characters long.');
   }
   const fullPhoneNumber = `${countryCode}${phone}`;
-  const existingUser = await User.findOne({ where: { fullPhoneNumber } });
-  if (existingUser) {
-    return res.send('Phone number is already used by another user.');
-  }
   try {
+    console.log('Checking existing user...');
+    const existingUser = await User.findOne({ where: { fullPhoneNumber } });
+    if (existingUser) {
+      return res.status(400).send('Phone number is already used by another user.');
+    }
+    console.log('Creating new user...');
     const user = await User.create({ username, password, fullPhoneNumber });
     req.session.userId = user.id; // Save userId in session
     res.redirect(`/profile?userId=${user.id}`);
@@ -441,23 +410,38 @@ app.get('/api/profile', requireLogin, async (req, res) => {
   }
 });
 
+// Ensure the uploads directory exists
+const uploadsDir = path.join(__dirname, 'public/uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Handle profile update form submission
 app.post('/profile', upload.single('profilePicture'), async (req, res) => {
   const { bio, interests, location, age, gender } = req.body;
-  const profilePicture = req.file ? `/uploads/${req.file.filename}` : '';
-  // Update user's bio, interests, profile picture, location, age, and gender in the database
-  const user = await User.findByPk(req.session.userId);
-  if (user) {
-    user.bio = bio;
-    user.interests = JSON.stringify(interests.split(', '));
-    user.profilePicture = profilePicture || user.profilePicture;
-    user.location = location;
-    user.age = age;
-    user.gender = gender;
-    await user.save();
-    res.redirect(`/profile?userId=${user.userId}`);
-  } else {
-    res.send('User not found.');
+  let profilePicture = '';
+
+  if (req.file) {
+    profilePicture = `/uploads/${req.file.filename}`;
+  }
+
+  try {
+    const user = await User.findByPk(req.session.userId);
+    if (user) {
+      user.bio = bio;
+      user.interests = JSON.stringify(interests.split(', '));
+      user.profilePicture = profilePicture || user.profilePicture;
+      user.location = location;
+      user.age = age;
+      user.gender = gender;
+      await user.save();
+      res.redirect(`/profile?userId=${user.id}`);
+    } else {
+      res.status(404).send('User not found.');
+    }
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).send('Internal Server Error');
   }
 });
 
