@@ -6,8 +6,8 @@
     <title>Messages - Find One by Click</title>
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #e5ddd5;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
             margin: 0;
             padding: 0;
             display: flex;
@@ -15,7 +15,7 @@
             height: 100vh;
         }
         nav {
-            background-color: #075E54;
+            background-color: #007bff;
             color: white;
             padding: 10px;
             text-align: center;
@@ -25,22 +25,10 @@
             margin: 0 10px;
             text-decoration: none;
         }
-        .chat-header {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            background-color: #075E54;
-            color: white;
-        }
-        .chat-header img {
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            margin-right: 10px;
-        }
-        .chat-header h2 {
-            margin: 0;
-            font-size: 20px;
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
         }
         .message {
             margin: 10px 0;
@@ -48,31 +36,19 @@
             border-radius: 10px;
             max-width: 60%;
             word-wrap: break-word;
-            display: flex;
-            align-items: center;
-            position: relative;
+            display: inline-block;
             clear: both;
-        }
-        .message img {
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            margin-right: 10px;
-        }
-        .message.other {
-            background-color: hsl(94, 11%, 41%);
-            justify-content: flex-end;
-            float: right;
-            text-align: right;
-        }
-        .message.you img {
-            margin-left: 10px;
-            margin-right: 0;
+            position: relative;
         }
         .message.you {
-            background-color: #DCF8C6;
-            float: left;
+            background-color: #ffffff;
+            text-align: right;
+            float: right;
+        }
+        .message.other {
+            background-color: #dcf8c6;
             text-align: left;
+            float: left;
         }
         .message-status {
             position: absolute;
@@ -85,7 +61,6 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            overflow: hidden;
         }
         #messagesList {
             flex-grow: 1;
@@ -96,25 +71,23 @@
             display: flex;
             padding: 10px;
             border-top: 1px solid #ccc;
-            background: #f0f0f0;
+            background: white;
         }
         .message-form textarea {
             flex-grow: 1;
             resize: none;
             padding: 10px;
-            border-radius: 20px;
+            border-radius: 5px;
             border: 1px solid #ccc;
             margin-right: 10px;
-            outline: none;
         }
         .message-form button {
-            background-color: #075E54;
+            background-color: #007bff;
             color: white;
             border: none;
             padding: 10px 15px;
-            border-radius: 50%;
+            border-radius: 5px;
             cursor: pointer;
-            outline: none;
         }
         @media (max-width: 768px) {
             .message-form textarea {
@@ -141,10 +114,8 @@
     <nav>
         <a href="/">Home</a> | <a href="/profile">Profile</a> | <a href="/matches">Matches</a> | <a href="/nearby">Nearby Users</a> | <a href="/chatlist">Messages</a> | <a href="/login">Logout</a>
     </nav>
-    <div class="chat-header">
-        <img id="chatUserProfilePic" src="default-profile-pic.jpg" alt="User">
-        <h2 id="chatWith">Chat with ${chatUsername}</h2>
-    </div>
+    <hr>
+    <h2 id="chatWith">Chat with ${chatUsername}</h2>
     <div id="chatWindow">
         <div id="messagesList" class="messages-list">
             <!-- Messages will be displayed here -->
@@ -164,8 +135,7 @@
             fetch(`/api/messages?chatUserId=${chatUserId}`)
                 .then(response => response.json())
                 .then(data => {
-                    const { messages, chatUser } = data;
-                    document.getElementById('chatUserProfilePic').src = chatUser.profilePicture || 'default-profile-pic.jpg';
+                    const { messages, chatUser } = data; // Include chatUser in the response to get the correct username
                     const messagesList = document.getElementById('messagesList');
                     messagesList.innerHTML = '';
 
@@ -173,7 +143,7 @@
                         messagesList.innerHTML = '<p>No messages to display.</p>';
                     } else {
                         messages.forEach(msg => {
-                            appendMessage(msg, chatUser.username);
+                            appendMessage(msg, chatUser.username); // Pass the correct username for the receiver
                         });
                     }
                 })
@@ -186,16 +156,12 @@
         function appendMessage(message, chatUsername) {
             const messageElement = document.createElement('div');
             const sanitizedContent = message.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            const senderProfilePic = message.fromUserId === userId ? 'your-profile-pic.jpg' : 'chat-user-profile-pic.jpg'; // Update this to use the correct profile picture URLs
-            messageElement.classList.add('message', message.fromUserId === userId ? 'other' : 'you');
+            messageElement.classList.add('message', message.fromUserId === userId ? 'you' : 'other');
             messageElement.innerHTML = `
-                <img src="${senderProfilePic}" alt="${message.fromUserId === userId ? 'you' : chatUsername}">
-                <div>
-                    <p><strong>${message.toUserId === userId ? 'you' : chatUsername}</strong></p>
-                    <p>${sanitizedContent}</p>
-                    <p><small>${new Date(message.timestamp).toLocaleString()}</small></p>
-                    <span class="message-status">${message.fromUserId === userId ? 'Sent' : 'Received'}</span>
-                </div>
+                <p><strong>${message.fromUserId === userId ? 'You' : chatUsername}</strong></p>
+                <p>${sanitizedContent}</p>
+                <p><small>${new Date(message.timestamp).toLocaleString()}</small></p>
+                <span class="message-status">${message.fromUserId === userId ? 'Sent' : 'Received'}</span>
             `;
             document.getElementById('messagesList').appendChild(messageElement);
             document.getElementById('messagesList').scrollTop = document.getElementById('messagesList').scrollHeight; // Scroll to the bottom
@@ -218,9 +184,9 @@
             .then(response => response.json())
             .then(newMessage => {
                 if (newMessage) {
-                    socket.emit('newMessage', newMessage);
+                    socket.emit('newMessage', newMessage); // Emit the message to the server
                     document.getElementById('content').value = ''; // Clear the input field
-                    appendMessage(newMessage, 'you');
+                    appendMessage(newMessage, 'You'); // Show the message in the chat window with 'You' as the sender
                 }
             })
             .catch(error => {
@@ -238,6 +204,7 @@
             fetchMessages(chatUserId);
         }
 
+        // Ensure the message list is refreshed when the page is loaded
         window.addEventListener('load', () => {
             if (chatUserId) {
                 fetchMessages(chatUserId);
