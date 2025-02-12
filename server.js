@@ -15,7 +15,7 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 // Initialize Sequelize with SQLite
-const sequelize = new Sequelize({
+const sequelize = new Sequelize(process.env.DATABASE_URL || {
   dialect: 'sqlite',
   storage: path.join(__dirname, 'database.sqlite')
 });
@@ -184,7 +184,7 @@ User.hasMany(Message, { as: 'ReceivedMessages', foreignKey: 'toUserId' });
 Message.belongsTo(User, { as: 'Sender', foreignKey: 'fromUserId' });
 Message.belongsTo(User, { as: 'Receiver', foreignKey: 'toUserId' });
 
-sequelize.sync().then(() => {
+sequelize.sync({ force: false }).then(() => {
   console.log('Database & tables created!');
 });
 
@@ -585,30 +585,28 @@ app.get('/api/online-users', async (req, res) => {
   res.json(onlineUsers);
 });
 
-// Route to get messages between users
+// Fetch messages for a chat
 app.get('/api/messages', requireLogin, async (req, res) => {
-  const userId = req.session.userId;
-  const chatUserId = req.query.chatUserId;
+    const userId = req.session.userId;
+    const chatUserId = req.query.chatUserId;
 
-  try {
-    const messages = await Message.findAll({
-      where: {
-        [Op.or]: [
-          { fromUserId: userId, toUserId: chatUserId },
-          { fromUserId: chatUserId, toUserId: userId }
-        ]
-      },
-      order: [['timestamp', 'ASC']]
-    });
-
-    const chatUser = await User.findByPk(chatUserId, { attributes: ['id', 'username', 'profilePicture'] });
-
-    res.json({ messages, chatUser });
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-    res.status(500).send('Internal Server Error');
-  }
+    try {
+        const messages = await Message.findAll({
+            where: {
+                [Op.or]: [
+                    { fromUserId: userId, toUserId: chatUserId },
+                    { fromUserId: chatUserId, toUserId: userId }
+                ]
+            },
+            order: [['timestamp', 'ASC']]
+        });
+        res.json(messages);
+    } catch (error) {
+        console.error('Error fetching messages:', error);
+        res.status(500).send('Internal Server Error');
+    }
 });
+
 
 // Send a message
 app.post('/api/send-message', requireLogin, async (req, res) => {
@@ -1402,27 +1400,24 @@ app.post('/api/send-message', requireLogin, async (req, res) => {
 
 // Fetch messages
 app.get('/api/messages', requireLogin, async (req, res) => {
-  const userId = req.session.userId;
-  const chatUserId = req.query.chatUserId;
+    const userId = req.session.userId;
+    const chatUserId = req.query.chatUserId;
 
-  try {
-    const messages = await Message.findAll({
-      where: {
-        [Op.or]: [
-          { fromUserId: userId, toUserId: chatUserId },
-          { fromUserId: chatUserId, toUserId: userId }
-        ]
-      },
-      order: [['timestamp', 'ASC']]
-    });
-
-    const chatUser = await User.findByPk(chatUserId, { attributes: ['id', 'username'] });
-
-    res.json({ messages, chatUser });
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-    res.status(500).send('Internal Server Error');
-  }
+    try {
+        const messages = await Message.findAll({
+            where: {
+                [Op.or]: [
+                    { fromUserId: userId, toUserId: chatUserId },
+                    { fromUserId: chatUserId, toUserId: userId }
+                ]
+            },
+            order: [['timestamp', 'ASC']]
+        });
+        res.json(messages);
+    } catch (error) {
+        console.error('Error fetching messages:', error);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // Create a virtual event
@@ -1472,30 +1467,6 @@ app.get('/api/searching-for-relationship', async (req, res) => {
     console.error('Error fetching users:', error);
     res.status(500).send('Internal Server Error');
   }
-});
-
-app.post('/api/send-message', requireLogin, async (req, res) => {
-    const { toUserId, content } = req.body;
-    const fromUserId = req.session.userId; // Ensure this is the dynamic userId
-
-    if (!toUserId || !content) {
-        return res.status(400).json({ error: 'Missing required parameters' });
-    }
-
-    try {
-        const newMessage = await Message.create({
-            fromUserId,
-            toUserId,
-            content,
-            timestamp: new Date(),
-            messageType: 'text' // Ensure this is set if it's not in the request body
-        });
-        console.log('Message created:', newMessage);
-        res.status(201).json(newMessage);
-    } catch (error) {
-        console.error('Error sending message:', error);
-        res.status(500).send('Internal Server Error');
-    }
 });
 
 // Fetch the chat list for a user
@@ -1987,6 +1958,17 @@ app.post('/api/settings', async (req, res) => {
   } catch (error) {
     console.error('Error updating settings:', error);
     res.status(500).send('Internal Server Error');
+  }
+});
+
+// Route to get a user's profile
+app.get('/api/profile', requireLogin, async (req, res) => {
+  const userId = req.query.userId || req.session.userId;
+  const user = await User.findByPk(userId);
+  if (user) {
+    res.json(user);
+  } else {
+    res.status(404).send('User not found.');
   }
 });
 
