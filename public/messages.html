@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messages - Find One by Click</title>
+    <title>Messages</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            font-family: 'Roboto', sans-serif;
+            background-color: #e5ddd5;
             margin: 0;
             padding: 0;
             display: flex;
@@ -15,7 +15,7 @@
             height: 100vh;
         }
         nav {
-            background-color: #007bff;
+            background-color: #075E54;
             color: white;
             padding: 10px;
             text-align: center;
@@ -25,85 +25,103 @@
             margin: 0 10px;
             text-decoration: none;
         }
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .message {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 10px;
-            max-width: 60%;
-            word-wrap: break-word;
-            display: inline-block;
-            clear: both;
-            position: relative;
-        }
-        .message.you {
-            background-color: #ffffff;
-            text-align: right;
-            float: right;
-        }
-        .message.other {
-            background-color: #dcf8c6;
-            text-align: left;
-            float: left;
-        }
-        .message-status {
-            position: absolute;
-            bottom: 5px;
-            right: 10px;
-            font-size: 0.8em;
-            color: #999;
-        }
-        #chatWindow {
+        .chat-header {
             display: flex;
-            flex-direction: column;
-            height: 100%;
+            align-items: center;
+            padding: 10px;
+            background-color: #075E54;
+            color: white;
         }
-        #messagesList {
+        .chat-header img {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+        .chat-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        .message-container {
             flex-grow: 1;
             overflow-y: auto;
             padding: 10px;
+            display: flex;
+            flex-direction: column;
         }
-        .message-form {
+        .message {
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 60%;
+    word-wrap: break-word;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+.message.you {
+    background-color: #DCF8C6;
+    align-self: flex-end;
+    text-align: right;
+}
+.message.other {
+    background-color: #fff;
+    align-self: flex-start;
+    text-align: left;
+}
+
+        .typing-area {
             display: flex;
             padding: 10px;
             border-top: 1px solid #ccc;
-            background: white;
+            background: #f0f0f0;
         }
-        .message-form textarea {
+        .typing-area textarea {
             flex-grow: 1;
             resize: none;
             padding: 10px;
-            border-radius: 5px;
+            border-radius: 20px;
             border: 1px solid #ccc;
             margin-right: 10px;
+            outline: none;
         }
-        .message-form button {
-            background-color: #007bff;
+        .typing-area button {
+            background-color: #075E54;
             color: white;
             border: none;
             padding: 10px 15px;
-            border-radius: 5px;
+            border-radius: 50%;
             cursor: pointer;
+            outline: none;
         }
         @media (max-width: 768px) {
-            .message-form textarea {
-                flex-grow: 1;
-                padding: 10px;
-                border-radius: 5px;
-                border: 1px solid #ccc;
-                margin-right: 10px;
-                width: 100%;
+            .chat-header h2 {
+                font-size: 18px;
+            }
+            .typing-area button {
+                padding: 8px 12px;
             }
         }
         @media (max-width: 480px) {
-            .message-form textarea {
-                margin-bottom: 5px;
+            .chat-header {
+                flex-direction: column;
+                align-items: flex-start;
             }
-            .message-form button {
+            .chat-header img {
+                width: 30px;
+                height: 30px;
+            }
+            .chat-header h2 {
+                font-size: 16px;
+            }
+            .typing-area {
+                flex-direction: column;
+            }
+            .typing-area textarea {
+                margin-bottom: 5px;
+                width: 100%;
+            }
+            .typing-area button {
                 width: 100%;
             }
         }
@@ -112,66 +130,64 @@
 </head>
 <body>
     <nav>
-        <a href="/">Home</a> | <a href="/profile">Profile</a> | <a href="/matches">Matches</a> | <a href="/nearby">Nearby Users</a> | <a href="/chatlist">Messages</a> | <a href="/login">Logout</a>
+        <a href="/">Home</a> 
     </nav>
-    <hr>
-    <h2 id="chatWith">Chat with ${chatUsername}</h2>
-    <div id="chatWindow">
-        <div id="messagesList" class="messages-list">
-            <!-- Messages will be displayed here -->
-        </div>
-        <form id="messageForm" class="message-form">
-            <textarea id="content" name="content" rows="1" placeholder="Type a message..." required></textarea>
-            <button type="submit">Send</button>
-        </form>
+    <div class="chat-header">
+        <img id="chatUserProfilePic" src="default-profile-pic.jpg" alt="User">
+        <h2 id="chatWith">Chat with User</h2>
+    </div>
+    <div class="message-container" id="messageContainer">
+        <!-- Messages will be dynamically loaded here -->
+    </div>
+    <div class="typing-area">
+        <textarea id="messageInput" rows="1" placeholder="Type a message..." required></textarea>
+        <button id="sendButton">Send</button>
     </div>
     <script>
-        const userId = Number('yourUserId'); // Ensure this is a number
+        const socket = io();
+    
+        const userId = Number('yourUserId'); // Replace with dynamic userId
         const chatUserId = Number(new URLSearchParams(window.location.search).get('userId'));
         const chatUsername = new URLSearchParams(window.location.search).get('username');
-        const socket = io();
-
-        function fetchMessages(chatUserId) {
-            fetch(`/api/messages?chatUserId=${chatUserId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const { messages, chatUser } = data; // Include chatUser in the response to get the correct username
-                    const messagesList = document.getElementById('messagesList');
-                    messagesList.innerHTML = '';
-
-                    if (!messages || messages.length === 0) {
-                        messagesList.innerHTML = '<p>No messages to display.</p>';
-                    } else {
-                        messages.forEach(msg => {
-                            appendMessage(msg, chatUser.username); // Pass the correct username for the receiver
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching messages:', error);
-                    document.getElementById('messagesList').innerHTML = '<p>Error fetching messages. Please try again later.</p>';
-                });
-        }
-
-        function appendMessage(message, chatUsername) {
+    
+        document.getElementById('chatWith').textContent = `Chat with ${chatUsername}`;
+    
+        // Fetch profile data of the chat user
+        fetch(`/api/profile?userId=${chatUserId}`)
+            .then(response => response.json())
+            .then(user => {
+                if (user && user.profilePicture) {
+                    document.getElementById('chatUserProfilePic').src = user.profilePicture;
+                }
+            })
+            .catch(error => console.error('Error fetching profile:', error));
+    
+        function appendMessage(message) {
+            const messageContainer = document.getElementById('messageContainer');
             const messageElement = document.createElement('div');
-            const sanitizedContent = message.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            messageElement.classList.add('message', message.fromUserId === userId ? 'you' : 'other');
-            messageElement.innerHTML = `
-                <p><strong>${message.fromUserId === userId ? 'You' : chatUsername}</strong></p>
-                <p>${sanitizedContent}</p>
-                <p><small>${new Date(message.timestamp).toLocaleString()}</small></p>
-                <span class="message-status">${message.fromUserId === userId ? 'Sent' : 'Received'}</span>
-            `;
-            document.getElementById('messagesList').appendChild(messageElement);
-            document.getElementById('messagesList').scrollTop = document.getElementById('messagesList').scrollHeight; // Scroll to the bottom
+    
+            // Determine if the message was sent by the current user
+            const isYou = message.fromUserId === userId;
+    
+            messageElement.className = `message ${isYou ? 'you' : 'other'}`;
+            messageElement.innerHTML = `<strong>${isYou ? 'You' : 'Sender'}:</strong> ${message.content}`;
+    
+            messageContainer.appendChild(messageElement);
+            messageContainer.scrollTop = messageContainer.scrollHeight; // Scroll to the bottom
         }
-
-        document.getElementById('messageForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const content = document.getElementById('content').value;
-            if (!chatUserId) {
-                alert('No user selected to send the message.');
+    
+        // Fetch messages
+        fetch(`/api/messages?chatUserId=${chatUserId}`)
+            .then(response => response.json())
+            .then(messages => {
+                messages.forEach(appendMessage);
+            })
+            .catch(error => console.error('Error fetching messages:', error));
+    
+        // Send message
+        document.getElementById('sendButton').addEventListener('click', () => {
+            const content = document.getElementById('messageInput').value;
+            if (!content.trim()) {
                 return;
             }
             fetch('/api/send-message', {
@@ -179,37 +195,23 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ fromUserId: userId, toUserId: chatUserId, content: content.replace(/</g, "&lt;").replace(/>/g, "&gt;") })
+                body: JSON.stringify({ toUserId: chatUserId, content })
             })
             .then(response => response.json())
             .then(newMessage => {
-                if (newMessage) {
-                    socket.emit('newMessage', newMessage); // Emit the message to the server
-                    document.getElementById('content').value = ''; // Clear the input field
-                    appendMessage(newMessage, 'You'); // Show the message in the chat window with 'You' as the sender
-                }
+                appendMessage(newMessage);
+                document.getElementById('messageInput').value = ''; // Clear input
             })
-            .catch(error => {
-                console.error('Error sending message:', error);
-                alert('Failed to send message. Please try again.');
-            });
+            .catch(error => console.error('Error sending message:', error));
         });
-
-        socket.on('newMessage', (newMessage) => {
-            appendMessage(newMessage, chatUsername);
-        });
-
-        if (chatUserId) {
-            document.getElementById('chatWith').textContent = `Chat with ${chatUsername}`;
-            fetchMessages(chatUserId);
-        }
-
-        // Ensure the message list is refreshed when the page is loaded
-        window.addEventListener('load', () => {
-            if (chatUserId) {
-                fetchMessages(chatUserId);
+    
+        // Receive new messages via Socket.io
+        socket.on('newMessage', (message) => {
+            if (message.fromUserId === chatUserId || message.toUserId === chatUserId) {
+                appendMessage(message);
             }
         });
     </script>
+    
 </body>
 </html>
