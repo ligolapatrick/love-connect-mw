@@ -52,6 +52,7 @@
     }
     #messageInput {
       display: flex;
+      visibility: hidden; /* Hide initially */
     }
     #messageInput textarea {
       flex-grow: 1;
@@ -91,29 +92,28 @@
       background-color: red;
       color: white;
     }
-      /* Media Queries for Responsive Design */
-   @media (max-width: 768px) {
-    .user-card {
-      width: 90%; /* Adjusted width for smaller screens */
+    /* Media Queries for Responsive Design */
+    @media (max-width: 768px) {
+      .user-card {
+        width: 90%; /* Adjusted width for smaller screens */
+      }
     }
-  }
-
-  @media (max-width: 480px) {
-    .user-card {
-      width: 100%; /* Full width for very small screens */
+    @media (max-width: 480px) {
+      .user-card {
+        width: 100%; /* Full width for very small screens */
+      }
+      .message-input {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .message-input input {
+        width: 100%;
+        margin-bottom: 5px;
+      }
+      .message-input button {
+        width: 100%;
+      }
     }
-    .message-input {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .message-input input {
-      width: 100%;
-      margin-bottom: 5px;
-    }
-    .message-input button {
-      width: 100%;
-    }
-  }
   </style>
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -128,24 +128,29 @@
           endQuickMatch();
         } else {
           timeLeft--;
-          timerElement.textContent = `Time Left: ${Math.floor(timeLeft / 60)}:${timeLeft % 60}`;
+          timerElement.textContent = `Time Left: ${Math.floor(timeLeft / 60)}:${timeLeft % 60 < 10 ? '0' : ''}${timeLeft % 60}`;
         }
       }, 1000);
     }
 
     socket.on('quickMatchStart', ({ roomName }) => {
       document.getElementById('chat-container').style.display = 'flex';
+      document.getElementById('messageInput').style.visibility = 'visible';
       startTimer();
     });
 
     function sendMessage() {
       const message = document.getElementById('messageText').value;
-      // Implement logic to send the message to the server
+      if (message.trim()) {
+        socket.emit('sendMessage', { message });
+        document.getElementById('messageText').value = '';
+      }
     }
 
     function endQuickMatch() {
       document.getElementById('decision').style.display = 'block';
-      // Logic to notify the server about the end of the session
+      document.getElementById('messageInput').style.visibility = 'hidden';
+      socket.emit('endQuickMatch');
     }
 
     function handleDecision(decision) {
@@ -154,7 +159,7 @@
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ userDecision: decision, roomName })
+        body: JSON.stringify({ userDecision: decision })
       }).then(response => {
         if (response.ok) {
           // Handle next steps based on user decision
@@ -183,7 +188,7 @@
     <a href="profile.html">Profile</a> |
     <a href="matches.html">Matches</a> |
     <a href="messages.html">Messages</a> |
-    <a href="settings.html">settings</a> |
+    <a href="settings.html">Settings</a> |
     <a href="login.html">Logout</a>
   </nav>
   <hr>

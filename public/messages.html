@@ -28,6 +28,7 @@
         .chat-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             padding: 10px;
             background-color: #075E54;
             color: white;
@@ -50,26 +51,25 @@
             flex-direction: column;
         }
         .message {
-    margin: 5px 0;
-    padding: 10px;
-    border-radius: 10px;
-    max-width: 60%;
-    word-wrap: break-word;
-    display: flex;
-    align-items: center;
-    position: relative;
-}
-.message.you {
-    background-color: #DCF8C6;
-    align-self: flex-end;
-    text-align: right;
-}
-.message.other {
-    background-color: #fff;
-    align-self: flex-start;
-    text-align: left;
-}
-
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 60%;
+            word-wrap: break-word;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        .message.you {
+            background-color: #DCF8C6;
+            align-self: flex-end;
+            text-align: right;
+        }
+        .message.other {
+            background-color: #fff;
+            align-self: flex-start;
+            text-align: left;
+        }
         .typing-area {
             display: flex;
             padding: 10px;
@@ -94,11 +94,24 @@
             cursor: pointer;
             outline: none;
         }
+        .chat-controls {
+            display: flex;
+            align-items: center;
+        }
+        .chat-controls button {
+            background-color: #075E54;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-left: 10px;
+        }
         @media (max-width: 768px) {
             .chat-header h2 {
                 font-size: 18px;
             }
-            .typing-area button {
+            .typing-area button, .chat-controls button {
                 padding: 8px 12px;
             }
         }
@@ -124,6 +137,10 @@
             .typing-area button {
                 width: 100%;
             }
+            .chat-controls button {
+                width: 100%;
+                margin-top: 5px;
+            }
         }
     </style>
     <script src="/socket.io/socket.io.js"></script>
@@ -133,8 +150,14 @@
         <a href="/">Home</a> 
     </nav>
     <div class="chat-header">
-        <img id="chatUserProfilePic" src="default-profile-pic.jpg" alt="User">
-        <h2 id="chatWith">Chat with User</h2>
+        <div>
+            <img id="chatUserProfilePic" src="default-profile-pic.jpg" alt="User">
+            <h2 id="chatWith">Chat with User</h2>
+        </div>
+        <div class="chat-controls">
+            <button id="voiceCallButton" onclick="initiateVoiceCall()">🎤Voice Call</button>
+            <button id="videoCallButton" onclick="initiateVideoCall()">🎦Video Call</button>
+        </div>
     </div>
     <div class="message-container" id="messageContainer">
         <!-- Messages will be dynamically loaded here -->
@@ -211,7 +234,29 @@
                 appendMessage(message);
             }
         });
+
+        // Handle missed call notifications
+        socket.on('missedCallNotification', ({ callee, time }) => {
+            const missedCallMessage = {
+                fromUserId: 'loveconnect',
+                toUserId: userId,
+                content: `You have missed a video call from ${callee} at ${new Date(time).toLocaleTimeString()}`,
+                timestamp: new Date(time)
+            };
+            appendMessage(missedCallMessage);
+        });
+
+        // Initiate voice call
+        function initiateVoiceCall() {
+            socket.emit('initiateCall', { userId, calleeId: chatUserId, callType: 'voice' });
+            window.location.href = `/voiceCall.html?calleeName=${encodeURIComponent(chatUsername)}&callerName=${encodeURIComponent('Your Username')}`;
+        }
+
+        // Initiate video call
+        function initiateVideoCall() {
+            socket.emit('initiateCall', { userId, calleeId: chatUserId, callType: 'video' });
+            window.location.href = `/videoCall.html?calleeName=${encodeURIComponent(chatUsername)}&callerName=${encodeURIComponent('Your Username')}`;
+        }
     </script>
-    
 </body>
 </html>

@@ -166,7 +166,7 @@
   <a href="/">Home</a> |
   <a href="/profile">Profile</a> |
   <a href="/matches">Matches</a> |
-  <a href="/speed-dating">speedDate</a> |
+  <a href="/speed">speedDate</a> |
   <a href="/chatlist">Messages</a> |
   <a href="/login">Logout</a>
 </nav>
@@ -175,77 +175,85 @@
     <p>&copy; 2024 LoveConnect. All rights reserved.</p>
     <p><a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-service.html">Terms of Service</a></p>
   </footer>
+
+  <!-- Notification Modal -->
+  <div id="notification-modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <p>Welcome to LoveConnect! It seems like you're not registered. Please click the Register button if you don't have an account or the Login button if you are already registered.</p>
+      <button id="register-button" onclick="window.location.href='registration.html'">Register</button>
+      <button id="login-button" onclick="window.location.href='login.html'">Login</button>
+    </div>
+  </div>
+
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-   // Extract username from query parameter
-const urlParams = new URLSearchParams(window.location.search);
-const username = urlParams.get('username'); // Changed 'Username' to 'username'
-
-// Display username
-if (username) {
-  document.getElementById('username').textContent = username; // Ensure ID matches
-}
-
-    
-      // Function to fetch user data
-      function fetchUserData() {
-            fetch('/get-user-data')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('username').textContent = data.username;
-                    } else {
-                        document.getElementById('username').textContent = 'Guest';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching user data:', error);
-                    document.getElementById('username').textContent = 'Guest';
-                });
-        }
-
-        // Fetch user data on page load
-        window.onload = fetchUserData;
-     // Toggle dropdown menu
-     const menuIcon = document.getElementById('menu-icon');
-    const dropdownMenu = document.getElementById('dropdown-menu');
-    menuIcon.addEventListener('click', () => {
-      dropdownMenu.classList.toggle('show');
-    });
-
-    // Logout functionality
-    const logoutButton = document.getElementById('logout-button');
-    logoutButton.addEventListener('click', () => {
-      fetch('/logout', { method: 'POST' })
-        .then(response => response.text())
-        .then(() => {
-          window.location.href = '/';
+    async function checkUserRegistration() {
+      try {
+        const response = await fetch('/api/check-registration', {
+          method: 'GET',
+          credentials: 'include'
         });
-    });
-
-      fetch('/api/activity')
-        .then(response => response.json())
-        .then(activity => {
-          const feed = document.getElementById('activity-feed');
-          activity.forEach(item => {
-            const activityItem = document.createElement('div');
-            activityItem.className = 'activity-item';
-            activityItem.textContent = `${item.action} on ${new Date(item.timestamp).toLocaleString()}`;
-            feed.appendChild(activityItem);
-          });
-        });
-
-    const ws = new WebSocket('ws://localhost:3000');
-    ws.onmessage = event => {
-      const notification = JSON.parse(event.data);
-      if (notification.type === 'friend-request') {
-        alert(`You have a new friend request from user ${notification.from}`);
+        const result = await response.json();
+        return result.isRegistered;
+      } catch (error) {
+        console.error('Error checking registration status:', error);
+        return false; // Default to not registered in case of error
       }
-    };
-  });
-</script>
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      const isRegistered = await checkUserRegistration();
+      if (!isRegistered) {
+        const modal = document.getElementById('notification-modal');
+        modal.style.display = 'block';
+
+        const closeModal = document.getElementsByClassName('close')[0];
+        closeModal.onclick = function() {
+          modal.style.display = 'none';
+        };
+
+        window.onclick = function(event) {
+          if (event.target === modal) {
+            modal.style.display = 'none';
+          }
+        };
+      }
+    });
+  </script>
+  <style>
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgb(0,0,0);
+      background-color: rgba(0,0,0,0.4);
+      padding-top: 60px;
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+  </style>
 </body>
 </html>
-
-
-

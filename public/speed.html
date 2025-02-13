@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speed Chat</title>
+  <link rel="stylesheet" href="styles2.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+header {
+  width: 100%;
+  padding: 20px;
+  background-color: #007bff;
+  color: white;
+  text-align: center;
+}
+
+main {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.chat-window {
+  width: 80%;
+  max-width: 800px;
+  height: 70vh;
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.boards {
+  display: flex;
+  height: 100%;
+}
+
+.board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+textarea {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  resize: none;
+}
+
+.centered-content {
+  text-align: center;
+}
+
+h1, h2 {
+  margin: 0;
+}
+
+h3 {
+  margin-top: 0;
+}
+
+/* Responsive design adjustments */
+@media (max-width: 768px) {
+  .chat-window {
+    width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .chat-window {
+    width: 100%;
+  }
+}
+
+  </style>
+</head>
+<body>
+
+  <main>
+    <section class="speed-chat-section centered-content">
+      <h2>Speed Chat</h2>
+      <div id="chat-window" class="chat-window">
+        <div class="chat-header">
+          <h2>Chat with a stranger</h2>
+          <span id="timer">3:00</span>
+        </div>
+        <div class="boards">
+          <div class="board" id="left-board">
+            <h3>Stranger's Board</h3>
+            <textarea id="stranger-chat-input" placeholder="Stranger is typing..." disabled></textarea>
+          </div>
+          <div class="board" id="right-board">
+            <h3>Your Board</h3>
+            <textarea id="user-chat-input" placeholder="Type a message"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const socket = io();
+    let timerInterval;
+
+    // Timer functionality
+    const timerElement = document.getElementById('timer');
+    const startTimer = () => {
+      let timeLeft = 180; // 3 minutes in seconds
+
+      timerInterval = setInterval(() => {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        timeLeft--;
+
+        if (timeLeft < 0) {
+          clearInterval(timerInterval);
+          alert('Chat session has ended.');
+          socket.emit('endChat');
+        }
+      }, 1000);
+    };
+
+    // Handle user input
+    const userChatInput = document.getElementById('user-chat-input');
+    userChatInput.addEventListener('input', () => {
+      socket.emit('userMessage', userChatInput.value);
+    });
+
+    // Handle incoming messages from the stranger
+    socket.on('strangerMessage', (message) => {
+      const strangerChatInput = document.getElementById('stranger-chat-input');
+      strangerChatInput.value = message;
+    });
+
+    // Join the speed chat room
+    socket.emit('joinSpeedChat');
+    startTimer();
+
+    // Handle end of chat and find a new stranger
+    socket.on('endChat', () => {
+      alert('Chat session has ended. Finding a new stranger...');
+      clearInterval(timerInterval);
+      userChatInput.value = '';
+      document.getElementById('stranger-chat-input').value = '';
+      socket.emit('joinSpeedChat');
+      startTimer();
+    });
+  </script>
+</body>
+</html>

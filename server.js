@@ -326,6 +326,11 @@ app.get('/about-app', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'about-app.html'));
 });
 
+// Route to serve the speed.html file
+app.get('/speed', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'speed.html'));
+});
+
 // Route to serve the voice-chat-room.html file
 app.get('/voice-chat-room', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'voice-chat-room.html'));
@@ -344,6 +349,15 @@ app.get('/searching', requireLogin, (req, res) => {
 // Route to serve the moodmatcher.html file
 app.get('/moodmatcher', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'moodmatcher.html'));
+});
+
+// Add routes to serve voice and video call HTML files
+app.get('/voiceCall.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'voiceCall.html'));
+});
+
+app.get('/videoCall.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'videoCall.html'));
 });
 
 // Route to serve the instantdate.html file
@@ -1794,51 +1808,171 @@ app.post('/api/send-goals-match-request', requireLogin, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
-const quickMatchQueue = [];
-const chatRooms = {};
-
-app.post('/api/join-quick-match', requireLogin, (req, res) => {
-  const userId = req.session.userId;
-  quickMatchQueue.push(userId);
-  res.sendStatus(200);
-});
-
-const createChatRoom = (user1, user2) => {
-  const roomName = `quickMatch-${user1}-${user2}`;
-  chatRooms[roomName] = { users: [user1, user2], messages: [] };
-  return roomName;
-};
-
-setInterval(async () => {
-  if (quickMatchQueue.length >= 2) {
-    const user1 = quickMatchQueue.shift();
-    const user2 = quickMatchQueue.shift();
-    const roomName = createChatRoom(user1, user2);
-
-    io.to(user1).emit('quickMatchStart', { roomName });
-    io.to(user2).emit('quickMatchStart', { roomName });
-  }
-}, 5000);
+let waitingUser = null;
+const speedChatRooms = {};
 
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
-  socket.on('joinRoom', (roomName) => {
-    socket.join(roomName);
-    socket.roomName = roomName;
-    console.log(`${socket.id} joined room ${roomName}`);
+  socket.on('joinSpeedChat', () => {
+    if (waitingUser) {
+      const roomName = `speedChat-${waitingUser}-${socket.id}`;
+      speedChatRooms[roomName] = { users: [waitingUser, socket.id] };
+      socket.join(roomName);
+      socket.to(waitingUser).emit('chatPartnerJoined');
+      socket.emit('chatPartnerJoined');
+      waitingUser = null;
+    } else {
+      waitingUser = socket.id;
+    }
   });
 
-  socket.on('sendMessage', ({ message, roomName }) => {
-    const userId = socket.handshake.session.userId;
-    const chatMessage = { sender: userId, message, timestamp: new Date() };
-    chatRooms[roomName].messages.push(chatMessage);
-    io.to(roomName).emit('receiveMessage', chatMessage);
+  socket.on('userMessage', (message) => {
+    const roomName = Object.keys(socket.rooms).find(room => room.startsWith('speedChat-'));
+    if (roomName) {
+      const otherUser = speedChatRooms[roomName].users.find(id => id !== socket.id);
+      socket.to(otherUser).emit('strangerMessage', message);
+    }
+  });
+
+  socket.on('endChat', () => {
+    const roomName = Object.keys(socket.rooms).find(room => room.startsWith('speedChat-'));
+    if (roomName) {
+      const users = speedChatRooms[roomName].users;
+      users.forEach(id => {
+        io.to(id).emit('endChat');
+      });
+      delete speedChatRooms[roomName];
+    }
+    if (waitingUser === socket.id) {
+      waitingUser = null;
+    }
   });
 
   socket.on('disconnect', () => {
     console.log('A user disconnected:', socket.id);
+    if (waitingUser === socket.id) {
+      waitingUser = null;
+    }
+    for (const roomName in speedChatRooms) {
+      const room = speedChatRooms[roomName];
+      if (room.users.includes(socket.id)) {
+        room.users = room.users.filter(id => id !== socket.id);
+        room.users.forEach(id => io.to(id).emit('endChat'));
+        delete speedChatRooms[roomName];
+      }
+    }
+  });
+});
+
+const quickMatchRooms = {};
+
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  socket.on('joinQuickMatch', () => {
+    if (waitingUsers.length > 0) {
+      const pairedUser = waitingUsers.shift();
+      const roomName = `quickMatch-${pairedUser}-${socket.id}`;
+      quickMatchRooms[roomName] = { users: [pairedUser, socket.id] };
+      socket.join(roomName);
+      socket.to(pairedUser).emit('quickMatchStart', { roomName });
+      socket.emit('quickMatchStart', { roomName });
+    } else {
+      waitingUsers.push(socket.id);
+    }
+  });
+
+  socket.on('sendMessage', ({ message }) => {
+    const roomName = Object.keys(socket.rooms).find(room => room.startsWith('quickMatch-'));
+    if (roomName) {
+      io.to(roomName).emit('receiveMessage', { message });
+    }
+  });
+
+  socket.on('endQuickMatch', () => {
+    const roomName = Object.keys(socket.rooms).find(room => room.startsWith('quickMatch-'));
+    if (roomName) {
+      const users = quickMatchRooms[roomName].users;
+      users.forEach(id => {
+        io.to(id).emit('endChat');
+      });
+      delete quickMatchRooms[roomName];
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('A user disconnected:', socket.id);
+    waitingUsers = waitingUsers.filter(id => id !== socket.id);
+    for (const roomName in quickMatchRooms) {
+      const room = quickMatchRooms[roomName];
+      if (room.users.includes(socket.id)) {
+        room.users = room.users.filter(id => id !== socket.id);
+        io.to(roomName).emit('endChat');
+        delete quickMatchRooms[roomName];
+      }
+    }
+  });
+});
+
+const users = {};
+
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  // Register connected user
+  socket.on('registerUser', (userId) => {
+    users[userId] = socket.id;
+    io.emit('onlineUsers', Object.keys(users).map(id => ({ username: id })));
+  });
+
+// Handle call initiation
+socket.on('initiateCall', async ({ userId, calleeId, callType }) => {
+    const callee = users[calleeId];
+    if (callee) {
+        io.to(callee.socketId).emit('callRequest', { caller: users[userId].username, callerId: userId, callType });
+        // Start a timeout to handle missed call
+        const missedCallTimeout = setTimeout(async () => {
+            const messageContent = `You have missed a ${callType} call from ${users[userId].username} at ${new Date().toLocaleTimeString()}`;
+            await Message.create({
+                fromUserId: userId,
+                toUserId: calleeId,
+                content: messageContent,
+                messageType: 'system'
+            });
+            io.to(users[userId].socketId).emit('missedCallNotification', { callee: callee.username, time: new Date() });
+        }, 30000); // 30 seconds timeout
+        socket.missedCallTimeout = missedCallTimeout;
+    } else {
+        socket.emit('userNotFound', 'The user is not available');
+    }
+});
+
+  // Handle call acceptance
+  socket.on('acceptCall', ({ caller }) => {
+    clearTimeout(socket.missedCallTimeout);
+    io.to(caller).emit('callAccepted');
+  });
+
+  // Handle call decline
+  socket.on('declineCall', ({ caller }) => {
+    clearTimeout(socket.missedCallTimeout);
+    io.to(caller).emit('callDeclined');
+  });
+
+  socket.on('getOnlineUsers', () => {
+    io.emit('onlineUsers', Object.keys(users).map(id => ({ username: id })));
+  });
+
+  socket.on('disconnect', () => {
+    console.log('A user disconnected:', socket.id);
+    for (const userId in users) {
+      if (users[userId] === socket.id) {
+        delete users[userId];
+        break;
+      }
+    }
+    io.emit('onlineUsers', Object.keys(users).map(id => ({ username: id })));
   });
 });
 

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Call</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .call-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background-color: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 5px;
+    }
+    .call-buttons {
+      margin-top: 20px;
+    }
+    .call-buttons button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .call-buttons .start {
+      background-color: green;
+      color: white;
+    }
+    .call-buttons .end {
+      background-color: red;
+      color: white;
+    }
+    .call-header {
+      margin-bottom: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    #callTimer {
+      margin-top: 10px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="call-container">
+    <div id="callHeader" class="call-header">Calling...</div>
+    <audio id="remoteAudio" autoplay></audio>
+    <audio id="callingSound" src="sound/calling_sound.mp3" loop></audio> <!-- Calling sound -->
+    <div id="callTimer">00:00</div> <!-- Call Timer -->
+    <div class="call-buttons">
+      <button class="start" onclick="startCall()">Start Call</button>
+      <button class="end" onclick="endCall()">End Call</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let localStream;
+    let peerConnection;
+    let callStartTime;
+    let callTimerInterval;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const calleeName = urlParams.get('calleeName');
+    document.getElementById('callHeader').innerText = `Calling ${calleeName}...`;
+
+    const callingSound = document.getElementById('callingSound');
+    const callTimerElement = document.getElementById('callTimer');
+
+    function updateCallTimer() {
+      const elapsedTime = Math.floor((Date.now() - callStartTime) / 1000);
+      const minutes = Math.floor(elapsedTime / 60);
+      const seconds = elapsedTime % 60;
+      callTimerElement.textContent = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+
+    async function startCall() {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      peerConnection = new RTCPeerConnection();
+      
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit('iceCandidate', event.candidate);
+        }
+      };
+
+      peerConnection.ontrack = (event) => {
+        const remoteAudio = document.getElementById('remoteAudio');
+        remoteAudio.srcObject = event.streams[0];
+      };
+
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      socket.emit('callOffer', offer);
+
+      callingSound.play();
+      callStartTime = Date.now();
+      callTimerInterval = setInterval(updateCallTimer, 1000);
+
+      // Auto-terminate call after 30 seconds if unanswered
+      setTimeout(() => {
+        if (peerConnection.connectionState !== 'connected') {
+          endCall();
+          window.location.href = `/messages.html?userId=${urlParams.get('callerId')}&username=${urlParams.get('callerName')}`;
+        }
+      }, 30000);
+    }
+
+    function endCall() {
+      clearInterval(callTimerInterval);
+      if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+      callingSound.pause();
+      callingSound.currentTime = 0;
+    }
+
+    socket.on('callAnswer', async (answer) => {
+      callingSound.pause();
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    });
+
+    socket.on('iceCandidate', async (candidate) => {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+    });
+
+    socket.on('callOffer', async (offer) => {
+      peerConnection = new RTCPeerConnection();
+
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit('iceCandidate', event.candidate);
+        }
+      };
+
+      peerConnection.ontrack = (event) => {
+        const remoteAudio = document.getElementById('remoteAudio');
+        remoteAudio.srcObject = event.streams[0];
+      };
+
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      socket.emit('callAnswer', answer);
+
+      callStartTime = Date.now();
+      callTimerInterval = setInterval(updateCallTimer, 1000);
+    });
+
+    socket.on('callRequest', ({ caller }) => {
+      document.getElementById('callHeader').innerText = `${caller} is calling...`;
+    });
+
+    socket.on('callTimeout', () => {
+      endCall();
+          window.location.href = `/messages.html?userId=${urlParams.get('callerId')}&username=${urlParams.get('callerName')}`;
+    });
+  </script>
+</body>
+</html>
