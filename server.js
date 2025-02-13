@@ -2111,6 +2111,10 @@ app.get('/api/profile', requireLogin, async (req, res) => {
   }
 });
 
+const Sentiment = require('sentiment');
+// Configure Sentiment Analysis
+const sentiment = new Sentiment();
+
 const axios = require('axios');
 
 // Sample knowledge base about the app
@@ -2120,24 +2124,50 @@ const knowledgeBase = {
   "How do I reset my password?": "If you forgot your password, click on the 'Forgot Password' link on the login page and follow the instructions.",
   "How can I find nearby users?": "You can find nearby users by clicking on the 'Nearby Users' section in the app.",
   "How do I send a message?": "To send a message, go to the chat interface, type your message, and click the 'Send' button.",
+  "What is LoveConnect": "LoveConnect is a dating and social networking app designed to help you find meaningful connections.",
+  "How do I create an account": "To create an account, click on the 'Register' button on the homepage and fill out the registration form.",
+  "How do I reset my password": "If you forgot your password, click on the 'Forgot Password' link on the login page and follow the instructions.",
+  "How can I find nearby users": "You can find nearby users by clicking on the 'Nearby Users' section in the app.",
+  "How do I send a message": "To send a message, go to the chat interface, type your message, and click the 'Send' button.",
+   "Hello": "Hi, how can i help you!.",
+   "hi": "Hi, how can i heip you!.",
+   "hello": "Hi, how can i help you!.",
+   "what's your name ": "am LoveConnect Ai Assistant!.",
+   "what is your name ": "am LoveConnect Ai Assistant!.",
+   "what is your name?": "am LoveConnect Ai Assistant!.",
   // Add more FAQs as needed
 };
 
+// Friendly and conversational responses
+const casualReplies = [
+  "Interesting! Tell me more about that.",
+  "I love hearing about that.",
+  "That's a great topic! What's your take on it?",
+  "Oh, that's cool. Got any more details?",
+  "Nice! What else can we chat about?",
+  "Let's dive deeper into that. What do you think?",
+  "Sounds fun! Any other thoughts?"
+];
+
 // Function to get AI response
-async function getAIResponse(message) {
+async function getAIResponse(message, conversationContext) {
   // Check if the user message matches any question in the knowledge base
   if (knowledgeBase[message]) {
     return knowledgeBase[message];
   }
-  
-  // If not found in the knowledge base, perform a web search
+
+
+  // Perform a web search if necessary
   const webSearchResponse = await performWebSearch(message);
   if (webSearchResponse) {
     return webSearchResponse;
   }
-  
-  // Default response if no match is found
-  return "I'm sorry, I don't have an answer for that. How can I assist you with LoveConnect?";
+
+  // Analyze the user's sentiment using Sentiment package
+  const sentimentResponse = analyzeSentiment(message);
+
+  // Generate a friendly and empathetic response based on the detected sentiment
+  return generateSentimentResponse(sentimentResponse, message);
 }
 
 // Function to perform web search using Google Custom Search API
@@ -2151,8 +2181,15 @@ async function performWebSearch(query) {
     console.log('Google Search API Response:', response.data); // Log the full API response for debugging
 
     if (response.data.items && response.data.items.length > 0) {
-      const searchResult = response.data.items[0];
-      return `Here's what I found: ${searchResult.title} - ${searchResult.snippet}. For more details, visit: ${searchResult.link}`;
+      // Filter results to prioritize more conversational content
+      const filteredResults = response.data.items.filter(item => !item.title.toLowerCase().includes('youtube') && !item.title.toLowerCase().includes('product') && !item.title.toLowerCase().includes('meal'));
+
+      if (filteredResults.length > 0) {
+        const searchResult = filteredResults[0];
+        return `Here's what I found: ${searchResult.title} - ${searchResult.snippet}. For more details, visit: ${searchResult.link}`;
+      } else {
+        return "I'm sorry, I couldn't find any conversational information on that. Can I help you with something else?";
+      }
     } else {
       console.warn('No search results found for query:', query);
       return "I'm sorry, I couldn't find any information on that. Can I help you with something else?";
@@ -2163,9 +2200,37 @@ async function performWebSearch(query) {
   }
 }
 
+// Function to analyze sentiment using Sentiment package
+function analyzeSentiment(text) {
+  const result = sentiment.analyze(text);
+  return result;
+}
+
+// Function to generate friendly and empathetic responses based on sentiment
+function generateSentimentResponse(sentiment, message) {
+  let response = "I see. ";
+
+  if (sentiment.score > 2) {
+    response += "That sounds wonderful! Tell me more about it.";
+  } else if (sentiment.score < -2) {
+    response += "I'm sorry to hear that. I'm here if you want to talk.";
+  } else {
+    response += "I understand. How can I help you with that?";
+  }
+
+  return response;
+}
+
+// Function to generate friendly responses
+function generateFriendlyResponse(message, conversationContext) {
+  const response = casualReplies[Math.floor(Math.random() * casualReplies.length)];
+  return `${response} ${conversationContext}`;
+}
+
 app.post('/api/ai-response', async (req, res) => {
   const userMessage = req.body.message;
-  const aiResponse = await getAIResponse(userMessage);
+  const conversationContext = req.body.context; // Keeping track of conversation context
+  const aiResponse = await getAIResponse(userMessage, conversationContext);
   res.json({ response: aiResponse });
 });
 

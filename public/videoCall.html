@@ -57,7 +57,7 @@
     <div id="callHeader" class="call-header">Calling...</div>
     <video id="localVideo" autoplay muted></video>
     <video id="remoteVideo" autoplay></video>
-    <audio id="callingSound" src="sounds/calling_sound.mp3" loop></audio> <!-- Calling sound -->
+    <audio id="callingSound" src="sound/calling_sound.mp3" loop></audio> <!-- Calling sound -->
     <div id="callTimer">00:00</div> <!-- Call Timer -->
     <div class="call-buttons">
       <button class="start" onclick="startCall()">Start Call</button>
@@ -143,6 +143,7 @@
     });
 
     socket.on('iceCandidate', async (candidate) => {
+      console.log('Received ICE Candidate:', candidate); // Log received ICE candidates
       await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
     });
 
@@ -151,6 +152,7 @@
 
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
+          console.log('Sending ICE Candidate:', event.candidate); // Log ICE candidates
           socket.emit('iceCandidate', event.candidate);
         }
       };
@@ -183,6 +185,10 @@
       endCall();
       window.location.href = `/messages.html?userId=${urlParams.get('callerId')}&username=${urlParams.get('callerName')}`;
     });
+
+    peerConnection.onconnectionstatechange = () => {
+      console.log('Connection State:', peerConnection.connectionState); // Log connection state changes
+    };
   </script>
 </body>
 </html>

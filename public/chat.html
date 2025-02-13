@@ -11,12 +11,13 @@
     <div id="messages" class="message-container"></div>
     <div class="typing-area">
       <textarea id="messageInput" rows="1" placeholder="Type a message..." required></textarea>
-      <button id="sendButton" onclick="sendMessage()">Send</button>
+      <button id="sendButton">Send</button>
     </div>
   </div>
 
   <script>
     const messagesContainer = document.getElementById('messages');
+    let conversationContext = '';
 
     function appendMessage(content, isUser) {
       const messageElement = document.createElement('div');
@@ -24,6 +25,13 @@
       messageElement.textContent = content;
       messagesContainer.appendChild(messageElement);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+      // Update conversation context
+      if (isUser) {
+        conversationContext += `User: ${content}\n`;
+      } else {
+        conversationContext += `AI: ${content}\n`;
+      }
     }
 
     async function sendMessage() {
@@ -38,11 +46,41 @@
       const response = await fetch('/api/ai-response', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage })
+        body: JSON.stringify({ message: userMessage, context: conversationContext })
       });
 
       const data = await response.json();
       appendMessage(data.response, false);
+    }
+
+    document.getElementById('sendButton').addEventListener('click', sendMessage);
+
+    // Display a friendly greeting when the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      appendMessage(getRandomResponse('greeting'), false);
+    });
+
+    // Display a farewell message when the user leaves the page
+    window.addEventListener('beforeunload', (event) => {
+      appendMessage(getRandomResponse('farewell'), false);
+    });
+
+    const friendlyResponses = {
+      greeting: [
+        "Hey there! How can I help you today?",
+        "Hi! What can I do for you?",
+        "Hello! Need any assistance?"
+      ],
+      farewell: [
+        "Take care! If you need anything else, just let me know.",
+        "Goodbye! I'm here whenever you need me.",
+        "See you later! Have a great day!"
+      ]
+    };
+
+    function getRandomResponse(type) {
+      const responses = friendlyResponses[type];
+      return responses[Math.floor(Math.random() * responses.length)];
     }
   </script>
   <style>
