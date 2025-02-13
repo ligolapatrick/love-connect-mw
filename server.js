@@ -327,6 +327,11 @@ app.get('/about-app', requireLogin, (req, res) => {
 });
 
 // Route to serve the speed.html file
+app.get('/chat', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'chat.html'));
+});
+
+// Route to serve the chat.html file
 app.get('/speed', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'speed.html'));
 });
@@ -2104,6 +2109,64 @@ app.get('/api/profile', requireLogin, async (req, res) => {
   } else {
     res.status(404).send('User not found.');
   }
+});
+
+const axios = require('axios');
+
+// Sample knowledge base about the app
+const knowledgeBase = {
+  "What is LoveConnect?": "LoveConnect is a dating and social networking app designed to help you find meaningful connections.",
+  "How do I create an account?": "To create an account, click on the 'Register' button on the homepage and fill out the registration form.",
+  "How do I reset my password?": "If you forgot your password, click on the 'Forgot Password' link on the login page and follow the instructions.",
+  "How can I find nearby users?": "You can find nearby users by clicking on the 'Nearby Users' section in the app.",
+  "How do I send a message?": "To send a message, go to the chat interface, type your message, and click the 'Send' button.",
+  // Add more FAQs as needed
+};
+
+// Function to get AI response
+async function getAIResponse(message) {
+  // Check if the user message matches any question in the knowledge base
+  if (knowledgeBase[message]) {
+    return knowledgeBase[message];
+  }
+  
+  // If not found in the knowledge base, perform a web search
+  const webSearchResponse = await performWebSearch(message);
+  if (webSearchResponse) {
+    return webSearchResponse;
+  }
+  
+  // Default response if no match is found
+  return "I'm sorry, I don't have an answer for that. How can I assist you with LoveConnect?";
+}
+
+// Function to perform web search using Google Custom Search API
+async function performWebSearch(query) {
+  const apiKey = 'AIzaSyDTC62xiWs7OPtHRRRiJ35p-oh5-xE66zs'; // Your Google Search API key
+  const cx = 'c49ea14e5ae2846e2'; // Your Google Search Engine ID
+  const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}`;
+
+  try {
+    const response = await axios.get(url);
+    console.log('Google Search API Response:', response.data); // Log the full API response for debugging
+
+    if (response.data.items && response.data.items.length > 0) {
+      const searchResult = response.data.items[0];
+      return `Here's what I found: ${searchResult.title} - ${searchResult.snippet}. For more details, visit: ${searchResult.link}`;
+    } else {
+      console.warn('No search results found for query:', query);
+      return "I'm sorry, I couldn't find any information on that. Can I help you with something else?";
+    }
+  } catch (error) {
+    console.error('Error performing web search:', error);
+    return "I'm sorry, I couldn't find any information on that. Can I help you with something else?";
+  }
+}
+
+app.post('/api/ai-response', async (req, res) => {
+  const userMessage = req.body.message;
+  const aiResponse = await getAIResponse(userMessage);
+  res.json({ response: aiResponse });
 });
 
 // Start the server
