@@ -87,39 +87,44 @@
     }
 
     async function startCall() {
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      peerConnection = new RTCPeerConnection();
-      
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit('iceCandidate', event.candidate);
-        }
-      };
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        peerConnection = new RTCPeerConnection();
+        
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            socket.emit('iceCandidate', event.candidate);
+          }
+        };
 
-      peerConnection.ontrack = (event) => {
-        const remoteAudio = document.getElementById('remoteAudio');
-        remoteAudio.srcObject = event.streams[0];
-      };
+        peerConnection.ontrack = (event) => {
+          const remoteAudio = document.getElementById('remoteAudio');
+          remoteAudio.srcObject = event.streams[0];
+        };
 
-      localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-      });
+        localStream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, localStream);
+        });
 
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-      socket.emit('callOffer', offer);
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        socket.emit('callOffer', offer);
 
-      callingSound.play();
-      callStartTime = Date.now();
-      callTimerInterval = setInterval(updateCallTimer, 1000);
+        callingSound.play();
+        callStartTime = Date.now();
+        callTimerInterval = setInterval(updateCallTimer, 1000);
 
-      // Auto-terminate call after 30 seconds if unanswered
-      setTimeout(() => {
-        if (peerConnection.connectionState !== 'connected') {
-          endCall();
-          window.location.href = `/messages.html?userId=${urlParams.get('callerId')}&username=${urlParams.get('callerName')}`;
-        }
-      }, 30000);
+        // Auto-terminate call after 30 seconds if unanswered
+        setTimeout(() => {
+          if (peerConnection.connectionState !== 'connected') {
+            endCall();
+            window.location.href = `/messages.html?userId=${urlParams.get('callerId')}&username=${urlParams.get('callerName')}`;
+          }
+        }, 30000);
+      } catch (error) {
+        console.error('Error starting call:', error);
+        alert('Failed to start the call. Please try again.');
+      }
     }
 
     function endCall() {
@@ -178,7 +183,7 @@
 
     socket.on('callTimeout', () => {
       endCall();
-          window.location.href = `/messages.html?userId=${urlParams.get('callerId')}&username=${urlParams.get('callerName')}`;
+      window.location.href = `/messages.html?userId=${urlParams.get('callerId')}&username=${urlParams.get('callerName')}`;
     });
   </script>
 </body>
