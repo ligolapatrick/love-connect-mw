@@ -5,19 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MoodMatcher</title>
   <link rel="stylesheet" href="altenate.css">
+  <style>
+    /* Bottom Navigation Styles */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: hsl(0, 66%, 64%);
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.bottom-nav a {
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.bottom-nav a i {
+  display: block;
+  font-size: 20px;
+}
+
+.bottom-nav a.active {
+  color: rgb(0, 0, 0);
+}
+  </style>
   <script src="utilities.js" defer></script>
   <script src="scripts.js" defer></script>
 </head>
 <body>
-  <nav>
-    <a href="moodmatcher">MoodMatcher</a> |
-    <a href="secretcrush">SecretCrush</a> |
-    <a href="instantdate">Instant Date</a> |
-    <a href="freetohangout">Free to Hangout</a> |
-  </nav>
-  <hr>
-  <div></div>
-  
+
   <main>
     <section class="mood-section">
       <h2>Select Your Mood</h2>
@@ -35,7 +55,13 @@
       </div>
     </section>
   </main>
-  
+  <nav class="bottom-nav">
+  <a href="moodmatcher">MoodMatcher</a> |
+  <a href="secretcrush">SecretCrush</a> |
+  <a href="instantdate">Instant Date</a> |
+  <a href="freetohangout">Free to Hangout</a> |
+  </nav>
+    
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const loggedInUserGender = 'male'; // Replace this with dynamic gender of the logged-in user

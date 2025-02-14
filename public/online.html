@@ -1,107 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Online Users</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      justify-content: center;
-      align-items: center;
-    }
-    h1 {
-      text-align: center;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      background-color: white;
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 5px;
-      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 300px;
-    }
-    li button {
-      padding: 5px 10px;
-      border: none;
-      border-radius: 5px;
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-    li button:hover {
-      background-color: #0056b3;
-    }
-    .message-button {
-      background-color: #28a745;
-    }
-    .message-button:hover {
-      background-color: #218838;
-    }
-  </style>
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Users - LoveConnect</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
 
-    socket.on('connect', () => {
-      // Request the list of online users
-      socket.emit('getOnlineUsers');
-    });
+        .profile-container {
+            display: flex;
+            overflow-x: auto;
+            width: 90%;
+            height: 80%;
+        }
 
-    socket.on('onlineUsers', (users) => {
-      const list = document.getElementById('onlineUsersList');
-      list.innerHTML = '';
-      users.forEach(user => {
-        const listItem = document.createElement('li');
-        listItem.innerText = user.username;
-        const callButton = document.createElement('button');
-        callButton.innerText = 'Call';
-        callButton.onclick = () => initiateCall(user.username);
-        const messageButton = document.createElement('button');
-        messageButton.innerText = 'Message';
-        messageButton.className = 'message-button';
-        messageButton.onclick = () => sendMessage(user.username, user.id);
-        listItem.appendChild(callButton);
-        listItem.appendChild(messageButton);
-        list.appendChild(listItem);
-      });
-    });
+        .profile-card {
+            min-width: 300px;
+            margin: 0 10px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
 
-    function initiateCall(username) {
-      socket.emit('initiateCall', { username });
-    }
+        .profile-card img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
 
-    function sendMessage(username, userId) {
-      // Redirect to the messages page with the user's ID and username
-      window.location.href = `/messages.html?userId=${userId}&username=${username}`;
-    }
+        .profile-card h3 {
+            margin-bottom: 10px;
+            color: #007bff;
+        }
 
-    socket.on('callRequest', (caller) => {
-      const accept = confirm(`${caller} is calling you. Do you want to accept?`);
-      if (accept) {
-        window.location.href = '/voiceCall.html';
-        socket.emit('acceptCall', { caller });
-      } else {
-        socket.emit('declineCall', { caller });
-      }
-    });
-  </script>
+        .profile-card p {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .profile-card {
+                min-width: 80%;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>Online Users</h1>
-  <ul id="onlineUsersList"></ul>
+    <div class="profile-container">
+        <!-- Profile cards will be dynamically injected here -->
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/api/online-users')
+                .then(response => response.json())
+                .then(users => {
+                    const profileContainer = document.querySelector('.profile-container');
+                    users.forEach(user => {
+                        const profileCard = document.createElement('div');
+                        profileCard.classList.add('profile-card');
+
+                        profileCard.innerHTML = `
+                            <img src="${user.profilePicture || 'images/default-avatar.png'}" alt="Profile Picture">
+                            <h3>${user.username}</h3>
+                            <p>${user.location}</p>
+                            <p>${user.bio}</p>
+                        `;
+
+                        profileContainer.appendChild(profileCard);
+                    });
+                })
+                .catch(error => console.error('Error fetching online users:', error));
+        });
+    </script>
 </body>
 </html>

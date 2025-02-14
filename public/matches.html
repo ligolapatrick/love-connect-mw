@@ -103,19 +103,36 @@
         height: auto;
       }
     }
+        /* Bottom Navigation Styles */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: hsl(0, 66%, 64%);
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.bottom-nav a {
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.bottom-nav a i {
+  display: block;
+  font-size: 20px;
+}
+
+.bottom-nav a.active {
+  color: rgb(0, 0, 0);
+}
+
   </style>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a> |
-    <a href="daily-discovery.html">daily-discovery</a> |
-    <a href="fitness-buddies.html">fitness-buddies</a> |
-    <a href="relationship-goals.html">relationship-goals</a> |
-    <a href="quick-matches.html">quick-matches</a> |
-    <a href="settings.html">settings</a> |
-    <a href="login.html">Logout</a>
-  </nav>
-  <hr>
   <header>
     <h1>Matches</h1>
   </header>
@@ -124,6 +141,16 @@
       <!-- Matches will be displayed here -->
     </div>
   </main>
+  <nav class="bottom-nav">
+    <a href="/">Home</a> |
+    <a href="daily-discovery.html">daily-discovery</a> |
+    <a href="fitness-buddies.html">fitness-buddies</a> |
+    <a href="relationship-goals.html">relationship-goals</a> |
+    <a href="quick-matches.html">quick-matches</a> |
+    <a href="settings.html">settings</a> |
+    <a href="login.html">Logout</a>
+  </nav>
+
   <script>
     function fetchMatches() {
       fetch('/api/matches')

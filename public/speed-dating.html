@@ -107,17 +107,37 @@
       width: 100%;
     }
   }
+          /* Bottom Navigation Styles */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: hsl(0, 66%, 64%);
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.bottom-nav a {
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.bottom-nav a i {
+  display: block;
+  font-size: 20px;
+}
+
+.bottom-nav a.active {
+  color: rgb(0, 0, 0);
+}
+ 
   </style>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a> |
-    <a href="profile.html">Profile</a> |
-    <a href="matches.html">Matches</a> |
-    <a href="messages.html">Messages</a> |
-    <a href="login.html">Logout</a>
-  </nav>
-  <hr>
+
   <h1>Speed Dating</h1>
   <div class="create-session">
     <button onclick="createSession()">Create Speed Dating Session</button>
@@ -126,6 +146,16 @@
     <h2>Available Speed Dating Sessions</h2>
     <div class="session-container" id="available-sessions"></div>
   </div>
+  <main>
+    <nav class="bottom-nav">
+      <a href="/">Home</a> |
+      <a href="profile.html">Profile</a> |
+      <a href="matches.html">Matches</a> |
+      <a href="messages.html">Messages</a> |
+      <a href="login.html">Logout</a>
+    </nav>
+  
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();

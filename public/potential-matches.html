@@ -95,21 +95,51 @@
       width: 100%;
     }
   }
+     
+/* Bottom Navigation Styles */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: hsl(0, 66%, 64%);
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.bottom-nav a {
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.bottom-nav a i {
+  display: block;
+  font-size: 20px;
+}
+
+.bottom-nav a.active {
+  color: rgb(0, 0, 0);
+}
   </style>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a> |
-    <a href="profile.html">Profile</a> |
-    <a href="matches.html">Matches</a> |
-    <a href="online.html">online</a> |
-    <a href="settings.html">settings</a> |
-    <a href="login.html">Logout</a>
-  </nav>
-  <hr>
+
+
   <h1>Potential Matches</h1>
   <div id="matches" class="swipe-container"></div>
   <div class="loading" id="loading">Loading matches...</div>
+  <main> 
+    <nav class="bottom-nav">
+      <a href="/">Home</a> |
+      <a href="profile.html">Profile</a> |
+      <a href="matches.html">Matches</a> |
+      <a href="online.html">online</a> |
+      <a href="settings.html">settings</a> |
+      <a href="login.html">Logout</a>
+    </nav>
+
   <script>
     async function fetchMatches() {
       const userId = sessionStorage.getItem('userId');

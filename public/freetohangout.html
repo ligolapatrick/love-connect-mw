@@ -115,21 +115,40 @@
         width: 100%;
       }
     }
+            /* Bottom Navigation Styles */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: hsl(0, 66%, 64%);
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.bottom-nav a {
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.bottom-nav a i {
+  display: block;
+  font-size: 20px;
+}
+
+.bottom-nav a.active {
+  color: rgb(0, 0, 0);
+}
+ 
   </style>
 </head>
 <body>
   <header>
     <h1>Searching for Relationship</h1>
     <nav class="navbar">
-      <nav>
-        <a href="/">Home</a> |
-        <a href="daily-discovery.html">daily-discovery</a> |
-        <a href="fitness-buddies.html">fitness-buddies</a> |
-        <a href="relationship-goals.html">relationship-goals</a> |
-        <a href="quick-matches.html">quick-matches</a> |
-        <a href="login.html">Logout</a>
-      </nav>
-      <hr>
+  
   </header>
   
   <main>
@@ -141,7 +160,16 @@
       </div>
     </section>
   </main>
-  
+
+  <nav class="bottom-nav">
+  <a href="/">Home</a> |
+  <a href="daily-discovery.html">daily-discovery</a> |
+  <a href="fitness-buddies.html">fitness-buddies</a> |
+  <a href="relationship-goals.html">relationship-goals</a> |
+  <a href="quick-matches.html">quick-matches</a> |
+  <a href="login.html">Logout</a>
+</nav>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       fetch('/api/searching-for-relationship')

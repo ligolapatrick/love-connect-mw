@@ -813,6 +813,7 @@ app.get('/api/online-users', async (req, res) => {
   }
 });
 
+
 let waitingUsers = [];
 let chatPairs = {};
 
@@ -867,6 +868,7 @@ io.on('connection', (socket) => {
     }
   }
 });
+
 
 app.get('/api/matches', async (req, res) => {
   const { userId } = req.query;
@@ -1813,112 +1815,6 @@ app.post('/api/send-goals-match-request', requireLogin, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-let waitingUser = null;
-const speedChatRooms = {};
-
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-
-  socket.on('joinSpeedChat', () => {
-    if (waitingUser) {
-      const roomName = `speedChat-${waitingUser}-${socket.id}`;
-      speedChatRooms[roomName] = { users: [waitingUser, socket.id] };
-      socket.join(roomName);
-      socket.to(waitingUser).emit('chatPartnerJoined');
-      socket.emit('chatPartnerJoined');
-      waitingUser = null;
-    } else {
-      waitingUser = socket.id;
-    }
-  });
-
-  socket.on('userMessage', (message) => {
-    const roomName = Object.keys(socket.rooms).find(room => room.startsWith('speedChat-'));
-    if (roomName) {
-      const otherUser = speedChatRooms[roomName].users.find(id => id !== socket.id);
-      socket.to(otherUser).emit('strangerMessage', message);
-    }
-  });
-
-  socket.on('endChat', () => {
-    const roomName = Object.keys(socket.rooms).find(room => room.startsWith('speedChat-'));
-    if (roomName) {
-      const users = speedChatRooms[roomName].users;
-      users.forEach(id => {
-        io.to(id).emit('endChat');
-      });
-      delete speedChatRooms[roomName];
-    }
-    if (waitingUser === socket.id) {
-      waitingUser = null;
-    }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('A user disconnected:', socket.id);
-    if (waitingUser === socket.id) {
-      waitingUser = null;
-    }
-    for (const roomName in speedChatRooms) {
-      const room = speedChatRooms[roomName];
-      if (room.users.includes(socket.id)) {
-        room.users = room.users.filter(id => id !== socket.id);
-        room.users.forEach(id => io.to(id).emit('endChat'));
-        delete speedChatRooms[roomName];
-      }
-    }
-  });
-});
-
-const quickMatchRooms = {};
-
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-
-  socket.on('joinQuickMatch', () => {
-    if (waitingUsers.length > 0) {
-      const pairedUser = waitingUsers.shift();
-      const roomName = `quickMatch-${pairedUser}-${socket.id}`;
-      quickMatchRooms[roomName] = { users: [pairedUser, socket.id] };
-      socket.join(roomName);
-      socket.to(pairedUser).emit('quickMatchStart', { roomName });
-      socket.emit('quickMatchStart', { roomName });
-    } else {
-      waitingUsers.push(socket.id);
-    }
-  });
-
-  socket.on('sendMessage', ({ message }) => {
-    const roomName = Object.keys(socket.rooms).find(room => room.startsWith('quickMatch-'));
-    if (roomName) {
-      io.to(roomName).emit('receiveMessage', { message });
-    }
-  });
-
-  socket.on('endQuickMatch', () => {
-    const roomName = Object.keys(socket.rooms).find(room => room.startsWith('quickMatch-'));
-    if (roomName) {
-      const users = quickMatchRooms[roomName].users;
-      users.forEach(id => {
-        io.to(id).emit('endChat');
-      });
-      delete quickMatchRooms[roomName];
-    }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('A user disconnected:', socket.id);
-    waitingUsers = waitingUsers.filter(id => id !== socket.id);
-    for (const roomName in quickMatchRooms) {
-      const room = quickMatchRooms[roomName];
-      if (room.users.includes(socket.id)) {
-        room.users = room.users.filter(id => id !== socket.id);
-        io.to(roomName).emit('endChat');
-        delete quickMatchRooms[roomName];
-      }
-    }
-  });
-});
 
 const users = {};
 
@@ -2232,6 +2128,165 @@ app.post('/api/ai-response', async (req, res) => {
   const conversationContext = req.body.context; // Keeping track of conversation context
   const aiResponse = await getAIResponse(userMessage, conversationContext);
   res.json({ response: aiResponse });
+});
+
+// Route to get online users
+app.get('/api/online-users', async (req, res) => {
+  const onlineUsers = await User.findAll({
+    where: {
+      online: true // Assuming you have a field to track online status
+    }
+  });
+  res.json(onlineUsers);
+});
+
+const onlineUsers = new Map();
+
+io.on('connection', (socket) => {
+    socket.on('joinSpeedDating', () => {
+        onlineUsers.set(socket.id, { socket: socket, paired: false });
+
+        const waitingUserEntry = Array.from(onlineUsers.entries()).find(([id, user]) => id !== socket.id && !user.paired);
+
+        if (waitingUserEntry) {
+            const [waitingUserId, waitingUser] = waitingUserEntry;
+            onlineUsers.get(socket.id).paired = true;
+            onlineUsers.get(waitingUserId).paired = true;
+
+            socket.emit('paired', { partner: waitingUserId });
+            waitingUser.socket.emit('paired', { partner: socket.id });
+            onlineUsers.get(socket.id).partner = waitingUserId;
+            onlineUsers.get(waitingUserId).partner = socket.id;
+        } else {
+            socket.emit('waitingList');
+        }
+    });
+
+    socket.on('sendMessage', (message) => {
+        const user = onlineUsers.get(socket.id);
+        if (user && user.partner) {
+            const partnerId = user.partner;
+            const partnerSocket = onlineUsers.get(partnerId).socket;
+            partnerSocket.emit('message', message);
+            socket.emit('message', message); // Also emit the message back to the sender
+        }
+    });
+
+    socket.on('nextUser', () => {
+        const user = onlineUsers.get(socket.id);
+        if (user && user.partner) {
+            const partnerId = user.partner;
+            const partnerSocket = onlineUsers.get(partnerId).socket;
+            partnerSocket.emit('partnerDisconnected');
+            onlineUsers.get(partnerId).paired = false;
+            delete onlineUsers.get(partnerId).partner;
+            delete user.partner;
+        }
+        onlineUsers.set(socket.id, { socket: socket, paired: false });
+        socket.emit('waitingList');
+    });
+
+    socket.on('disconnect', () => {
+        const user = onlineUsers.get(socket.id);
+        if (user && user.partner) {
+            const partnerId = user.partner;
+            const partnerSocket = onlineUsers.get(partnerId).socket;
+            partnerSocket.emit('partnerDisconnected');
+            onlineUsers.get(partnerId).paired = false;
+            delete onlineUsers.get(partnerId).partner;
+        }
+        onlineUsers.delete(socket.id);
+    });
+});
+
+
+
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('joinQuickMatch', () => {
+        onlineUsers.set(socket.id, { socket: socket, paired: false });
+
+        const waitingUserEntry = Array.from(onlineUsers.entries()).find(([id, user]) => id !== socket.id && !user.paired);
+
+        if (waitingUserEntry) {
+            const [waitingUserId, waitingUser] = waitingUserEntry;
+            onlineUsers.get(socket.id).paired = true;
+            onlineUsers.get(waitingUserId).paired = true;
+
+            socket.emit('quickMatchStart', { roomName: socket.id });
+            waitingUser.socket.emit('quickMatchStart', { roomName: waitingUserId });
+            onlineUsers.get(socket.id).partner = waitingUserId;
+            onlineUsers.get(waitingUserId).partner = socket.id;
+
+            // Start the timer
+            setTimeout(() => {
+                endQuickMatch(socket.id);
+                endQuickMatch(waitingUserId);
+            }, 180000); // 3 minutes in milliseconds
+        } else {
+            socket.emit('waitingList');
+        }
+    });
+
+    socket.on('sendMessage', ({ message }) => {
+        const user = onlineUsers.get(socket.id);
+        if (user && user.partner) {
+            const partnerId = user.partner;
+            const partnerSocket = onlineUsers.get(partnerId).socket;
+            partnerSocket.emit('message', { message });
+            socket.emit('message', { message }); // Also emit the message back to the sender
+        }
+    });
+
+    socket.on('endQuickMatch', () => {
+        endQuickMatch(socket.id);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+        endQuickMatch(socket.id);
+    });
+
+    function endQuickMatch(socketId) {
+        const user = onlineUsers.get(socketId);
+        if (user && user.partner) {
+            const partnerId = user.partner;
+            const partnerSocket = onlineUsers.get(partnerId).socket;
+            partnerSocket.emit('endQuickMatch');
+            onlineUsers.get(partnerId).paired = false;
+            delete onlineUsers.get(partnerId).partner;
+            delete user.partner;
+        }
+        onlineUsers.delete(socketId);
+    }
+});
+
+app.post('/api/join-quick-match', (req, res) => {
+    res.status(200).send('Joined the quick match queue');
+});
+
+app.post('/api/quick-match-end', (req, res) => {
+    const { userDecision } = req.body;
+    console.log(`User decision: ${userDecision}`);
+    res.status(200).send('Decision received');
+});
+
+
+// Endpoint to handle voice note uploads
+app.post('/api/send-voice-note', upload.single('voiceNote'), (req, res) => {
+    const { toUserId } = req.body;
+    const voiceNoteUrl = `/voice_notes/${req.file.filename}`;
+    const voiceNoteMessage = {
+        fromUserId: 'yourUserId', // Replace with the dynamic user ID of the sender
+        toUserId: Number(toUserId),
+        voiceNoteUrl,
+        timestamp: new Date()
+    };
+    
+    // Send the voice note to the recipient
+    io.to(onlineUsers.get(toUserId).socket.id).emit('newVoiceNote', voiceNoteMessage);
+    res.status(200).json(voiceNoteMessage);
 });
 
 // Start the server

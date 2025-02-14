@@ -107,6 +107,11 @@
             cursor: pointer;
             margin-left: 10px;
         }
+        .chat-controls #recordButton {
+            background-color: red;
+            border-radius: 50%;
+            padding: 10px;
+        }
         @media (max-width: 768px) {
             .chat-header h2 {
                 font-size: 18px;
@@ -165,6 +170,7 @@
     <div class="typing-area">
         <textarea id="messageInput" rows="1" placeholder="Type a message..." required></textarea>
         <button id="sendButton">Send</button>
+        <button id="recordButton">🎤</button>
     </div>
     <script>
         const socket = io();
@@ -192,7 +198,7 @@
             // Determine if the message was sent by the current user
             const isYou = message.fromUserId === userId;
     
-            messageElement.className = `message ${isYou ? 'you' : 'other'}`;
+            messageElement.className = `message ${isYou ? 'other' : 'other'}`;
             messageElement.innerHTML = `<strong>${isYou ? 'You' : 'Sender'}:</strong> ${message.content}`;
     
             messageContainer.appendChild(messageElement);
@@ -257,6 +263,75 @@
             socket.emit('initiateCall', { userId, calleeId: chatUserId, callType: 'video' });
             window.location.href = `/videoCall.html?calleeName=${encodeURIComponent(chatUsername)}&callerName=${encodeURIComponent('Your Username')}`;
         }
+
+        // Voice note recording
+        let mediaRecorder;
+        let audioChunks = [];
+
+        document.getElementById('recordButton').addEventListener('mousedown', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.start();
+
+                mediaRecorder.addEventListener('dataavailable', event => {
+                    audioChunks.push(event.data);
+                });
+
+                mediaRecorder.addEventListener('stop', () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audioElement = new Audio(audioUrl);
+                    audioElement.controls = true;
+                    
+                    // Send voice note to the server
+                    const formData = new FormData();
+                    formData.append('voiceNote', audioBlob);
+                    formData.append('toUserId', chatUserId);
+
+                    fetch('/api/send-voice-note', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(voiceNoteMessage => {
+                        appendMessage(voiceNoteMessage);
+                    })
+                    .catch(error => console.error('Error sending voice note:', error));
+
+                    // Append the voice note to the chat window
+                    const messageElement = document.createElement('div');
+                    messageElement.className = 'message you';
+                    messageElement.appendChild(audioElement);
+                    document.getElementById('messageContainer').appendChild(messageElement);
+                    document.getElementById('messageContainer').scrollTop = document.getElementById('messageContainer').scrollHeight; // Scroll to the bottom
+                    audioChunks = [];
+                });
+
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+            }
+        });
+
+        document.getElementById('recordButton').addEventListener('mouseup', () => {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        });
+
+        // Receive voice notes via Socket.io
+        socket.on('newVoiceNote', (voiceNoteMessage) => {
+            if (voiceNoteMessage.fromUserId === chatUserId || voiceNoteMessage.toUserId === chatUserId) {
+                const audioElement = new Audio(voiceNoteMessage.voiceNoteUrl);
+                audioElement.controls = true;
+
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${voiceNoteMessage.fromUserId === userId ? 'you' : 'other'}`;
+                messageElement.appendChild(audioElement);
+                document.getElementById('messageContainer').appendChild(messageElement);
+                document.getElementById('messageContainer').scrollTop = document.getElementById('messageContainer').scrollHeight; // Scroll to the bottom
+            }
+        });
     </script>
 </body>
 </html>

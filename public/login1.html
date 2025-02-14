@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - find one-LoveConnect</title>
+    <title>Login - find one-LoveConnect</title>
     <script src="https://connect.facebook.net/en_US/sdk.js" async defer></script>
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -19,9 +19,9 @@
             background-color: rgba(0, 0, 0, 0.8);
             color: white;
             display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
         }
         .navbar img {
             height: 50px;
@@ -70,18 +70,6 @@
             text-align: left;
             margin-bottom: 5px;
         }
-        /* Form Sections */
-.form-section {
-    background-image: url('/images/Matches.jpg'); /* Your path */
-    background-size: cover;
-    background-position: cover;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    
-}
-
         .form-background input, .form-background select, .form-background button {
             width: 100%;
             padding: 10px;
@@ -97,11 +85,74 @@
         .form-background button:hover {
             background-color: #0056b3;
         }
-
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+        }
         footer a {
             color: white;
             text-decoration: none;
             margin: 0 10px;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+            }
+            .nav-links li {
+                margin: 10px 0;
+            }
+            .form-section {
+                padding: 20px;
+            }
+            .form-background {
+                width: 90%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar {
+                flex-direction: column;
+                padding: 10px;
+            }
+            .nav-logo img {
+                height: 40px;
+            }
+            .nav-contact {
+                margin: 10px 0;
+            }
+            .nav-contact span {
+                display: block;
+                margin: 5px 0;
+            }
+            .nav-links {
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+            }
+            .nav-links li {
+                margin: 10px 0;
+            }
+            .form-background {
+                width: 90%;
+                padding: 15px;
+            }
+            .form-background h2 {
+                font-size: 1.5em;
+            }
+            .form-background input, .form-background button {
+                font-size: 1em;
+                padding: 8px;
+            }
+            footer {
+                font-size: 0.9em;
+                padding: 5px;
+            }
         }
     </style>
 </head>
@@ -112,31 +163,23 @@
             <img src="images/LoveConnect logo.png" alt="LoveConnect Logo">
         </div>
         <div class="nav-contact">
-            <span><img src="images/Limav-Flat-Gradient-Social-Whatsapp.512.png" alt="WhatsApp Icon"> 0888202246</span>
-            <span><img src="images/Graphicloads-100-Flat-Email-2.256 (1).png" alt="ligolapatrick61@gmail.com icon">ligolapatrick61@gmail.com</span>
+
         </div>
     
     </nav>
+   
     <main>
         <section class="form-section">
             <div class="form-background">
-                <h2>Register</h2>
-                <form action="/register" method="post">
+                <h2>Login</h2>
+                <form action="/login" method="post">
                     <label for="username">Username:</label>
                     <input type="text" id="username" name="username" required><br>
-                    <label for="password">Password (6 characters long):</label>
-                    <input type="password" id="password" name="password" required><br>
-                    <label for="phone">Phone Number:</label>
-                    <select id="countryCode" name="countryCode" required>
-                        <option value="+1">+1 (USA)</option>
-                        <option value="+44">+44 (UK)</option>
-                        <option value="+81">+81 (Japan)</option>
-                        <option value="+265">+265 (Malawi)</option>
-                        <!-- Add more country codes as needed -->
-                    </select>
-                    <input type="text" id="phone" name="phone" required><br>
-                    <button type="submit">Register</button>
-                    <p>Already have an account? <a href="login.html">Login here</a></p>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required minlength="6"><br>
+                    <button type="submit">Login</button>
+                    <p id="error-message" style="color: red;"></p>
+                    <p>Don't have an account? <a href="registration.html">register here</a></p>
                 </form>
                 <div class="fb-login-button" 
                      data-width="" 
@@ -150,18 +193,10 @@
                 </div>
                 <p id="error-message" style="color: red;"></p>
             </div>
-        </section>
-        <section class="promo-section">
-            <h3>Why Choose LoveConnect?</h3>
-            <ul>
-                <li>Connect with like-minded individuals looking for love.</li>
-                <li>Advanced matchmaking algorithms to find your perfect match.</li>
-                <li>Fun and interactive features to make dating enjoyable.</li>
-            </ul>
-        </section>
+     
     </main>
     <footer>
-        <p>&copy; 2024 LoveConnect. All rights reserved.</p>
+        <p>&copy; 2025 LoveConnect. All rights reserved.</p>
         <p><a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-service.html">Terms of Service</a></p>
     </footer>
     <script>

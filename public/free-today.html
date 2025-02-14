@@ -72,19 +72,39 @@
             text-align: left;
             font-size: 0.9em;
         }
+        /* Bottom Navigation Styles */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: hsl(0, 66%, 64%);
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.bottom-nav a {
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.bottom-nav a i {
+  display: block;
+  font-size: 20px;
+}
+
+.bottom-nav a.active {
+  color: rgb(0, 0, 0);
+}
+  
     </style>
 </head>
 <body>
     <header>
         <h1>Free Today</h1>
-        <nav class="navbar">
-            <ul>
-                <li><a href="instantdate.html">Instant Date</a></li>
-                <li><a href="secretcrush.html">Secret Crush</a></li>
-                <li><a href="moodmatcher.html">Mood Matcher</a></li>
-                <li><a href="virtualmeetup.html">Virtual Meetup</a></li>
-            </ul>
-        </nav>
+
     </header>
     <main>
         <section class="hangout-section">
@@ -94,6 +114,15 @@
             </div>
         </section>
     </main>
+        <nav class="bottom-nav">
+          <a href="/">Home</a> |
+         <a href="speed.html">chat call</a> |
+         <a href="secretcrush.html">Secret Crush</a> |
+        <a href="moodmatcher.html">Mood Matcher</a> |
+        <a href="virtualmeetup.html">Virtual Meetup</a> |
+
+        </nav>
+        
     <script>
         let isDown = false;
         let startX;

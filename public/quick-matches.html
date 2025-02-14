@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles2.css">
   <title>Quick Matches</title>
   <style>
     body {
@@ -114,6 +115,33 @@
         width: 100%;
       }
     }
+ /* Bottom Navigation Styles */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: hsl(0, 66%, 64%);
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.bottom-nav a {
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.bottom-nav a i {
+  display: block;
+  font-size: 20px;
+}
+
+.bottom-nav a.active {
+  color: rgb(0, 0, 0);
+}
+  
   </style>
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -133,10 +161,17 @@
       }, 1000);
     }
 
-    socket.on('quickMatchStart', ({ roomName }) => {
+    socket.on('quickMatchStart', ({ partner }) => {
       document.getElementById('chat-container').style.display = 'flex';
       document.getElementById('messageInput').style.visibility = 'visible';
       startTimer();
+    });
+
+    socket.on('message', ({ message }) => {
+      const messagesContainer = document.getElementById('messages');
+      const messageElement = document.createElement('div');
+      messageElement.textContent = message;
+      messagesContainer.appendChild(messageElement);
     });
 
     function sendMessage() {
@@ -183,15 +218,7 @@
   </script>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a> |
-    <a href="profile.html">Profile</a> |
-    <a href="matches.html">Matches</a> |
-    <a href="messages.html">Messages</a> |
-    <a href="settings.html">Settings</a> |
-    <a href="login.html">Logout</a>
-  </nav>
-  <hr>
+
   <h1>Quick Matches</h1>
   <div id="timer" class="timer">Time Left: 3:00</div>
   <div id="chat-container" style="display:none;">
@@ -206,5 +233,15 @@
     <button class="decision-button connect" onclick="handleDecision('connect')">Connect</button>
     <button class="decision-button skip" onclick="handleDecision('skip')">Skip</button>
   </div>
+  <mai>
+    <nav class="bottom-nav">
+      <a href="/">Home</a> |
+      <a href="profile.html">Profile</a> |
+      <a href="matches.html">Matches</a> |
+      <a href="messages.html">Messages</a> |
+      <a href="settings.html">Settings</a> |
+      <a href="login.html">Logout</a>
+    </nav>
+  </mai>
 </body>
 </html>
