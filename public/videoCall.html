@@ -1,194 +1,215 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Video Call</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .call-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
-      background-color: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      border-radius: 5px;
-    }
-    .call-buttons {
-      margin-top: 20px;
-    }
-    .call-buttons button {
-      padding: 10px 20px;
-      margin: 5px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .call-buttons .start {
-      background-color: green;
-      color: white;
-    }
-    .call-buttons .end {
-      background-color: red;
-      color: white;
-    }
-    .call-header {
-      margin-bottom: 20px;
-      font-size: 24px;
-      font-weight: bold;
-    }
-    #callTimer {
-      margin-top: 10px;
-      font-size: 18px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Call - LoveConnect</title>
+    <link rel="stylesheet" href="styles2.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('images/logo.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+        }
+        .video-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        video {
+            width: 45%;
+            max-width: 400px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        audio {
+            display: none; /* Hide audio elements */
+        }
+        .call-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .call-controls button {
+            background-color: #075E54;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.3s;
+            margin: 0 10px;
+        }
+        .call-controls button:hover {
+            background-color: #006f4a;
+        }
+        .timer {
+            font-size: 1.5em;
+            color: #007bff;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-  <div class="call-container">
-    <div id="callHeader" class="call-header">Calling...</div>
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
-    <audio id="callingSound" src="sound/calling_sound.mp3" loop></audio> <!-- Calling sound -->
-    <div id="callTimer">00:00</div> <!-- Call Timer -->
-    <div class="call-buttons">
-      <button class="start" onclick="startCall()">Start Call</button>
-      <button class="end" onclick="endCall()">End Call</button>
+    <div class="container">
+        <h2>Calling <span id="calleeName"></span></h2>
+        <div class="video-container">
+            <video id="localVideo" autoplay muted></video>
+            <video id="remoteVideo" autoplay></video>
+        </div>
+        <audio id="callingSound" src="sound/calling_sound.mp3" loop></audio> <!-- Calling sound -->
+        <div class="timer" id="callTimer">00:30</div>
+        <div class="call-controls" id="callerControls">
+            <button id="callButton">Call</button>
+        </div>
+        <div class="call-controls" id="endCallControls" style="display: none;">
+            <button id="endCallButton">End Call</button>
+        </div>
     </div>
-  </div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    let localStream;
-    let peerConnection;
-    let callStartTime;
-    let callTimerInterval;
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const calleeName = urlParams.get('calleeName');
-    document.getElementById('callHeader').innerText = `Calling ${calleeName}...`;
-
-    const callingSound = document.getElementById('callingSound');
-    const callTimerElement = document.getElementById('callTimer');
-
-    function updateCallTimer() {
-      const elapsedTime = Math.floor((Date.now() - callStartTime) / 1000);
-      const minutes = Math.floor(elapsedTime / 60);
-      const seconds = elapsedTime % 60;
-      callTimerElement.textContent = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-    }
-
-    async function startCall() {
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      document.getElementById('localVideo').srcObject = localStream;
-      peerConnection = new RTCPeerConnection();
-      
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit('iceCandidate', event.candidate);
-        }
-      };
-
-      peerConnection.ontrack = (event) => {
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script>
+        const socket = io();
+        const callButton = document.getElementById('callButton');
+        const endCallButton = document.getElementById('endCallButton');
+        const localVideo = document.getElementById('localVideo');
         const remoteVideo = document.getElementById('remoteVideo');
-        remoteVideo.srcObject = event.streams[0];
-      };
+        const callingSound = document.getElementById('callingSound');
+        const callTimer = document.getElementById('callTimer');
+        const callerControls = document.getElementById('callerControls');
+        const endCallControls = document.getElementById('endCallControls');
+        const calleeNameElement = document.getElementById('calleeName');
 
-      localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-      });
+        const calleeName = new URLSearchParams(window.location.search).get('calleeName');
+        calleeNameElement.textContent = calleeName;
 
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-      socket.emit('callOffer', offer);
+        let peerConnection;
+        let localStream;
+        let remoteStream;
+        let countdown;
 
-      callingSound.play();
-      callStartTime = Date.now();
-      callTimerInterval = setInterval(updateCallTimer, 1000);
+        const config = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
 
-      // Auto-terminate call after 30 seconds if unanswered
-      setTimeout(() => {
-        if (peerConnection.connectionState !== 'connected') {
-          endCall();
-          window.location.href = `/messages.html?userId=${urlParams.get('callerId')}&username=${urlParams.get('callerName')}`;
-        }
-      }, 30000);
-    }
+        const startCallTimer = () => {
+            let timeRemaining = 30;
+            countdown = setInterval(() => {
+                const seconds = timeRemaining.toString().padStart(2, '0');
+                callTimer.textContent = `00:${seconds}`;
+                if (timeRemaining <= 0) {
+                    clearInterval(countdown);
+                    endCall();
+                    socket.emit('missedCall', { fromUserId: 'callerId', toUserId: 'receiverId' });
+                }
+                timeRemaining -= 1;
+            }, 1000);
+        };
 
-    function endCall() {
-      clearInterval(callTimerInterval);
-      if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-      }
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-      }
-      callingSound.pause();
-      callingSound.currentTime = 0;
-    }
+        const setupPeerConnection = () => {
+            peerConnection = new RTCPeerConnection(config);
+            peerConnection.ontrack = (event) => {
+                if (!remoteStream) {
+                    remoteStream = new MediaStream();
+                    remoteVideo.srcObject = remoteStream;
+                }
+                remoteStream.addTrack(event.track);
+            };
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('iceCandidate', event.candidate);
+                }
+            };
+        };
 
-    socket.on('callAnswer', async (answer) => {
-      callingSound.pause();
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-    });
+        const initiateCall = async () => {
+            setupPeerConnection();
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            localVideo.srcObject = localStream;
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('callOffer', { offer, toUserId: 'receiverId' });
+            callingSound.play();
+            startCallTimer();
+            callerControls.style.display = 'none';
+            endCallControls.style.display = 'flex';
+        };
 
-    socket.on('iceCandidate', async (candidate) => {
-      console.log('Received ICE Candidate:', candidate); // Log received ICE candidates
-      await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    });
+        const handleCallAnswer = async (answer) => {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            clearInterval(countdown);
+        };
 
-    socket.on('callOffer', async (offer) => {
-      peerConnection = new RTCPeerConnection();
+        const handleIceCandidate = async (candidate) => {
+            try {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (error) {
+                console.error('Error adding received ICE candidate', error);
+            }
+        };
 
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          console.log('Sending ICE Candidate:', event.candidate); // Log ICE candidates
-          socket.emit('iceCandidate', event.candidate);
-        }
-      };
+        const endCall = () => {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+                localStream.getTracks().forEach(track => track.stop());
+                if (remoteStream) {
+                    remoteStream.getTracks().forEach(track => track.stop());
+                }
+                socket.emit('endCall', { toUserId: 'receiverId' });
+                callingSound.pause();
+                clearInterval(countdown);
+                endCallControls.style.display = 'none';
+                callerControls.style.display = 'flex';
+            }
+        };
 
-      peerConnection.ontrack = (event) => {
-        const remoteVideo = document.getElementById('remoteVideo');
-        remoteVideo.srcObject = event.streams[0];
-      };
+        socket.on('callAnswer', (answer) => {
+            handleCallAnswer(answer);
+        });
 
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      document.getElementById('localVideo').srcObject = localStream;
-      localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-      });
+        socket.on('iceCandidate', (candidate) => {
+            handleIceCandidate(candidate);
+        });
 
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-      socket.emit('callAnswer', answer);
+        socket.on('callEnded', () => {
+            endCall();
+        });
 
-      callStartTime = Date.now();
-      callTimerInterval = setInterval(updateCallTimer, 1000);
-    });
+        callButton.addEventListener('click', () => {
+            initiateCall();
+        });
 
-    socket.on('callRequest', ({ caller }) => {
-      document.getElementById('callHeader').innerText = `${caller} is calling...`;
-    });
+        endCallButton.addEventListener('click', () => {
+            endCall();
+        });
 
-    socket.on('callTimeout', () => {
-      endCall();
-      window.location.href = `/messages.html?userId=${urlParams.get('callerId')}&username=${urlParams.get('callerName')}`;
-    });
-
-    peerConnection.onconnectionstatechange = () => {
-      console.log('Connection State:', peerConnection.connectionState); // Log connection state changes
-    };
-  </script>
+        socket.emit('startCall');
+    </script>
 </body>
 </html>

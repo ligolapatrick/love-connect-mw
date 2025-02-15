@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Call - LoveConnect</title>
+    <title>Incoming Video Call - LoveConnect</title>
     <link rel="stylesheet" href="styles2.css">
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: url('images/logo.png') no-repeat center center fixed;
+            background: url('path/to/your/background-image.jpg') no-repeat center center fixed;
             background-size: cover;
             color: #333;
             display: flex;
@@ -27,6 +27,19 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             width: 90%;
             max-width: 800px;
+        }
+        .video-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        video {
+            width: 45%;
+            max-width: 400px;
+            border-radius: 10px;
+            margin-bottom: 10px;
         }
         audio {
             display: none; /* Hide audio elements */
@@ -51,21 +64,25 @@
         .call-controls button:hover {
             background-color: #006f4a;
         }
-        .timer {
-            font-size: 1.5em;
-            color: #007bff;
-            margin-top: 10px;
+        .answer-button {
+            background-color: #28a745;
+        }
+        .decline-button {
+            background-color: #dc3545;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Calling <span id="calleeName"></span></h2>
-        <audio id="remoteAudio" autoplay></audio>
+        <h2>Incoming Video Call from <span id="callerName"></span></h2>
+        <div class="video-container">
+            <video id="localVideo" autoplay muted></video>
+            <video id="remoteVideo" autoplay></video>
+        </div>
         <audio id="callingSound" src="sound/calling_sound.mp3" loop></audio> <!-- Calling sound -->
-        <div class="timer" id="callTimer">00:30</div>
-        <div class="call-controls" id="callerControls">
-            <button id="callButton">Call</button>
+        <div class="call-controls" id="receiverControls">
+            <button id="answerButton" class="answer-button">Answer</button>
+            <button id="declineButton" class="decline-button">Decline</button>
         </div>
         <div class="call-controls" id="endCallControls" style="display: none;">
             <button id="endCallButton">End Call</button>
@@ -75,22 +92,22 @@
     <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <script>
         const socket = io();
-        const callButton = document.getElementById('callButton');
+        const answerButton = document.getElementById('answerButton');
+        const declineButton = document.getElementById('declineButton');
         const endCallButton = document.getElementById('endCallButton');
-        const remoteAudio = document.getElementById('remoteAudio');
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
         const callingSound = document.getElementById('callingSound');
-        const callTimer = document.getElementById('callTimer');
-        const callerControls = document.getElementById('callerControls');
+        const receiverControls = document.getElementById('receiverControls');
         const endCallControls = document.getElementById('endCallControls');
-        const calleeNameElement = document.getElementById('calleeName');
+        const callerNameElement = document.getElementById('callerName');
 
-        const calleeName = new URLSearchParams(window.location.search).get('calleeName');
-        calleeNameElement.textContent = calleeName;
+        const callerName = new URLSearchParams(window.location.search).get('callerName');
+        callerNameElement.textContent = callerName;
 
         let peerConnection;
         let localStream;
         let remoteStream;
-        let countdown;
 
         const config = {
             iceServers: [
@@ -99,26 +116,12 @@
             ]
         };
 
-        const startCallTimer = () => {
-            let timeRemaining = 30;
-            countdown = setInterval(() => {
-                const seconds = timeRemaining.toString().padStart(2, '0');
-                callTimer.textContent = `00:${seconds}`;
-                if (timeRemaining <= 0) {
-                    clearInterval(countdown);
-                    endCall();
-                    socket.emit('missedCall', { fromUserId: 'callerId', toUserId: 'receiverId' });
-                }
-                timeRemaining -= 1;
-            }, 1000);
-        };
-
         const setupPeerConnection = () => {
             peerConnection = new RTCPeerConnection(config);
             peerConnection.ontrack = (event) => {
                 if (!remoteStream) {
                     remoteStream = new MediaStream();
-                    remoteAudio.srcObject = remoteStream;
+                    remoteVideo.srcObject = remoteStream;
                 }
                 remoteStream.addTrack(event.track);
             };
@@ -129,22 +132,18 @@
             };
         };
 
-        const initiateCall = async () => {
+        const answerCall = async (offer) => {
             setupPeerConnection();
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('callOffer', { offer, toUserId: 'receiverId' });
-            callingSound.play();
-            startCallTimer();
-            callerControls.style.display = 'none';
+            localVideo.srcObject = localStream;
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('callAnswer', { answer, toUserId: 'callerId' });
+            callingSound.pause();
+            receiverControls.style.display = 'none';
             endCallControls.style.display = 'flex';
-        };
-
-        const handleCallAnswer = async (answer) => {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-            clearInterval(countdown);
         };
 
         const handleIceCandidate = async (candidate) => {
@@ -163,16 +162,15 @@
                 if (remoteStream) {
                     remoteStream.getTracks().forEach(track => track.stop());
                 }
-                socket.emit('endCall', { toUserId: 'receiverId' });
+                socket.emit('endCall', { toUserId: 'callerId' });
                 callingSound.pause();
-                clearInterval(countdown);
+                receiverControls.style.display = 'none';
                 endCallControls.style.display = 'none';
-                callerControls.style.display = 'flex';
             }
         };
 
-        socket.on('callAnswer', (answer) => {
-            handleCallAnswer(answer);
+        socket.on('callOffer', async ({ offer }) => {
+            await answerCall(offer);
         });
 
         socket.on('iceCandidate', (candidate) => {
@@ -183,15 +181,20 @@
             endCall();
         });
 
-        callButton.addEventListener('click', () => {
-            initiateCall();
+        answerButton.addEventListener('click', () => {
+            // Answer the call when the answer button is clicked
+        });
+
+        declineButton.addEventListener('click', () => {
+            // Decline the call when the decline button is clicked
+            endCall();
         });
 
         endCallButton.addEventListener('click', () => {
             endCall();
         });
 
-        socket.emit('startCall');
+        socket.emit('joinCall');
     </script>
 </body>
 </html>

@@ -1816,67 +1816,6 @@ app.post('/api/send-goals-match-request', requireLogin, async (req, res) => {
   }
 });
 
-const users = {};
-
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-
-  // Register connected user
-  socket.on('registerUser', (userId) => {
-    users[userId] = socket.id;
-    io.emit('onlineUsers', Object.keys(users).map(id => ({ username: id })));
-  });
-
-// Handle call initiation
-socket.on('initiateCall', async ({ userId, calleeId, callType }) => {
-    const callee = users[calleeId];
-    if (callee) {
-        io.to(callee.socketId).emit('callRequest', { caller: users[userId].username, callerId: userId, callType });
-        // Start a timeout to handle missed call
-        const missedCallTimeout = setTimeout(async () => {
-            const messageContent = `You have missed a ${callType} call from ${users[userId].username} at ${new Date().toLocaleTimeString()}`;
-            await Message.create({
-                fromUserId: userId,
-                toUserId: calleeId,
-                content: messageContent,
-                messageType: 'system'
-            });
-            io.to(users[userId].socketId).emit('missedCallNotification', { callee: callee.username, time: new Date() });
-        }, 30000); // 30 seconds timeout
-        socket.missedCallTimeout = missedCallTimeout;
-    } else {
-        socket.emit('userNotFound', 'The user is not available');
-    }
-});
-
-  // Handle call acceptance
-  socket.on('acceptCall', ({ caller }) => {
-    clearTimeout(socket.missedCallTimeout);
-    io.to(caller).emit('callAccepted');
-  });
-
-  // Handle call decline
-  socket.on('declineCall', ({ caller }) => {
-    clearTimeout(socket.missedCallTimeout);
-    io.to(caller).emit('callDeclined');
-  });
-
-  socket.on('getOnlineUsers', () => {
-    io.emit('onlineUsers', Object.keys(users).map(id => ({ username: id })));
-  });
-
-  socket.on('disconnect', () => {
-    console.log('A user disconnected:', socket.id);
-    for (const userId in users) {
-      if (users[userId] === socket.id) {
-        delete users[userId];
-        break;
-      }
-    }
-    io.emit('onlineUsers', Object.keys(users).map(id => ({ username: id })));
-  });
-});
-
 app.post('/api/search-users', requireLogin, async (req, res) => {
   const { minAge, maxAge, interests, location } = req.body;
 
@@ -2142,63 +2081,71 @@ app.get('/api/online-users', async (req, res) => {
 
 const onlineUsers = new Map();
 
+// User connection and pairing for speed dating
 io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
     socket.on('joinSpeedDating', () => {
-        onlineUsers.set(socket.id, { socket: socket, paired: false });
+        onlineUsers.set(socket.id, { socket: socket });
 
-        const waitingUserEntry = Array.from(onlineUsers.entries()).find(([id, user]) => id !== socket.id && !user.paired);
+        if (waitingUsers.length > 0) {
+            const partnerSocketId = waitingUsers.shift();
+            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
 
-        if (waitingUserEntry) {
-            const [waitingUserId, waitingUser] = waitingUserEntry;
-            onlineUsers.get(socket.id).paired = true;
-            onlineUsers.get(waitingUserId).paired = true;
+            onlineUsers.get(socket.id).partnerSocketId = partnerSocketId;
+            onlineUsers.get(partnerSocketId).partnerSocketId = socket.id;
 
-            socket.emit('paired', { partner: waitingUserId });
-            waitingUser.socket.emit('paired', { partner: socket.id });
-            onlineUsers.get(socket.id).partner = waitingUserId;
-            onlineUsers.get(waitingUserId).partner = socket.id;
+            socket.emit('paired', { partnerSocketId });
+            partnerSocket.emit('paired', { partnerSocketId: socket.id });
         } else {
+            waitingUsers.push(socket.id);
             socket.emit('waitingList');
         }
     });
 
+    socket.on('nextUser', () => {
+        const partnerSocketId = onlineUsers.get(socket.id).partnerSocketId;
+        if (partnerSocketId) {
+            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
+            partnerSocket.emit('partnerDisconnected');
+            onlineUsers.delete(partnerSocketId);
+        }
+        onlineUsers.delete(socket.id);
+        socket.emit('joinSpeedDating');
+    });
+
     socket.on('sendMessage', (message) => {
         const user = onlineUsers.get(socket.id);
-        if (user && user.partner) {
-            const partnerId = user.partner;
-            const partnerSocket = onlineUsers.get(partnerId).socket;
-            partnerSocket.emit('message', message);
-            socket.emit('message', message); // Also emit the message back to the sender
+        if (user && user.partnerSocketId) {
+            const partnerSocketId = user.partnerSocketId;
+            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
+            if (partnerSocket) {
+                partnerSocket.emit('message', message);
+            }
         }
     });
 
-    socket.on('nextUser', () => {
-        const user = onlineUsers.get(socket.id);
-        if (user && user.partner) {
-            const partnerId = user.partner;
-            const partnerSocket = onlineUsers.get(partnerId).socket;
-            partnerSocket.emit('partnerDisconnected');
-            onlineUsers.get(partnerId).paired = false;
-            delete onlineUsers.get(partnerId).partner;
-            delete user.partner;
+    socket.on('initiateCall', ({ userId, calleeId, callType }) => {
+        const calleeSocketId = onlineUsers.get(calleeId)?.socket;
+        if (calleeSocketId) {
+            io.to(calleeSocketId).emit('callOffer', { callerId: userId, callType });
         }
-        onlineUsers.set(socket.id, { socket: socket, paired: false });
-        socket.emit('waitingList');
     });
 
     socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
         const user = onlineUsers.get(socket.id);
-        if (user && user.partner) {
-            const partnerId = user.partner;
-            const partnerSocket = onlineUsers.get(partnerId).socket;
-            partnerSocket.emit('partnerDisconnected');
-            onlineUsers.get(partnerId).paired = false;
-            delete onlineUsers.get(partnerId).partner;
+        if (user && user.partnerSocketId) {
+            const partnerSocketId = user.partnerSocketId;
+            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
+            if (partnerSocket) {
+                partnerSocket.emit('partnerDisconnected');
+            }
+            onlineUsers.delete(partnerSocketId);
         }
         onlineUsers.delete(socket.id);
     });
 });
-
 
 
 io.on('connection', (socket) => {
@@ -2287,6 +2234,129 @@ app.post('/api/send-voice-note', upload.single('voiceNote'), (req, res) => {
     // Send the voice note to the recipient
     io.to(onlineUsers.get(toUserId).socket.id).emit('newVoiceNote', voiceNoteMessage);
     res.status(200).json(voiceNoteMessage);
+});
+
+const activeCalls = new Set();
+
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('registerUser', ({ userId }) => {
+        onlineUsers.set(userId, { socket: socket.id });
+    });
+
+    socket.on('sendMessage', (message) => {
+        const user = onlineUsers.get(message.fromUserId);
+        const recipientSocketId = onlineUsers.get(message.toUserId)?.socket;
+
+        if (user && recipientSocketId) {
+            io.to(recipientSocketId).emit('message', message);
+            socket.emit('message', message); // Also emit the message back to the sender
+        }
+    });
+
+    socket.on('callOffer', ({ offer, toUserId }) => {
+        const recipientSocketId = onlineUsers.get(toUserId)?.socket;
+
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('callOffer', { offer });
+        }
+    });
+
+    socket.on('callAnswer', ({ answer, toUserId }) => {
+        const recipientSocketId = onlineUsers.get(toUserId)?.socket;
+
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('callAnswer', answer);
+        }
+    });
+
+    socket.on('iceCandidate', ({ candidate, toUserId }) => {
+        const recipientSocketId = onlineUsers.get(toUserId)?.socket;
+
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('iceCandidate', candidate);
+        }
+    });
+
+    socket.on('endCall', ({ toUserId }) => {
+        const recipientSocketId = onlineUsers.get(toUserId)?.socket;
+
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('callEnded');
+        }
+    });
+
+    socket.on('missedCall', ({ fromUserId, toUserId }) => {
+        const recipientSocketId = onlineUsers.get(toUserId)?.socket;
+
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('missedCallNotification', { fromUserId, timestamp: Date.now() });
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+        // Remove user from onlineUsers map
+        for (const [userId, user] of onlineUsers.entries()) {
+            if (user.socket === socket.id) {
+                onlineUsers.delete(userId);
+                break;
+            }
+        }
+    });
+
+    // Receive voice notes via Socket.io
+    socket.on('voiceNote', (voiceNote) => {
+        const recipientSocketId = onlineUsers.get(voiceNote.toUserId)?.socket;
+
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('newVoiceNote', voiceNote);
+        }
+    });
+});
+
+// Endpoint to handle voice note uploads
+app.post('/api/send-voice-note', upload.single('voiceNote'), (req, res) => {
+    const { toUserId } = req.body;
+    const voiceNoteUrl = `/uploads/${req.file.filename}`;
+    const voiceNoteMessage = {
+        fromUserId: 'yourUserId', // Replace with the dynamic user ID of the sender
+        toUserId: Number(toUserId),
+        voiceNoteUrl,
+        timestamp: new Date()
+    };
+ // Save voice note to a file or database for persistence
+    // This example assumes voice notes are stored in a JSON file
+    const voiceNotesFilePath = 'voice_notes.json';
+    let voiceNotes = [];
+    if (fs.existsSync(voiceNotesFilePath)) {
+        voiceNotes = JSON.parse(fs.readFileSync(voiceNotesFilePath, 'utf8'));
+    }
+    voiceNotes.push(voiceNoteMessage);
+    fs.writeFileSync(voiceNotesFilePath, JSON.stringify(voiceNotes, null, 2), 'utf8');
+
+    // Send the voice note to the recipient
+    const recipient = onlineUsers.get(toUserId);
+    if (recipient && recipient.socket) {
+        recipient.socket.emit('newVoiceNote', voiceNoteMessage);
+    }
+    res.status(200).json(voiceNoteMessage);
+});
+
+// Endpoint to fetch voice notes
+app.get('/api/voice-notes', (req, res) => {
+    const { chatUserId, userId } = req.query;
+    const voiceNotesFilePath = 'voice_notes.json';
+    let voiceNotes = [];
+    if (fs.existsSync(voiceNotesFilePath)) {
+        voiceNotes = JSON.parse(fs.readFileSync(voiceNotesFilePath, 'utf8'));
+    }
+    const relevantVoiceNotes = voiceNotes.filter(note =>
+        (note.fromUserId == userId && note.toUserId == chatUserId) ||
+        (note.fromUserId == chatUserId && note.toUserId == userId)
+    );
+    res.json(relevantVoiceNotes);
 });
 
 // Start the server
