@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host Voice Chat Room - LoveConnect</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('images/logo.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+        }
+        .room-details, .participant-list, .controls {
+            margin-bottom: 20px;
+        }
+        .participant-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .controls button {
+            background-color: #075E54;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 5px;
+            outline: none;
+            transition: background-color 0.3s;
+        }
+        .controls button:hover {
+            background-color: #006f4a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="room-details">
+            <h2>Room Name: <span id="roomName"></span></h2>
+            <p>Participants: <span id="participantCount">0</span></p>
+        </div>
+        <div class="participant-list">
+            <h3>Participants</h3>
+            <ul id="participants">
+                <!-- Participant list will be populated here -->
+            </ul>
+        </div>
+        <div class="controls">
+            <button id="muteButton">Mute All</button>
+            <button id="leaveButton">Leave Room</button>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const roomNameSpan = document.getElementById('roomName');
+        const participantCountSpan = document.getElementById('participantCount');
+        const participantsList = document.getElementById('participants');
+        const muteButton = document.getElementById('muteButton');
+        const leaveButton = document.getElementById('leaveButton');
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('roomName');
+
+        roomNameSpan.textContent = roomName;
+
+        let localStream;
+        const peerConnections = {};
+
+        // Request microphone access
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            localStream = stream;
+        }).catch(error => {
+            console.error('Error accessing media devices.', error);
+        });
+
+        socket.emit('joinRoomAsHost', { roomName });
+
+        socket.on('participantJoined', (participant) => {
+            const li = document.createElement('li');
+            li.textContent = participant.nickname;
+            li.setAttribute('data-id', participant.id);
+            li.addEventListener('click', () => {
+                socket.emit('unmuteParticipant', { roomName, participantId: participant.id });
+            });
+            participantsList.appendChild(li);
+            participantCountSpan.textContent = participantsList.childElementCount;
+
+            // Create a new RTCPeerConnection for each participant
+            const peerConnection = new RTCPeerConnection();
+            peerConnections[participant.id] = peerConnection;
+
+            // Add local stream tracks to the peer connection
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            // Handle ICE candidates
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('iceCandidate', { to: participant.id, candidate: event.candidate });
+                }
+            };
+
+            // Handle remote stream
+            peerConnection.ontrack = (event) => {
+                const audioElement = document.createElement('audio');
+                audioElement.srcObject = event.streams[0];
+                audioElement.autoplay = true;
+                document.body.appendChild(audioElement);
+            };
+
+            // Create an offer and send it to the participant
+            peerConnection.createOffer().then(offer => {
+                peerConnection.setLocalDescription(offer);
+                socket.emit('offer', { to: participant.id, offer });
+            });
+        });
+
+        socket.on('offer', ({ from, offer }) => {
+            const peerConnection = new RTCPeerConnection();
+            peerConnections[from] = peerConnection;
+
+            // Add local stream tracks to the peer connection
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            // Handle ICE candidates
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('iceCandidate', { to: from, candidate: event.candidate });
+                }
+            };
+
+            // Handle remote stream
+            peerConnection.ontrack = (event) => {
+                const audioElement = document.createElement('audio');
+                audioElement.srcObject = event.streams[0];
+                audioElement.autoplay = true;
+                document.body.appendChild(audioElement);
+            };
+
+            // Set remote description and create an answer
+            peerConnection.setRemoteDescription(offer).then(() => {
+                return peerConnection.createAnswer();
+            }).then(answer => {
+                peerConnection.setLocalDescription(answer);
+                socket.emit('answer', { to: from, answer });
+            });
+        });
+
+        socket.on('answer', ({ from, answer }) => {
+            const peerConnection = peerConnections[from];
+            peerConnection.setRemoteDescription(answer);
+        });
+
+        socket.on('iceCandidate', ({ from, candidate }) => {
+            const peerConnection = peerConnections[from];
+            peerConnection.addIceCandidate(candidate);
+        });
+
+        socket.on('participantLeft', (participant) => {
+            const li = document.querySelector(`li[data-id='${participant.id}']`);
+            if (li) {
+                participantsList.removeChild(li);
+                participantCountSpan.textContent = participantsList.childElementCount;
+            }
+            // Close peer connection when a participant leaves
+            if (peerConnections[participant.id]) {
+                peerConnections[participant.id].close();
+                delete peerConnections[participant.id];
+            }
+        });
+
+        muteButton.addEventListener('click', () => {
+            socket.emit('muteAllParticipants', { roomName });
+        });
+
+        leaveButton.addEventListener('click', () => {
+            socket.emit('leaveRoomAsHost', { roomName });
+            window.location.href = '/create-room.html';
+        });
+
+        socket.on('speaking', (participant) => {
+            const li = document.querySelector(`li[data-id='${participant.id}']`);
+            if (li) {
+                participantsList.removeChild(li);
+                participantsList.insertBefore(li, participantsList.firstChild);
+                li.style.color = 'blue'; // Indicate the participant is speaking
+            }
+        });
+
+        socket.on('stoppedSpeaking', (participant) => {
+            const li = document.querySelector(`li[data-id='${participant.id}']`);
+            if (li) {
+                li.style.color = ''; // Reset the style when the participant stops speaking
+            }
+        });
+
+        socket.on('raisedHand', (participant) => {
+            const li = document.querySelector(`li[data-id='${participant.id}']`);
+            if (li) {
+                li.style.color = 'green'; // Indicate the participant raised hand
+            }
+        });
+    </script>
+</body>
+</html>

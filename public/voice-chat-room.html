@@ -1,224 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voice Chat Room - Find One by Click</title>
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    .voice-chat-container {
-      text-align: center;
-      margin-top: 50px;
-    }
-    .video-container {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    .video-container .host-video {
-      grid-column: span 3;
-      border: 2px solid #007bff;
-    }
-    video {
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      width: 100%;
-      height: 200px;
-    }
-    .controls {
-      margin-top: 20px;
-    }
-    .mute-button {
-      display: block;
-      margin: 10px auto;
-      padding: 5px 10px;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .mute-button:hover {
-      background-color: #0056b3;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Voice Chat Room - LoveConnect</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('images/logo.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+        }
+        .room-creation, .available-rooms {
+            margin-bottom: 20px;
+        }
+        .available-rooms ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .room-creation input, .room-creation button {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .room-creation button {
+            background-color: #075E54;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .room-creation button:hover {
+            background-color: #006f4a;
+        }
+    </style>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a> |
-    <a href="/profile">Profile</a> |
-    <a href="/matches">Matches</a> |
-    <a href="/nearby">Nearby Users</a> |
-    <a href="/messages">Messages</a> |
-    <a href="/voice-chat-room">Voice Chat Room</a> |
-    <a href="/login">Logout</a>
-  </nav>
-  <hr>
-  <div class="voice-chat-container">
-    <input type="text" id="sessionNameInput" placeholder="Enter session name">
-    <div class="video-container">
-      <video id="hostVideo" class="host-video" autoplay muted></video>
-      <video id="video1" autoplay></video>
-      <video id="video2" autoplay></video>
-      <video id="video3" autoplay></video>
-      <video id="video4" autoplay></video>
-      <video id="video5" autoplay></video>
+    <div class="container">
+        <div class="room-creation">
+            <h2>Create Voice Chat Room</h2>
+            <input type="text" id="roomName" placeholder="Enter Room Name">
+            <button id="createRoomButton">Create Room</button>
+        </div>
+        <div class="available-rooms">
+            <h3>Available Rooms</h3>
+            <ul id="roomsList">
+                <!-- Available rooms will be listed here -->
+            </ul>
+        </div>
     </div>
-    <div class="controls">
-      <button id="createButton">Create Session</button>
-      <button id="hangUpButton">Hang Up</button>
-      <button id="muteButton">Mute</button>
-      <button id="unmuteButton">Unmute</button>
-    </div>
-  </div>
-  <div class="voice-chat-container">
-    <h2>Available Voice Chats</h2>
-    <div id="voiceChatList">
-      <!-- Available voice chats will be displayed here -->
-    </div>
-  </div>
-  
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const hostVideo = document.getElementById('hostVideo');
-    const videoElements = [
-      document.getElementById('video1'),
-      document.getElementById('video2'),
-      document.getElementById('video3'),
-      document.getElementById('video4'),
-      document.getElementById('video5')
-    ];
-    let localStream;
-    let pcs = [];
-    let listening = true;
-    let isMuted = false;
-    let currentSession = '';
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const createRoomButton = document.getElementById('createRoomButton');
+        const roomNameInput = document.getElementById('roomName');
+        const roomsList = document.getElementById('roomsList');
 
-    document.getElementById('createButton').addEventListener('click', async () => {
-      const sessionName = document.getElementById('sessionNameInput').value.trim();
-      if (!sessionName) {
-        alert('Please enter a session name');
-        return;
-      }
-      currentSession = sessionName;
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      hostVideo.srcObject = localStream;
-      socket.emit('createVoiceChat', sessionName);
-    });
+        createRoomButton.addEventListener('click', () => {
+            const roomName = roomNameInput.value;
+            if (roomName) {
+                socket.emit('createRoom', { roomName });
+                roomNameInput.value = '';
+            }
+        });
 
-    document.getElementById('hangUpButton').addEventListener('click', () => {
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
-      }
-      pcs.forEach(pc => pc.close());
-      pcs = [];
-      hostVideo.srcObject = null;
-      videoElements.forEach(video => video.srcObject = null);
-      socket.emit('leaveVoiceChat', currentSession);
-      currentSession = '';
-    });
+        socket.on('roomCreated', (room) => {
+            window.location.href = `/host-room.html?roomName=${encodeURIComponent(room.name)}`;
+        });
 
-    document.getElementById('muteButton').addEventListener('click', () => {
-      localStream.getAudioTracks().forEach(track => track.enabled = false);
-      isMuted = true;
-    });
+        socket.on('availableRooms', (rooms) => {
+            roomsList.innerHTML = '';
+            rooms.forEach(room => {
+                const li = document.createElement('li');
+                li.textContent = room.name;
+                li.addEventListener('click', () => {
+                    window.location.href = `/join-room.html?roomName=${encodeURIComponent(room.name)}`;
+                });
+                roomsList.appendChild(li);
+            });
+        });
 
-    document.getElementById('unmuteButton').addEventListener('click', () => {
-      localStream.getAudioTracks().forEach(track => track.enabled = true);
-      isMuted = false;
-    });
-
-    socket.on('voiceChatCreated', (sessionName) => {
-      listening = false;
-      currentSession = sessionName;
-      startLocalStream();
-    });
-
-    socket.on('voiceChatJoined', (sessionName) => {
-      listening = true;
-      alert(`Joined voice chat room: ${sessionName}`);
-    });
-
-    socket.on('updateVoiceChatList', (sessions) => {
-      const voiceChatList = document.getElementById('voiceChatList');
-      voiceChatList.innerHTML = '';
-      sessions.forEach(session => {
-        const sessionElement = document.createElement('div');
-        sessionElement.className = 'chat-room';
-        sessionElement.innerHTML = `
-          <p>${session}</p>
-          <button onclick="joinVoiceChat('${session}')">Join</button>
-        `;
-        voiceChatList.appendChild(sessionElement);
-      });
-    });
-
-    socket.on('newParticipant', async (socketId) => {
-      if (pcs.length < 5) {
-        const pc = new RTCPeerConnection();
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-        pc.onicecandidate = (event) => {
-          if (event.candidate) {
-            socket.emit('iceCandidate', { to: socketId, candidate: event.candidate });
-          }
-        };
-        pc.ontrack = (event) => {
-          const videoElement = videoElements[pcs.length];
-          videoElement.srcObject = event.streams[0];
-        };
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket.emit('offer', { to: socketId, offer: pc.localDescription });
-        pcs.push(pc);
-      } else {
-        alert('All video slots are occupied. You will be listening only.');
-      }
-    });
-
-    socket.on('offer', async ({ from, offer }) => {
-      const pc = new RTCPeerConnection();
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit('iceCandidate', { to: from, candidate: event.candidate });
-        }
-      };
-      pc.ontrack = (event) => {
-        hostVideo.srcObject = event.streams[0];
-      };
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit('answer', { to: from, answer: pc.localDescription });
-      pcs.push(pc);
-    });
-
-    socket.on('answer', ({ from, answer }) => {
-      const pc = pcs.find(pc => pc.signalingState !== 'stable');
-      if (pc) {
-        pc.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
-
-    socket.on('iceCandidate', ({ from, candidate }) => {
-      const pc = pcs.find(pc => pc.signalingState !== 'stable');
-      if (pc) {
-        pc.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-    });
-
-    function startLocalStream() {
-      localStream = navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      hostVideo.srcObject = localStream;
-      socket.emit('startVoiceChat');
-    }
-
-    function joinVoiceChat(sessionName) {
-      socket.emit('joinVoiceChat', sessionName);
-    }
-  </script>
+        // Request available rooms when the page loads
+        socket.emit('getAvailableRooms');
+    </script>
 </body>
 </html>

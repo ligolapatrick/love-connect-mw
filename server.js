@@ -501,39 +501,6 @@ app.get('/api/currently-online-users', async (req, res) => {
   }
 });
 
-// Socket.IO handling for Speed Dating
-io.on('connection', (socket) => {
-  console.log('A user connected');
-
-  socket.on('joinSpeedDating', () => {
-    // Handle user joining speed dating session
-    console.log('User joined speed dating');
-  });
-
-  socket.on('sendMessage', (message) => {
-    // Broadcast message to other users
-    io.emit('receiveMessage', message);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('A user disconnected');
-  });
-});
-
-// Socket.IO handling for Voice Chat
-io.on('connection', (socket) => {
-  console.log('A user connected');
-
-  socket.on('joinVoiceChat', () => {
-    // Handle user joining voice chat
-    console.log('User joined voice chat');
-  });
-
-  socket.on('disconnect', () => {
-    console.log('A user disconnected');
-  });
-});
-
 // Route to search users based on criteria
 app.get('/api/search-users', async (req, res) => {
   const { minAge, maxAge, gender, interests, location } = req.query;
@@ -2148,77 +2115,85 @@ io.on('connection', (socket) => {
 });
 
 
+// Handle user connection and pairing for quick matches
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
-    socket.on('joinQuickMatch', () => {
-        onlineUsers.set(socket.id, { socket: socket, paired: false });
+    socket.on('joinQuickMatches', () => {
+        onlineUsers.set(socket.id, { socket: socket });
 
-        const waitingUserEntry = Array.from(onlineUsers.entries()).find(([id, user]) => id !== socket.id && !user.paired);
+        if (waitingUsers.length > 0) {
+            const partnerSocketId = waitingUsers.shift();
+            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
 
-        if (waitingUserEntry) {
-            const [waitingUserId, waitingUser] = waitingUserEntry;
-            onlineUsers.get(socket.id).paired = true;
-            onlineUsers.get(waitingUserId).paired = true;
+            onlineUsers.get(socket.id).partnerSocketId = partnerSocketId;
+            onlineUsers.get(partnerSocketId).partnerSocketId = socket.id;
 
-            socket.emit('quickMatchStart', { roomName: socket.id });
-            waitingUser.socket.emit('quickMatchStart', { roomName: waitingUserId });
-            onlineUsers.get(socket.id).partner = waitingUserId;
-            onlineUsers.get(waitingUserId).partner = socket.id;
-
-            // Start the timer
-            setTimeout(() => {
-                endQuickMatch(socket.id);
-                endQuickMatch(waitingUserId);
-            }, 180000); // 3 minutes in milliseconds
+            socket.emit('paired', { partnerSocketId });
+            partnerSocket.emit('paired', { partnerSocketId: socket.id });
         } else {
+            waitingUsers.push(socket.id);
             socket.emit('waitingList');
         }
     });
 
-    socket.on('sendMessage', ({ message }) => {
+   socket.on('nextUser', () => {
+    const user = onlineUsers.get(socket.id);
+    if (user && user.partnerSocketId) {
+        const partnerSocketId = user.partnerSocketId;
+        if (onlineUsers.has(partnerSocketId)) {
+            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
+            partnerSocket.emit('partnerDisconnected');
+            onlineUsers.delete(partnerSocketId);
+        }
+    }
+    onlineUsers.delete(socket.id);
+    socket.emit('joinQuickMatches');
+})
+
+    socket.on('sendMessage', (message) => {
         const user = onlineUsers.get(socket.id);
-        if (user && user.partner) {
-            const partnerId = user.partner;
-            const partnerSocket = onlineUsers.get(partnerId).socket;
-            partnerSocket.emit('message', { message });
-            socket.emit('message', { message }); // Also emit the message back to the sender
+        if (user && user.partnerSocketId) {
+            const partnerSocketId = user.partnerSocketId;
+            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
+            if (partnerSocket) {
+                partnerSocket.emit('message', message);
+            }
         }
     });
 
-    socket.on('endQuickMatch', () => {
-        endQuickMatch(socket.id);
+    socket.on('startVideoCall', (stream) => {
+        const user = onlineUsers.get(socket.id);
+        if (user && user.partnerSocketId) {
+            const partnerSocketId = user.partnerSocketId;
+            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
+            if (partnerSocket) {
+                partnerSocket.emit('partnerVideoStream', stream);
+            }
+        }
+    });
+
+    socket.on('initiateCall', ({ userId, calleeId, callType }) => {
+        const calleeSocketId = onlineUsers.get(calleeId)?.socket;
+        if (calleeSocketId) {
+            io.to(calleeSocketId).emit('callOffer', { callerId: userId, callType });
+        }
     });
 
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
-        endQuickMatch(socket.id);
-    });
-
-    function endQuickMatch(socketId) {
-        const user = onlineUsers.get(socketId);
-        if (user && user.partner) {
-            const partnerId = user.partner;
-            const partnerSocket = onlineUsers.get(partnerId).socket;
-            partnerSocket.emit('endQuickMatch');
-            onlineUsers.get(partnerId).paired = false;
-            delete onlineUsers.get(partnerId).partner;
-            delete user.partner;
+        const user = onlineUsers.get(socket.id);
+        if (user && user.partnerSocketId) {
+            const partnerSocketId = user.partnerSocketId;
+            if (onlineUsers.has(partnerSocketId)) {
+                const partnerSocket = onlineUsers.get(partnerSocketId).socket;
+                partnerSocket.emit('partnerDisconnected');
+                onlineUsers.delete(partnerSocketId);
+            }
         }
-        onlineUsers.delete(socketId);
-    }
+        onlineUsers.delete(socket.id);
+    });
 });
-
-app.post('/api/join-quick-match', (req, res) => {
-    res.status(200).send('Joined the quick match queue');
-});
-
-app.post('/api/quick-match-end', (req, res) => {
-    const { userDecision } = req.body;
-    console.log(`User decision: ${userDecision}`);
-    res.status(200).send('Decision received');
-});
-
 
 // Endpoint to handle voice note uploads
 app.post('/api/send-voice-note', upload.single('voiceNote'), (req, res) => {
@@ -2358,6 +2333,115 @@ app.get('/api/voice-notes', (req, res) => {
     );
     res.json(relevantVoiceNotes);
 });
+
+const rooms = new Map();
+
+// Handle user connection and room management
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('createRoom', ({ roomName }) => {
+        if (!rooms.has(roomName)) {
+            rooms.set(roomName, { host: socket.id, participants: [] });
+            socket.join(roomName);
+            io.emit('roomCreated', { name: roomName });
+        }
+    });
+
+    socket.on('getAvailableRooms', () => {
+        const availableRooms = Array.from(rooms.keys()).map(roomName => ({ name: roomName }));
+        socket.emit('availableRooms', availableRooms);
+    });
+
+    socket.on('joinRoomAsHost', ({ roomName }) => {
+        if (rooms.has(roomName)) {
+            rooms.get(roomName).host = socket.id;
+            socket.join(roomName);
+        }
+    });
+
+    socket.on('joinRoom', ({ roomName, nickname }) => {
+        if (rooms.has(roomName)) {
+            const room = rooms.get(roomName);
+            room.participants.push({ id: socket.id, nickname: nickname || `User ${socket.id}` });
+            socket.join(roomName);
+            io.to(roomName).emit('participantJoined', { id: socket.id, nickname: nickname || `User ${socket.id}` });
+        }
+    });
+
+    socket.on('muteAllParticipants', ({ roomName }) => {
+        if (rooms.has(roomName)) {
+            const room = rooms.get(roomName);
+            room.participants.forEach(participant => {
+                io.to(participant.id).emit('muted');
+            });
+        }
+    });
+
+    socket.on('muteParticipant', ({ roomName, participantId }) => {
+        if (rooms.has(roomName)) {
+            io.to(participantId).emit('muted');
+        }
+    });
+
+    socket.on('unmuteParticipant', ({ roomName, participantId }) => {
+        if (rooms.has(roomName)) {
+            io.to(participantId).emit('unmuted');
+        }
+    });
+
+    socket.on('leaveRoomAsHost', ({ roomName }) => {
+        if (rooms.has(roomName)) {
+            rooms.delete(roomName);
+            io.to(roomName).emit('roomClosed');
+            socket.leave(roomName);
+        }
+    });
+
+    socket.on('leaveRoom', ({ roomName }) => {
+        socket.leave(roomName);
+        rooms.forEach((room, name) => {
+            if (name === roomName) {
+                room.participants = room.participants.filter(participant => participant.id !== socket.id);
+                io.to(roomName).emit('participantLeft', { id: socket.id });
+            }
+        });
+    });
+
+    socket.on('raiseHand', ({ roomName }) => {
+        io.to(roomName).emit('raisedHand', { id: socket.id });
+    });
+
+    socket.on('muteSelf', ({ roomName }) => {
+        socket.emit('muted');
+    });
+
+    socket.on('speaking', ({ roomName, participantId }) => {
+        if (rooms.has(roomName)) {
+            io.to(roomName).emit('speaking', { id: participantId });
+        }
+    });
+
+        socket.on('stoppedSpeaking', ({ roomName, participantId }) => {
+        if (rooms.has(roomName)) {
+            io.to(roomName).emit('stoppedSpeaking', { id: participantId });
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+        rooms.forEach((room, roomName) => {
+            if (room.host === socket.id) {
+                rooms.delete(roomName);
+                io.to(roomName).emit('roomClosed');
+            } else {
+                room.participants = room.participants.filter(participant => participant.id !== socket.id);
+                io.to(roomName).emit('participantLeft', { id: socket.id });
+            }
+        });
+    });
+});
+
 
 // Start the server
 const port = 3000;

@@ -1,269 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles2.css">
-  <title>Quick Matches</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    nav {
-      background-color: #007bff;
-      color: white;
-      padding: 10px;
-      text-align: center;
-    }
-    nav a {
-      color: white;
-      margin: 0 10px;
-      text-decoration: none;
-    }
-    h1 {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .timer {
-      font-size: 2em;
-      color: red;
-      text-align: center;
-    }
-    #chat-container {
-      flex-grow: 1;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      background-color: #fff;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-    .messages-board {
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-    }
-    #receivedMessages {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: 10px;
-      background-color: #f4f4f4;
-      margin-right: 10px;
-      border-radius: 5px;
-      width: 50%;
-    }
-    #sentMessages {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: 10px;
-      background-color: #fff;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 50%;
-    }
-    #messageInput {
-      display: flex;
-      visibility: hidden; /* Hide initially */
-    }
-    #messageInput textarea {
-      flex-grow: 1;
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      resize: none;
-      margin-right: 10px;
-    }
-    #messageInput button {
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-    #messageInput button:hover {
-      background-color: #0056b3;
-    }
-    #decision {
-      display: none;
-      text-align: center;
-    }
-    .decision-button {
-      padding: 10px 20px;
-      margin: 5px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .connect {
-      background-color: green;
-      color: white;
-    }
-    .skip {
-      background-color: red;
-      color: white;
-    }
-    /* Media Queries for Responsive Design */
-    @media (max-width: 768px) {
-      .user-card {
-        width: 90%; /* Adjusted width for smaller screens */
-      }
-    }
-    @media (max-width: 480px) {
-      .user-card {
-        width: 100%; /* Full width for very small screens */
-      }
-      .message-input {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .message-input input {
-        width: 100%;
-        margin-bottom: 5px;
-      }
-      .message-input button {
-        width: 100%;
-      }
-    }
-    /* Bottom Navigation Styles */
-    .bottom-nav {
-      display: flex;
-      justify-content: space-around;
-      background-color: hsl(0, 66%, 64%);
-      padding: 10px 0;
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-    }
-    .bottom-nav a {
-      color: white;
-      text-align: center;
-      text-decoration: none;
-      font-size: 14px;
-    }
-    .bottom-nav a i {
-      display: block;
-      font-size: 20px;
-    }
-    .bottom-nav a.active {
-      color: rgb(0, 0, 0);
-    }
-  </style>
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    let timeLeft = 180; // 3 minutes
-
-    function startTimer() {
-      const timerElement = document.getElementById('timer');
-      const interval = setInterval(() => {
-        if (timeLeft <= 0) {
-          clearInterval(interval);
-          endQuickMatch();
-        } else {
-          timeLeft--;
-          timerElement.textContent = `Time Left: ${Math.floor(timeLeft / 60)}:${timeLeft % 60 < 10 ? '0' : ''}${timeLeft % 60}`;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Matches - LoveConnect</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('images/logo.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
         }
-      }, 1000);
-    }
-
-    socket.on('quickMatchStart', ({ partner }) => {
-      document.getElementById('chat-container').style.display = 'flex';
-      document.getElementById('messageInput').style.visibility = 'visible';
-      startTimer();
-    });
-
-    socket.on('message', ({ from, message }) => {
-      const receivedMessagesContainer = document.getElementById('receivedMessages');
-      const sentMessagesContainer = document.getElementById('sentMessages');
-      const messageElement = document.createElement('div');
-      messageElement.textContent = message;
-
-      if (from === 'partner') {
-        receivedMessagesContainer.appendChild(messageElement);
-      } else {
-        sentMessagesContainer.appendChild(messageElement);
-      }
-    });
-
-    function sendMessage() {
-      const message = document.getElementById('messageText').value;
-      if (message.trim()) {
-        socket.emit('sendMessage', { message });
-        document.getElementById('messageText').value = '';
-      }
-    }
-
-    function endQuickMatch() {
-      document.getElementById('decision').style.display = 'block';
-      document.getElementById('messageInput').style.visibility = 'hidden';
-      socket.emit('endQuickMatch');
-    }
-
-    function handleDecision(decision) {
-      fetch('/api/quick-match-end', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userDecision: decision })
-      }).then(response => {
-        if (response.ok) {
-          // Handle next steps based on user decision
-        } else {
-          alert('Error processing your decision. Please try again.');
+        .container {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
         }
-      }).catch(error => console.error('Error processing decision:', error));
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      // Join the quick match queue on page load
-      fetch('/api/join-quick-match', { method: 'POST' })
-        .then(response => {
-          if (response.ok) {
-            console.log('Joined the quick match queue');
-          } else {
-            alert('Failed to join the quick match queue');
-          }
-        }).catch(error => console.error('Error joining queue:', error));
-    });
-  </script>
+        .status {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        .timer {
+            font-size: 1.5em;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+        .video-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            width: 100%;
+        }
+        .video {
+            width: 45%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .video video {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+        .call-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .call-controls button {
+            background-color: #075E54;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 5px;
+            outline: none;
+            transition: background-color 0.3s;
+        }
+        .call-controls button:hover {
+            background-color: #006f4a;
+        }
+        .wait-list {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #777;
+        }
+        /* Media Queries for Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                width: 95%; /* Adjusted width for smaller screens */
+                padding: 10px; /* Reduced padding */
+            }
+            .video-container {
+                flex-direction: column;
+            }
+            .video {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <div class="status">Waiting for the other user to connect...</div>
+        <div class="timer" id="timer">03:00</div>
+        <div class="video-container">
+            <div class="video" id="partnerVideoContainer">
+                <h3>Partner's Video</h3>
+                <video id="partnerVideo" autoplay playsinline></video>
+            </div>
+            <div class="video" id="userVideoContainer">
+                <h3>Your Video</h3>
+                <video id="userVideo" autoplay playsinline muted></video>
+            </div>
+        </div>
+        <div class="call-controls">
+            <button id="nextButton">Next</button>
+        </div>
+        <div class="wait-list" id="waitListMessage">You are currently on the waiting list.</div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const statusElement = document.querySelector('.status');
+        const timerElement = document.getElementById('timer');
+        const waitListMessage = document.getElementById('waitListMessage');
+        const partnerVideo = document.getElementById('partnerVideo');
+        const userVideo = document.getElementById('userVideo');
+        let countdown;
+        let countdownDuration = 180; // 3 minutes in seconds
 
-  <h1>Quick Matches</h1>
-  <div id="timer" class="timer">Time Left: 3:00</div>
-  <div id="chat-container" style="display:none;">
-    <div class="messages-board">
-      <div id="receivedMessages"></div>
-      <div id="sentMessages"></div>
-    </div>
-    <div id="messageInput">
-      <textarea id="messageText" placeholder="Type your message here..."></textarea>
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>
-  <div id="decision">
-    <p>Time's up! Would you like to connect further?</p>
-    <button class="decision-button connect" onclick="handleDecision('connect')">Connect</button>
-    <button class="decision-button skip" onclick="handleDecision('skip')">Skip</button>
-  </div>
-  <mai>
-    <nav class="bottom-nav">
-      <a href="/">Home</a> |
-      <a href="profile.html">Profile</a> |
-      <a href="matches.html">Matches</a> |
-      <a href="messages.html">Messages</a> |
-      <a href="settings.html">Settings</a> |
-      <a href="login.html">Logout</a>
-    </nav>
-  </mai>
+        const startTimer = () => {
+            clearInterval(countdown);
+            let timeRemaining = countdownDuration;
+
+            countdown = setInterval(() => {
+                const minutes = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+                const seconds = (timeRemaining % 60).toString().padStart(2, '0');
+                timerElement.textContent = `${minutes}:${seconds}`;
+
+                if (timeRemaining <= 0) {
+                    clearInterval(countdown);
+                    socket.emit('nextUser');
+                    statusElement.textContent = 'Waiting for the next round...';
+                }
+
+                timeRemaining -= 1;
+            }, 1000);
+        };
+
+        socket.on('connect', () => {
+            socket.emit('joinSpeedDating');
+        });
+
+        socket.on('waitingList', () => {
+            waitListMessage.style.display = 'block';
+        });
+
+        socket.on('paired', (data) => {
+            statusElement.textContent = 'You are now connected!';
+            waitListMessage.style.display = 'none';
+            startTimer();
+        });
+
+        socket.on('partnerDisconnected', () => {
+            statusElement.textContent = 'Your partner has disconnected. Waiting for another match...';
+            clearInterval(countdown);
+        });
+
+        socket.on('message', (message) => {
+            const userChat = document.getElementById('userChat');
+            userChat.value = message;
+        });
+
+        socket.on('callOffer', (data) => {
+            const { callerId, callType } = data;
+            // Handle call offer, show notification to the user, etc.
+        });
+
+        nextButton.addEventListener('click', () => {
+            socket.emit('nextUser');
+        });
+
+        // Start user video stream
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(stream => {
+                userVideo.srcObject = stream;
+                socket.emit('startVideoCall', stream);
+            })
+            .catch(error => {
+                console.error('Error accessing media devices.', error);
+            });
+
+        socket.on('partnerVideoStream', (stream) => {
+            partnerVideo.srcObject = stream;
+        });
+    </script>
 </body>
 </html>
