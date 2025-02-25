@@ -1,185 +1,251 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Matches - Find One by Click</title>
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f4;
-    }
-    header {
-      background-color: #ff4d4d;
-      color: white;
-      text-align: center;
-      padding: 20px;
-    }
-    main {
-      padding: 20px;
-    }
-    .user-card-container {
-      display: flex;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      justify-content: start;
-      padding-left: 10px; 
-    }
-    .user-card {
-      position: relative;
-      width: 500px; 
-      margin: 10px; 
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      scroll-snap-align: start;
-      flex: 0 0 auto;
-    }
-    .user-card img {
-      width: 100%;
-      height: 500px; 
-      object-fit: cover;
-    }
-    .message-input {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      display: flex;
-      align-items: center;
-      background-color: rgba(255, 255, 255, 0.8);
-      padding: 5px;
-      border-radius: 5px;
-    }
-    .message-input input {
-      flex: 1;
-      padding: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .message-input button {
-      margin-left: 5px;
-      padding: 5px 10px;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .message-input button:hover {
-      background-color: #0056b3;
-    }
-    .user-info {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 10px;
-      text-align: left;
-      font-size: 0.9em;
-    }
-    @media (max-width: 768px) {
-      .user-card {
-        width: 80%;
-        height: auto;
-      }
-      .user-card img {
-        height: auto;
-      }
-    }
-    @media (max-width: 480px) {
-      .user-card {
-        width: 100%;
-        height: auto;
-      }
-      .user-card img {
-        height: auto;
-      }
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matches - Find One by Click</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #ff4d4d;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        main {
+            padding: 20px;
+        }
+        .user-card-container {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            justify-content: start;
+            padding-left: 10px;
+        }
+        .user-card {
+            position: relative;
+            width: 500px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            scroll-snap-align: start;
+            flex: 0 0 auto;
+        }
+        .user-card img {
+            width: 100%;
+            height: 500px;
+            object-fit: cover;
+        }
+        .user-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        .like-dislike-buttons {
+            position: absolute;
+            bottom: 50px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .like-dislike-buttons button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .like-button {
+            background-color: #28a745;
+            color: white;
+        }
+        .dislike-button {
+            background-color: #dc3545;
+            color: white;
+        }
+        .like-button.liked,
+        .dislike-button.disliked {
+            opacity: 0.5;
+        }
+        .heart-popup {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform: translate(-50%, 50%);
+            font-size: 2em;
+            display: none;
+            animation: popUpAndFade 2s forwards;
+        }
+        @keyframes popUpAndFade {
+            0% { display: block; opacity: 1; }
+            100% { display: none; opacity: 0; }
+        }
+        @media (max-width: 768px) {
+            .user-card {
+                width: 300px;
+                margin: 10px 5px;
+            }
+            .user-card img {
+                height: 300px;
+            }
+            .user-info {
+                font-size: 0.8em;
+                padding: 5px;
+            }
+        }
+        @media (max-width: 480px) {
+            .user-card {
+                width: 250px;
+            }
+            .user-card img {
+                height: 450px;
+            }
+            .user-info {
+                font-size: 0.7em;
+                padding: 3px;
+            }
+        }
         /* Bottom Navigation Styles */
-.bottom-nav {
-  display: flex;
-  justify-content: space-around;
-  background-color: hsl(0, 66%, 64%);
-  padding: 10px 0;
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-}
-
-.bottom-nav a {
-  color: white;
-  text-align: center;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.bottom-nav a i {
-  display: block;
-  font-size: 20px;
-}
-
-.bottom-nav a.active {
-  color: rgb(0, 0, 0);
-}
-
-  </style>
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: hsl(0, 66%, 64%);
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        .bottom-nav a {
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .bottom-nav a i {
+            display: block;
+            font-size: 20px;
+        }
+        .bottom-nav a.active {
+            color: rgb(0, 0, 0);
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Matches</h1>
-  </header>
-  <main>
-    <div class="user-card-container" id="matchesContainer">
-      <!-- Matches will be displayed here -->
-    </div>
-  </main>
-  <nav class="bottom-nav">
-    <a href="/">Home</a> |
-    <a href="daily-discovery.html">daily-discovery</a> |
-    <a href="fitness-buddies.html">fitness-buddies</a> |
-    <a href="relationship-goals.html">relationship-goals</a> |
-    <a href="quick-matches.html">quick-matches</a> |
-    <a href="settings.html">settings</a> |
-    <a href="login.html">Logout</a>
-  </nav>
+    <header>
+        <h1>Matches</h1>
+    </header>
+    <main>
+        <div class="user-card-container" id="matchesContainer">
+            <!-- Matches will be displayed here -->
+        </div>
+    </main>
+    <nav class="bottom-nav">
+        <a href="/">Home</a> |
+        <a href="daily-discovery.html">daily-discovery</a> |
+        <a href="fitness-buddies.html">fitness-buddies</a> |
+        <a href="relationship-goals.html">relationship-goals</a> |
+        <a href="quick-matches.html">quick-matches</a> |
+        <a href="settings.html">settings</a> |
+        <a href="login.html">Logout</a>
+    </nav>
 
-  <script>
-    function fetchMatches() {
-      fetch('/api/matches')
-        .then(response => response.json())
-        .then(matches => {
-          const matchesContainer = document.getElementById('matchesContainer');
-          matchesContainer.innerHTML = '';
-          matches.forEach(user => {
-            const userCard = document.createElement('div');
-            userCard.className = 'user-card';
-            userCard.innerHTML = `
-              <a href="/messages.html?userId=${user.id}&username=${encodeURIComponent(user.username)}">
-                <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
-                <div class="user-info">
-                  <h2>${user.username}</h2>
-                  <p><strong>Age:</strong> ${user.age || 'Not Provided'}</p>
-                  <p><strong>Interests:</strong> ${user.interests || 'Not Provided'}</p>
-                </div>
-              </a>
-            `;
-            matchesContainer.appendChild(userCard);
-          });
-        })
-        .catch(error => {
-          console.error('Error fetching matches:', error);
-        });
-    }
+    <script>
+        function fetchMatches() {
+            fetch('/api/matches')
+                .then(response => response.json())
+                .then(matches => {
+                    const matchesContainer = document.getElementById('matchesContainer');
+                    matchesContainer.innerHTML = '';
+                    matches.forEach(user => {
+                        const userCard = document.createElement('div');
+                        userCard.className = 'user-card';
+                        userCard.innerHTML = `
+                            <a href="/messages.html?userId=${user.id}&username=${encodeURIComponent(user.username)}">
+                                <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
+                                <div class="user-info">
+                                    <h2>${user.username}</h2>
+                                    <p><strong>Age:</strong> ${user.age || 'Not Provided'}</p>
+                                    <p><strong>Interests:</strong> ${user.interests || 'Not Provided'}</p>
+                                </div>
+                            </a>
+                            <div class="like-dislike-buttons">
+                                <button class="like-button" onclick="likeUser(${user.id}, this)">Like</button>
+                                <button class="dislike-button" onclick="dislikeUser(${user.id}, this)">Dislike</button>
+                            </div>
+                            <div class="heart-popup" id="heart-popup-${user.id}">❤️</div>
+                        `;
+                        matchesContainer.appendChild(userCard);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching matches:', error);
+                });
+        }
 
-    document.addEventListener('DOMContentLoaded', fetchMatches);
-  </script>
+        document.addEventListener('DOMContentLoaded', fetchMatches);
+
+        function likeUser(userId, button) {
+            button.classList.add('liked');
+            button.disabled = true;
+            document.getElementById(`heart-popup-${userId}`).style.display = 'block';
+            fetch('/api/like', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            }).then(response => {
+                console.log('User liked:', userId);
+                sendNotification(userId, 'liked');
+            }).catch(error => {
+                console.error('Error liking user:', error);
+            });
+        }
+
+        function dislikeUser(userId, button) {
+            button.classList.add('disliked');
+            button.disabled = true;
+            fetch('/api/dislike', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            }).then(response => {
+                console.log('User disliked:', userId);
+                sendNotification(userId, 'disliked');
+            }).catch(error => {
+                console.error('Error disliking user:', error);
+            });
+        }
+
+        function sendNotification(userId, action) {
+            fetch('/api/send-notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, action })
+            }).then(response => {
+                console.log(`Notification sent for ${action}`);
+            }).catch(error => {
+                console.error('Error sending notification:', error);
+            });
+        }
+    </script>
 </body>
 </html>

@@ -184,9 +184,6 @@ User.hasMany(Message, { as: 'ReceivedMessages', foreignKey: 'toUserId' });
 Message.belongsTo(User, { as: 'Sender', foreignKey: 'fromUserId' });
 Message.belongsTo(User, { as: 'Receiver', foreignKey: 'toUserId' });
 
-sequelize.sync({ force: false }).then(() => {
-  console.log('Database & tables created!');
-});
 
 // Serve static files from the 'public' directory
 app.use(bodyParser.json());
@@ -354,6 +351,10 @@ app.get('/searching', requireLogin, (req, res) => {
 // Route to serve the moodmatcher.html file
 app.get('/moodmatcher', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'moodmatcher.html'));
+});
+
+app.get('/likes', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'likes.html'));
 });
 
 // Add routes to serve voice and video call HTML files
@@ -747,6 +748,7 @@ app.get('/api/nearby-users', (req, res) => {
     }));
     res.send(nearbyUsers);
 });
+
 app.get('/api/matches', async (req, res) => {
   const { mood } = req.query;
   try {
@@ -2115,11 +2117,10 @@ io.on('connection', (socket) => {
 });
 
 
-// Handle user connection and pairing for quick matches
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
-    socket.on('joinQuickMatches', () => {
+    socket.on('joinQuickMatch', () => {
         onlineUsers.set(socket.id, { socket: socket });
 
         if (waitingUsers.length > 0) {
@@ -2131,53 +2132,35 @@ io.on('connection', (socket) => {
 
             socket.emit('paired', { partnerSocketId });
             partnerSocket.emit('paired', { partnerSocketId: socket.id });
+
+            // Start 3-minute timer
+            startSpeedDateTimer(socket, partnerSocket);
         } else {
             waitingUsers.push(socket.id);
             socket.emit('waitingList');
         }
     });
 
-   socket.on('nextUser', () => {
-    const user = onlineUsers.get(socket.id);
-    if (user && user.partnerSocketId) {
-        const partnerSocketId = user.partnerSocketId;
-        if (onlineUsers.has(partnerSocketId)) {
+    socket.on('nextUser', () => {
+        const partnerSocketId = onlineUsers.get(socket.id).partnerSocketId;
+        if (partnerSocketId) {
             const partnerSocket = onlineUsers.get(partnerSocketId).socket;
             partnerSocket.emit('partnerDisconnected');
             onlineUsers.delete(partnerSocketId);
         }
-    }
-    onlineUsers.delete(socket.id);
-    socket.emit('joinQuickMatches');
-})
-
-    socket.on('sendMessage', (message) => {
-        const user = onlineUsers.get(socket.id);
-        if (user && user.partnerSocketId) {
-            const partnerSocketId = user.partnerSocketId;
-            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
-            if (partnerSocket) {
-                partnerSocket.emit('message', message);
-            }
-        }
+        onlineUsers.delete(socket.id);
+        socket.emit('joinQuickMatch');
     });
 
-    socket.on('startVideoCall', (stream) => {
-        const user = onlineUsers.get(socket.id);
-        if (user && user.partnerSocketId) {
-            const partnerSocketId = user.partnerSocketId;
-            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
-            if (partnerSocket) {
-                partnerSocket.emit('partnerVideoStream', stream);
-            }
-        }
-    });
-
-    socket.on('initiateCall', ({ userId, calleeId, callType }) => {
+    socket.on('initiateCall', ({ userId, calleeId }) => {
         const calleeSocketId = onlineUsers.get(calleeId)?.socket;
         if (calleeSocketId) {
-            io.to(calleeSocketId).emit('callOffer', { callerId: userId, callType });
+            io.to(calleeSocketId).emit('callOffer', { callerId: userId });
         }
+    });
+
+    socket.on('signal', ({ partnerSocketId, candidate }) => {
+        io.to(partnerSocketId).emit('signal', { candidate });
     });
 
     socket.on('disconnect', () => {
@@ -2185,15 +2168,30 @@ io.on('connection', (socket) => {
         const user = onlineUsers.get(socket.id);
         if (user && user.partnerSocketId) {
             const partnerSocketId = user.partnerSocketId;
-            if (onlineUsers.has(partnerSocketId)) {
-                const partnerSocket = onlineUsers.get(partnerSocketId).socket;
+            const partnerSocket = onlineUsers.get(partnerSocketId).socket;
+            if (partnerSocket) {
                 partnerSocket.emit('partnerDisconnected');
-                onlineUsers.delete(partnerSocketId);
             }
+            onlineUsers.delete(partnerSocketId);
         }
         onlineUsers.delete(socket.id);
     });
 });
+
+function startSpeedDateTimer(userSocket, partnerSocket) {
+    let timeLeft = 180; // 3 minutes in seconds
+    const timer = setInterval(() => {
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            userSocket.emit('timeUp');
+            partnerSocket.emit('timeUp');
+        } else {
+            userSocket.emit('timer', { timeLeft });
+            partnerSocket.emit('timer', { timeLeft });
+            timeLeft--;
+        }
+    }, 1000);
+}
 
 // Endpoint to handle voice note uploads
 app.post('/api/send-voice-note', upload.single('voiceNote'), (req, res) => {
@@ -2334,112 +2332,198 @@ app.get('/api/voice-notes', (req, res) => {
     res.json(relevantVoiceNotes);
 });
 
-const rooms = new Map();
 
-// Handle user connection and room management
-io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
+// In-memory storage for game sessions and responses
+let gameSessions = [];
+let responses = [];
 
-    socket.on('createRoom', ({ roomName }) => {
-        if (!rooms.has(roomName)) {
-            rooms.set(roomName, { host: socket.id, participants: [] });
-            socket.join(roomName);
-            io.emit('roomCreated', { name: roomName });
-        }
+// Create a new game session
+app.post('/api/create-game', (req, res) => {
+    const { userId, truths, lie, password } = req.body;
+    const sessionId = gameSessions.length + 1;
+    const correctAnswer = truths.indexOf(lie);
+    gameSessions.push({ sessionId, userId, truths, lie, correctAnswer, password, guesses: [] });
+    res.json({ sessionId });
+});
+
+// List all game sessions
+app.get('/api/list-games', (req, res) => {
+    res.json(gameSessions);
+});
+
+// Fetch a game session
+app.get('/api/game-session/:sessionId', (req, res) => {
+    const { sessionId } = req.params;
+    const session = gameSessions.find(s => s.sessionId === parseInt(sessionId));
+    if (session) {
+        res.json(session);
+    } else {
+        res.status(404).json({ error: 'Game session not found' });
+    }
+});
+
+// Submit a guess
+app.post('/api/submit-guess', (req, res) => {
+    const { sessionId, userId, guess } = req.body;
+    const session = gameSessions.find(s => s.sessionId === parseInt(sessionId));
+    if (session) {
+        session.guesses.push({ userId, guess });
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: 'Game session not found' });
+    }
+});
+
+// Fetch guesses for a game session
+app.get('/api/game-session/:sessionId/guesses', (req, res) => {
+    const { sessionId } = req.params;
+    const session = gameSessions.find(s => s.sessionId === parseInt(sessionId));
+    if (session) {
+        res.json(session.guesses);
+    } else {
+        res.status(404).json({ error: 'Game session not found' });
+    }
+});
+
+// Fetch responses
+app.post('/api/fetch-responses', (req, res) => {
+    const { userId, password } = req.body;
+    const session = gameSessions.find(s => s.userId === userId && s.password === password);
+    if (session) {
+        const userResponses = responses.filter(response => response.toUserId === userId || response.fromUserId === userId);
+        res.json({ success: true, responses: userResponses });
+    } else {
+        res.status(401).json({ error: 'Invalid user ID or password' });
+    }
+});
+
+// Fetch response messages
+app.get('/api/response-messages', (req, res) => {
+    const { userId } = req.query;
+    const userResponses = responses.filter(response => response.toUserId === userId || response.fromUserId === userId);
+    res.json(userResponses);
+});
+
+// Add a response
+app.post('/api/add-response', (req, res) => {
+    const { fromUserId, toUserId, message } = req.body;
+    responses.push({ fromUserId, toUserId, message });
+    res.json({ success: true });
+});
+
+
+const Like = sequelize.define('Like', {
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  likedUserId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  }
+});
+
+const Dislike = sequelize.define('Dislike', {
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  dislikedUserId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  }
+});
+
+const Notification = sequelize.define('Notification', {
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  message: {
+    type: DataTypes.STRING,
+    allowNull: false
+  }
+});
+
+sequelize.sync({ force: false }).then(() => {
+  console.log('Database & tables created!');
+});
+
+app.get('/api/nearby-users', async (req, res) => {
+  try {
+    const users = await User.findAll();
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching nearby users:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.post('/api/like', async (req, res) => {
+  const { userId } = req.body;
+  try {
+    await Like.create({ userId: req.session.userId, likedUserId: userId });
+    const likedUser = await User.findByPk(userId);
+    const username = likedUser ? likedUser.username : 'Unknown User';
+    const message = `${req.session.username} liked your profile.`;
+    await Notification.create({ userId, message });
+    res.send('Liked');
+  } catch (error) {
+    console.error('Error liking user:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.post('/api/dislike', async (req, res) => {
+  const { userId } = req.body;
+  try {
+    await Dislike.create({ userId: req.session.userId, dislikedUserId: userId });
+    const dislikedUser = await User.findByPk(userId);
+    const username = dislikedUser ? dislikedUser.username : 'Unknown User';
+    const message = `${req.session.username} disliked your profile.`;
+    await Notification.create({ userId, message });
+    res.send('Disliked');
+  } catch (error) {
+    console.error('Error disliking user:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.get('/api/likes-dislikes', async (req, res) => {
+  try {
+    const totalLikes = await Like.count({ where: { likedUserId: req.session.userId } });
+    const totalDislikes = await Dislike.count({ where: { dislikedUserId: req.session.userId } });
+    const notifications = await Notification.findAll({ where: { userId: req.session.userId }, order: [['createdAt', 'DESC']] });
+    res.json({
+      totalLikes,
+      totalDislikes,
+      notifications: notifications.map(notification => ({ message: notification.message }))
     });
+  } catch (error) {
+    console.error('Error fetching likes and dislikes:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
-    socket.on('getAvailableRooms', () => {
-        const availableRooms = Array.from(rooms.keys()).map(roomName => ({ name: roomName }));
-        socket.emit('availableRooms', availableRooms);
-    });
 
-    socket.on('joinRoomAsHost', ({ roomName }) => {
-        if (rooms.has(roomName)) {
-            rooms.get(roomName).host = socket.id;
-            socket.join(roomName);
-        }
-    });
+// In-memory data storage for simplicity
+let users = [
+    { id: 1, username: 'User1', age: 25, gender: 'Male', bio: 'Bio1', interests: 'Music, Sports', location: 'Blantyre', profilePicture: 'path/to/image1.jpg' },
+    { id: 2, username: 'User2', age: 30, gender: 'Female', bio: 'Bio2', interests: 'Travel, Reading', location: 'Lilongwe', profilePicture: 'path/to/image2.jpg' },
+    // Add more users as needed
+];
 
-    socket.on('joinRoom', ({ roomName, nickname }) => {
-        if (rooms.has(roomName)) {
-            const room = rooms.get(roomName);
-            room.participants.push({ id: socket.id, nickname: nickname || `User ${socket.id}` });
-            socket.join(roomName);
-            io.to(roomName).emit('participantJoined', { id: socket.id, nickname: nickname || `User ${socket.id}` });
-        }
-    });
+// Fetch users based on location
+app.get('/api/location-matches', (req, res) => {
+    const { userId } = req.query;
+    const currentUser = users.find(user => user.id === parseInt(userId));
 
-    socket.on('muteAllParticipants', ({ roomName }) => {
-        if (rooms.has(roomName)) {
-            const room = rooms.get(roomName);
-            room.participants.forEach(participant => {
-                io.to(participant.id).emit('muted');
-            });
-        }
-    });
+    if (!currentUser) {
+        return res.status(404).json({ error: 'User not found' });
+    }
 
-    socket.on('muteParticipant', ({ roomName, participantId }) => {
-        if (rooms.has(roomName)) {
-            io.to(participantId).emit('muted');
-        }
-    });
-
-    socket.on('unmuteParticipant', ({ roomName, participantId }) => {
-        if (rooms.has(roomName)) {
-            io.to(participantId).emit('unmuted');
-        }
-    });
-
-    socket.on('leaveRoomAsHost', ({ roomName }) => {
-        if (rooms.has(roomName)) {
-            rooms.delete(roomName);
-            io.to(roomName).emit('roomClosed');
-            socket.leave(roomName);
-        }
-    });
-
-    socket.on('leaveRoom', ({ roomName }) => {
-        socket.leave(roomName);
-        rooms.forEach((room, name) => {
-            if (name === roomName) {
-                room.participants = room.participants.filter(participant => participant.id !== socket.id);
-                io.to(roomName).emit('participantLeft', { id: socket.id });
-            }
-        });
-    });
-
-    socket.on('raiseHand', ({ roomName }) => {
-        io.to(roomName).emit('raisedHand', { id: socket.id });
-    });
-
-    socket.on('muteSelf', ({ roomName }) => {
-        socket.emit('muted');
-    });
-
-    socket.on('speaking', ({ roomName, participantId }) => {
-        if (rooms.has(roomName)) {
-            io.to(roomName).emit('speaking', { id: participantId });
-        }
-    });
-
-        socket.on('stoppedSpeaking', ({ roomName, participantId }) => {
-        if (rooms.has(roomName)) {
-            io.to(roomName).emit('stoppedSpeaking', { id: participantId });
-        }
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-        rooms.forEach((room, roomName) => {
-            if (room.host === socket.id) {
-                rooms.delete(roomName);
-                io.to(roomName).emit('roomClosed');
-            } else {
-                room.participants = room.participants.filter(participant => participant.id !== socket.id);
-                io.to(roomName).emit('participantLeft', { id: socket.id });
-            }
-        });
-    });
+    const locationMatches = users.filter(user => user.location === currentUser.location && user.id !== currentUser.id);
+    res.json(locationMatches);
 });
 
 

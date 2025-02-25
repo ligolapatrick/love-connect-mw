@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Potential Matches</title>
+  <title>Location Matches</title>
   <style>
     .profile-container {
       position: relative;
@@ -123,7 +123,7 @@
 </head>
 <body>
   <header>
-    <h1>Potential Matches</h1>
+    <h1>Location-Based Matches</h1>
   </header>
 
   <main>
@@ -140,11 +140,11 @@
   </main>
 
   <script>
-    async function fetchMatches() {
+    async function fetchLocationMatches() {
       const userId = sessionStorage.getItem('userId');
 
       try {
-        const response = await fetch(`/api/location-matches`);
+        const response = await fetch(`/api/location-matches?userId=${userId}`);
         const data = await response.json();
 
         document.getElementById('loading').style.display = 'none';
@@ -167,10 +167,11 @@
               <p><strong>Gender:</strong> ${match.gender}</p>
               <p><strong>Bio:</strong> ${match.bio}</p>
               <p><strong>Interests:</strong> ${match.interests ? match.interests.split(',').join(', ') : 'Not provided'}</p>
+              <p><strong>Location:</strong> ${match.location}</p>
             </div>
             <div class="user-card-buttons">
-              <button class="like-button" onclick="likeUser(${match.id})">Like</button>
-                         <button class="dislike-button" onclick="dislikeUser(${match.id})">Dislike</button>
+              <button class="like-button" onclick="showHeartPopup(${match.id})">Like</button>
+              <button class="dislike-button">Dislike</button>
             </div>
             <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
             <button class="message-button" onclick="messageUser(${match.id})">Message</button>
@@ -190,32 +191,64 @@
       }, 2000);
     }
 
-    async function likeUser(userId) {
-      const response = await fetch('/api/like', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-      });
-      const data = await response.json();
-      if (data.success) {
-        showHeartPopup(userId);
-      }
-    }
-
-    async function dislikeUser(userId) {
-      await fetch('/api/dislike', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-      });
-    }
-
     function messageUser(userId) {
       window.location.href = `messages.html?userId=${userId}`;
     }
 
-    window.onload = fetchMatches;
+    function likeUser(userId, button) {
+            button.classList.add('liked');
+            button.disabled = true;
+            document.getElementById(`heart-popup-${userId}`).style.display = 'block';
+            fetch('/api/like', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            }).then(response => {
+                console.log('User liked:', userId);
+                sendNotification(userId, 'liked');
+            }).catch(error => {
+                console.error('Error liking user:', error);
+            });
+        }
+
+        function dislikeUser(userId, button) {
+            button.classList.add('disliked');
+            button.disabled = true;
+            fetch('/api/dislike', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            }).then(response => {
+                console.log('User disliked:', userId);
+                sendNotification(userId, 'disliked');
+            }).catch(error => {
+                console.error('Error disliking user:', error);
+            });
+        }
+
+        function messageUser(userId) {
+            window.location.href = `messages.html?userId=${userId}`;
+        }
+
+        function sendNotification(userId, action) {
+            fetch('/api/send-notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, action })
+            }).then(response => {
+                console.log(`Notification sent for ${action}`);
+            }).catch(error => {
+                console.error('Error sending notification:', error);
+            });
+        }
+
+    window.onload = fetchLocationMatches;
   </script>
 </body>
 </html>
-

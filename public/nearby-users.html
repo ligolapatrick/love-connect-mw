@@ -1,232 +1,265 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nearby Users</title>
-  <link rel="stylesheet" href="nearby-user.css">
-  <style>
-    .user-card-container {
-      display: flex;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      justify-content: start;
-      padding-left: 10px; /* Adjust for padding */
-    }
-    .user-card {
-      position: relative;
-      width: 500px; /* Increased width for better visibility */
-      margin: 10px; /* Adjusted margin for better spacing */
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      text-align: center;
-      scroll-snap-align: start;
-      flex: 0 0 auto;
-    }
-    .user-card img {
-      width: 100%;
-      height: 500px; /* Increased height for better visibility */
-      object-fit: cover;
-    }
-    .message-input {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      display: flex;
-      align-items: center;
-      background-color: rgba(255, 255, 255, 0.8);
-      padding: 5px;
-      border-radius: 5px;
-    }
-    .message-input input {
-      flex: 1;
-      padding: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .message-input button {
-      margin-left: 5px;
-      padding: 5px 10px;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .message-input button:hover {
-      background-color: #0056b3;
-    }
-    .user-info {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(0, 0, 0, 0.5);
-      color: white;
-      padding: 10px;
-      text-align: left;
-      font-size: 0.9em;
-    }
-    @media (max-width: 768px) {
-  .user-card {
-    width: 300px; /* Decreased width for smaller screens */
-    margin: 10px 5px; /* Adjusted margin for better spacing */
-  }
-  .user-card img {
-    height: 300px; /* Decreased height for smaller screens */
-  }
-  .message-input {
-    flex-direction: column;
-  }
-  .message-input input {
-    margin-bottom: 5px;
-    width: 100%;
-  }
-  .message-input button {
-    width: 100%;
-  }
-  .user-info {
-    font-size: 0.8em;
-    padding: 5px;
-  }
-}
-
-@media (max-width: 480px) {
-  .user-card {
-    width: 250px; /* Further decreased width for extra small screens */
-  }
-  .user-card img {
-    height: 250px; /* Further decreased height for extra small screens */
-  }
-  .message-input {
-    top: 5px;
-    padding: 3px;
-  }
-  .message-input input {
-    padding: 3px;
-  }
-  .message-input button {
-    padding: 3px 5px;
-  }
-  .user-info {
-    font-size: 0.7em;
-    padding: 3px;
-  }
-}
-
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nearby Users</title>
+    <link rel="stylesheet" href="nearby-users.css">
+    <style>
+        .user-card-container {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            justify-content: start;
+            padding-left: 10px;
+        }
+        .user-card {
+            position: relative;
+            width: 500px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            scroll-snap-align: start;
+            flex: 0 0 auto;
+        }
+        .user-card img {
+            width: 100%;
+            height: 500px;
+            object-fit: cover;
+        }
+        .user-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        .like-dislike-buttons {
+            position: absolute;
+            bottom: 50px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .like-dislike-buttons button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .like-button {
+            background-color: #28a745;
+            color: white;
+        }
+        .dislike-button {
+            background-color: #dc3545;
+            color: white;
+        }
+        .like-button.liked,
+        .dislike-button.disliked {
+            opacity: 0.5;
+        }
+        .message-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .message-button:hover {
+            background-color: #0056b3;
+        }
+        .heart-popup {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform: translate(-50%, 50%);
+            font-size: 2em;
+            display: none;
+            animation: popUpAndFade 2s forwards;
+        }
+        @keyframes popUpAndFade {
+            0% { display: block; opacity: 1; }
+            100% { display: none; opacity: 0; }
+        }
+        @media (max-width: 768px) {
+            .user-card {
+                width: 300px;
+                margin: 10px 5px;
+            }
+            .user-card img {
+                height: 350px;
+            }
+            .user-info {
+                font-size: 0.8em;
+                padding: 5px;
+            }
+        }
+        @media (max-width: 480px) {
+            .user-card {
+                width: 350px;
+            }
+            .user-card img {
+                height: 500px;
+            }
+            .user-info {
+                font-size: 0.7em;
+                padding: 3px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Nearby Users</h1>
-  </header>
-  
-  <main>
-    <section class="nearby-users-section">
-      <div class="user-card-container" id="user-card-container">
-        <!-- User cards will be dynamically loaded here -->
-      </div>
-      <!-- Add this to both HTML files within the body tag -->
-<div id="loader" style="display: none;">
-  <p>Loading...</p>
-</div>
-
-    </section>
-  </main>
-
-  <script>
-    // Function to show loader
-function showLoader() {
-  document.getElementById('loader').style.display = 'block';
-}
-
-// Function to hide loader
-function hideLoader() {
-  document.getElementById('loader').style.display = 'none';
-}
-
-    const userId = 'yourUserId'; // Replace with dynamic userId
-
-    document.addEventListener('DOMContentLoaded', () => {
-      fetch('/api/nearby-users')
-        .then(response => response.json())
-        .then(users => {
-          const container = document.getElementById('user-card-container');
-          container.innerHTML = '';
-          users.forEach(user => {
-            const userCard = document.createElement('div');
-            userCard.className = 'user-card';
-            userCard.innerHTML = `
-              <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
-              <div class="message-input" id="messageInputContainer-${user.id}">
-                <input type="text" id="messageInput-${user.id}" placeholder="Type a message">
-                <button class="send-button" onclick="sendMessage(${user.id})">Send</button>
-              </div>
-              <div class="user-info">
-                <h2>${user.username}</h2>
-                <p><strong>Age:</strong> ${user.age || 'Not Provided'}</p>
-              </div>
-            `;
-            container.appendChild(userCard);
-          });
-        })
-        .catch(error => {
-          console.error('Error fetching nearby users:', error);
-        });
-    });
-
-    function sendMessage(toUserId) {
-      const messageInput = document.getElementById(`messageInput-${toUserId}`);
-      const content = messageInput.value;
-      console.log('Sending message from:', userId, 'to:', toUserId); // Log IDs for debugging
-      fetch('/api/send-message', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ fromUserId: userId, toUserId, content })
-      })
-      .then(() => {
-        messageInput.value = '';
-        alert('Message sent!');
-      })
-      .catch(error => {
-        console.error('Error sending message:', error);
-      });
-    }
-
-    // Swiping functionality
-    let isDown = false;
-    let startX;
-    let scrollLeft;
-
-    const container = document.querySelector('.user-card-container');
-    container.addEventListener('mousedown', (e) => {
-      isDown = true;
-      container.classList.add('active');
-      startX = e.pageX - container.offsetLeft;
-      scrollLeft = container.scrollLeft;
-    });
-    container.addEventListener('mouseleave', () => {
-      isDown = false;
-      container.classList.remove('active');
-    });
-    container.addEventListener('mouseup', () => {
-      isDown = false;
-      container.classList.remove('active');
-    });
-    container.addEventListener('mousemove', (e) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = e.pageX - container.offsetLeft;
-      const walk = (x - startX) * 3; //scroll-fast
-      container.scrollLeft = scrollLeft - walk;
-    });
+    <header>
+        <h1>Nearby Users</h1>
+    </header>
     
-  </script>
+    <main>
+        <section class="nearby-users-section">
+            <div class="user-card-container" id="user-card-container">
+                <!-- User cards will be dynamically loaded here -->
+            </div>
+            <div id="loader" style="display: none;">
+                <p>Loading...</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function showLoader() {
+            document.getElementById('loader').style.display = 'block';
+        }
+
+        function hideLoader() {
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        const userId = 'yourUserId'; // Replace with dynamic userId
+
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            showLoader();
+            fetch('/api/nearby-users')
+                .then(response => response.json())
+                .then(users => {
+                    hideLoader();
+                    const container = document.getElementById('user-card-container');
+                    container.innerHTML = '';
+                    users.forEach(user => {
+                        const userCard = document.createElement('div');
+                        userCard.className = 'user-card';
+                        userCard.innerHTML = `
+                            <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
+                            <div class="user-info">
+                                <h2>${user.username}</h2>
+                                <p><strong>Age:</strong> ${user.age || 'Not Provided'}</p>
+                                <p><strong>Location:</strong> ${user.location || 'Not Provided'}</p>
+                                <p><strong>Interests:</strong> ${user.interests || 'Not Provided'}</p>
+                            </div>
+                            <div class="like-dislike-buttons">
+                                <button class="like-button" onclick="likeUser(${user.id}, this)">Like</button>
+                                <button class="dislike-button" onclick="dislikeUser(${user.id}, this)">Dislike</button>
+                            </div>
+                            <button class="message-button" onclick="messageUser(${user.id})">Message</button>
+                            <div class="heart-popup" id="heart-popup-${user.id}">❤️</div>
+                        `;
+                        container.appendChild(userCard);
+                    });
+                })
+                .catch(error => {
+                    hideLoader();
+                    console.error('Error fetching nearby users:', error);
+                });
+        });
+
+        function likeUser(userId, button) {
+            button.classList.add('liked');
+            button.disabled = true;
+            document.getElementById(`heart-popup-${userId}`).style.display = 'block';
+            fetch('/api/like', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            }).then(response => {
+                console.log('User liked:', userId);
+                sendNotification(userId, 'liked');
+            }).catch(error => {
+                console.error('Error liking user:', error);
+            });
+        }
+
+        function dislikeUser(userId, button) {
+            button.classList.add('disliked');
+            button.disabled = true;
+            fetch('/api/dislike', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            }).then(response => {
+                console.log('User disliked:', userId);
+                sendNotification(userId, 'disliked');
+            }).catch(error => {
+                console.error('Error disliking user:', error);
+            });
+        }
+
+        function messageUser(userId) {
+            window.location.href = `messages.html?userId=${userId}`;
+        }
+
+        function sendNotification(userId, action) {
+            fetch('/api/send-notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, action })
+            }).then(response => {
+                console.log(`Notification sent for ${action}`);
+            }).catch(error => {
+                console.error('Error sending notification:', error);
+            });
+        }
+
+        // Swiping functionality
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        const container = document.querySelector('.user-card-container');
+        container.addEventListener('mousedown', (e) => {
+            isDown = true;
+            container.classList.add('active');
+            startX = e.pageX - container.offsetLeft;
+            scrollLeft = container.scrollLeft;
+        });
+        container.addEventListener('mouseleave', () => {
+            isDown = false;
+            container.classList.remove('active');
+        });
+        container.addEventListener('mouseup', () => {
+            isDown = false;
+            container.classList.remove('active');
+        });
+        container.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - container.offsetLeft;
+            const walk = (x - startX) * 3; //scroll-fast
+            container.scrollLeft = scrollLeft - walk;
+        });
+    </script>
 </body>
 </html>

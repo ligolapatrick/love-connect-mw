@@ -3,229 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Join Voice Chat Room - LoveConnect</title>
+    <title>Join Room</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: url('images/logo.png') no-repeat center center fixed;
-            background-size: cover;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
             margin: 0;
-            padding: 0;
-        }
-        .container {
-            text-align: center;
-            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 800px;
+            background-color: #f4f4f4;
         }
-        .room-details, .participant-list, .controls {
-            margin-bottom: 20px;
+        h1, h2 {
+            color: #333;
+            text-align: center;
         }
-        .participant-list ul {
-            list-style-type: none;
-            padding: 0;
+        #waitingList, #listeners {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
         }
-        .controls button {
-            background-color: #075E54;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 10px;
+        #hostSlot, .waitingSlot, .listener {
+            width: 60px;
+            height: 60px;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            font-size: 14px;
+            position: relative;
             cursor: pointer;
-            margin: 5px;
-            outline: none;
-            transition: background-color 0.3s;
         }
-        .controls button:hover {
-            background-color: #006f4a;
+        #hostSlot img, .waitingSlot img, .listener img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .nickname {
+            position: absolute;
+            bottom: -15px;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+        }
+        .muted {
+            background-color: #ff4c4c;
+        }
+        #acquireSlotBtn {
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            font-size: 16px;
+        }
+        #acquireSlotBtn:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="room-details">
-            <h2>Room Name: <span id="roomName"></span></h2>
-            <p>Participants: <span id="participantCount">0</span></p>
-        </div>
-        <div class="participant-list">
-            <h3>Participants</h3>
-            <ul id="participants">
-                <!-- Participant list will be populated here -->
-            </ul>
-        </div>
-        <div class="controls">
-            <button id="raiseHandButton">Raise Hand</button>
-            <button id="muteButton">Mute</button>
-            <button id="leaveButton">Leave Room</button>
-        </div>
+    <h1 id="roomName">Room Name</h1>
+    
+    <div id="waitingList">
+        <div id="hostSlot" data-slot="0">Host</div>
+        <div class="waitingSlot" data-slot="1">1</div>
+        <div class="waitingSlot" data-slot="2">2</div>
+        <div class="waitingSlot" data-slot="3">3</div>
+        <div class="waitingSlot" data-slot="4">4</div>
+        <div class="waitingSlot" data-slot="5">5</div>
+        <div class="waitingSlot" data-slot="6">6</div>
+        <div class="waitingSlot" data-slot="7">7</div>
     </div>
+    
+    <h2>Listeners</h2>
+    <div id="listeners">
+        <!-- Listeners will be rendered here -->
+    </div>
+    
+    <button id="acquireSlotBtn" onclick="acquireSlot()">Acquire Slot</button>
+    
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
-        const roomNameSpan = document.getElementById('roomName');
-        const participantCountSpan = document.getElementById('participantCount');
-        const participantsList = document.getElementById('participants');
-        const raiseHandButton = document.getElementById('raiseHandButton');
-        const muteButton = document.getElementById('muteButton');
-        const leaveButton = document.getElementById('leaveButton');
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const roomName = urlParams.get('roomName');
-
-        roomNameSpan.textContent = roomName;
-
-        // Prompt user for nickname
-        let nickname = prompt("Please enter your nickname:", "");
-        if (nickname === null || nickname === "") {
-            nickname = `User ${socket.id}`;
+        const socket = io.connect('http://localhost:3000');
+        const roomName = new URLSearchParams(window.location.search).get('roomName');
+        document.getElementById('roomName').textContent = roomName;
+        
+        const nickname = prompt('Enter your nickname:') || "Guest";
+        const userProfilePicture = '';
+        
+        let waitingListData = [];
+        
+        socket.emit('joinRoom', { roomName, user: { nickname, profilePicture: userProfilePicture } });
+        
+        function joinWaitingList(slotNumber) {
+            const user = { nickname, profilePicture: userProfilePicture };
+            socket.emit('updateWaitingList', { roomName, slotNumber, user });
         }
-
-        let localStream;
-        const peerConnections = {};
-
-        socket.emit('joinRoom', { roomName, nickname });
-
-        socket.on('participantJoined', (participant) => {
-            const li = document.createElement('li');
-            li.textContent = participant.nickname;
-            li.setAttribute('data-id', participant.id);
-            participantsList.appendChild(li);
-            participantCountSpan.textContent = participantsList.childElementCount;
-
-            // Create a new RTCPeerConnection for each participant
-            const peerConnection = new RTCPeerConnection();
-            peerConnections[participant.id] = peerConnection;
-
-            // Add local stream tracks to the peer connection
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-            // Handle ICE candidates
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('iceCandidate', { to: participant.id, candidate: event.candidate });
+        
+        function removeFromWaitingList(slotNumber) {
+            socket.emit('removeFromWaitingList', { roomName, slotNumber });
+        }
+        
+        function acquireSlot() {
+            let emptyIndex = waitingListData.findIndex(slot => slot === null);
+            if (emptyIndex === -1) {
+                alert("No empty slot available.");
+            } else {
+                joinWaitingList(emptyIndex + 1);
+            }
+        }
+        
+        socket.on('waitingListUpdated', ({ waitingList }) => {
+            waitingListData = waitingList;
+            const waitingListContainer = document.getElementById('waitingList');
+            
+            const hostSlot = document.getElementById('hostSlot');
+            waitingListContainer.innerHTML = '';
+            waitingListContainer.appendChild(hostSlot);
+            
+            for (let i = 0; i < 7; i++) {
+                let slotDiv = document.createElement('div');
+                slotDiv.className = 'waitingSlot';
+                slotDiv.dataset.slot = i + 1;
+                const user = waitingList[i];
+                if (user) {
+                    slotDiv.innerHTML = `<img src="${user.profilePicture}" alt="Profile Picture"><span class="nickname">${user.nickname}</span>`;
+                    if (user.nickname === nickname) {
+                        slotDiv.addEventListener('dblclick', () => removeFromWaitingList(i + 1));
+                    }
+                } else {
+                    slotDiv.textContent = i + 1;
+                    slotDiv.addEventListener('click', () => joinWaitingList(i + 1));
                 }
-            };
-
-            // Handle remote stream
-            peerConnection.ontrack = (event) => {
-                const audioElement = document.createElement('audio');
-                audioElement.srcObject = event.streams[0];
-                audioElement.autoplay = true;
-                document.body.appendChild(audioElement);
-            };
-
-            // Create an offer and send it to the participant
-            peerConnection.createOffer().then(offer => {
-                peerConnection.setLocalDescription(offer);
-                socket.emit('offer', { to: participant.id, offer });
+                waitingListContainer.appendChild(slotDiv);
+            }
+        });
+        
+        socket.on('roomCreated', ({ roomName, host }) => {
+            const hostSlot = document.getElementById('hostSlot');
+            hostSlot.innerHTML = `<img src="${host.profilePicture}" alt="Host"><span class="nickname">${host.nickname}</span>`;
+        });
+        
+        socket.on('listenersUpdated', ({ listeners }) => {
+            const listenersContainer = document.getElementById('listeners');
+            listenersContainer.innerHTML = '';
+            listeners.forEach(listener => {
+                const listenerDiv = document.createElement('div');
+                listenerDiv.className = 'listener';
+                listenerDiv.innerHTML = `<img src="${listener.profilePicture}" alt="Profile Picture"><span class="nickname">${listener.nickname}</span>`;
+                listenersContainer.appendChild(listenerDiv);
             });
         });
 
-        socket.on('offer', ({ from, offer }) => {
-            const peerConnection = new RTCPeerConnection();
-            peerConnections[from] = peerConnection;
-
-            // Add local stream tracks to the peer connection
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-            // Handle ICE candidates
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('iceCandidate', { to: from, candidate: event.candidate });
-                }
-            };
-
-            // Handle remote stream
-            peerConnection.ontrack = (event) => {
-                const audioElement = document.createElement('audio');
-                audioElement.srcObject = event.streams[0];
-                audioElement.autoplay = true;
-                document.body.appendChild(audioElement);
-            };
-
-            // Set remote description and create an answer
-            peerConnection.setRemoteDescription(offer).then(() => {
-                return peerConnection.createAnswer();
-            }).then(answer => {
-                peerConnection.setLocalDescription(answer);
-                socket.emit('answer', { to: from, answer });
-            });
+        socket.on('userJoined', ({ user, waitingList }) => {
+            console.log(`${user.nickname} joined room.`);
         });
 
-        socket.on('answer', ({ from, answer }) => {
-            const peerConnection = peerConnections[from];
-            peerConnection.setRemoteDescription(answer);
+        socket.on('chatStarted', () => {
+            startListening();
         });
 
-        socket.on('iceCandidate', ({ from, candidate }) => {
-            const peerConnection = peerConnections[from];
-            peerConnection.addIceCandidate(candidate);
-        });
-
-        socket.on('participantLeft', (participant) => {
-            const li = document.querySelector(`li[data-id='${participant.id}']`);
-            if (li) {
-                participantsList.removeChild(li);
-                participantCountSpan.textContent = participantsList.childElementCount;
+        async function startListening() {
+            try {
+                const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const peers = {};
+                
+                document.querySelectorAll('.waitingSlot').forEach(slot => {
+                    const slotNumber = slot.dataset.slot;
+                    const peer = new RTCPeerConnection();
+                    peers[slotNumber] = peer;
+                    
+                    localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+                    
+                    peer.onicecandidate = event => {
+                        if (event.candidate) {
+                            socket.emit('signal', { roomName, slotNumber, candidate: event.candidate });
+                        }
+                    };
+                    
+                    peer.ontrack = event => {
+                        const audio = document.createElement('audio');
+                        audio.srcObject = event.streams[0];
+                        audio.autoplay = true;
+                        document.body.appendChild(audio);
+                    };
+                    
+                    socket.on('offer', async ({ slotNumber, offer }) => {
+                        await peer.setRemoteDescription(new RTCSessionDescription(offer));
+                        const answer = await peer.createAnswer();
+                        await peer.setLocalDescription(answer);
+                        socket.emit('answer', { roomName, slotNumber, answer });
+                    });
+                    
+                    socket.on('signal', async ({ slotNumber, candidate }) => {
+                        await peer.addIceCandidate(new RTCIceCandidate(candidate));
+                    });
+                });
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
             }
-            // Close peer connection when a participant leaves
-            if (peerConnections[participant.id]) {
-                peerConnections[participant.id].close();
-                delete peerConnections[participant.id];
-            }
-        });
-
-        raiseHandButton.addEventListener('click', () => {
-            socket.emit('raiseHand', { roomName });
-        });
-
-        muteButton.addEventListener('click', () => {
-            socket.emit('muteSelf', { roomName });
-        });
-
-        leaveButton.addEventListener('click', () => {
-            socket.emit('leaveRoom', { roomName });
-            window.location.href = '/create-room.html';
-        });
-
-        // Handle being muted by the host
-        socket.on('muted', () => {
-            muteButton.disabled = true;
-            muteButton.textContent = 'Muted';
-        });
-
-        socket.on('roomClosed', () => {
-            alert('The room has been closed by the host.');
-            window.location.href = '/voice-chat-room.html';
-        });
-
-        // Add more event listeners for handling participants who are speaking
-        socket.on('speaking', (participant) => {
-            const li = document.querySelector(`li[data-id='${participant.id}']`);
-            if (li) {
-                participantsList.removeChild(li);
-                participantsList.insertBefore(li, participantsList.firstChild);
-                li.style.color = 'blue'; // Indicate the participant is speaking
-            }
-        });
-
-        // Get user media (microphone) access
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
-                localStream = stream;
-            })
-            .catch(error => {
-                console.error('Error accessing media devices.', error);
-            });
+        }
     </script>
 </body>
 </html>
