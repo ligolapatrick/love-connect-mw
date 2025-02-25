@@ -386,9 +386,42 @@ app.get('/anonymous-chat-room', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'anonymous-chat-room.html'));
 });
 
-// Route to serve the chat-zone.html file
+// Route to serve the location-base-match.html file
+app.get('/location-matches', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'location-matches.html'));
+});
+
+// Route to serve the potential-matches.html file
+app.get('/potential-matches', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'potential-matches.html'));
+});
+
+// Route to serve the fitness-buddies.html file
+app.get('/fitness-buddies', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'fitness-buddies.html'));
+});
+
+// Route to serve the daily-discovery.html file
+app.get('/daily-discovery', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'daily-discovery.html'));
+});
+
+// Route to serve the relationship-goals.html file
 app.get('/chat-zone', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'chat-zone.html'));
+});
+
+// Route to serve the chat-zone.html file
+app.get('/relationship-goals', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'relationship-goals.html'));
+});
+
+app.get('/quick-matches', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'quick-matches.html'));
+});
+
+app.get('/settings', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'settings.html'));
 });
 
 // Route to get all users
