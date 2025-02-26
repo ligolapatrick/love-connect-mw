@@ -4,7 +4,83 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Safety Tips</title>
-  <link rel="stylesheet" href="AboutLoveConnect.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <style>
+      body, html {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          width: 100%;
+          font-family: Arial, sans-serif;
+          background-color: #f4f4f4;
+      }
+      header {
+          background-color: #007bff;
+          color: white;
+          padding: 20px;
+          text-align: center;
+          animation: slideDown 1s ease-out;
+      }
+      @keyframes slideDown {
+          from { transform: translateY(-100px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+      }
+      .info-section {
+          max-width: 800px;
+          margin: 40px auto;
+          padding: 20px;
+          background-color: white;
+          border-radius: 10px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+          animation: fadeIn 1s ease-in-out;
+      }
+      @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+      }
+      h2 {
+          color: #007bff;
+          text-align: center;
+      }
+      p, ul {
+          margin: 20px 0;
+          line-height: 1.6;
+      }
+      ul {
+          list-style: none;
+          padding: 0;
+      }
+      ul li {
+          margin: 10px 0;
+          padding-left: 20px;
+          position: relative;
+      }
+      ul li::before {
+        content: "\f007";
+          font-family: "FontAwesome";
+          position: absolute;
+          left: 0;
+          color: #007bff;
+          font-size: 1.2em;
+          top: 0;
+      }
+      footer {
+          background-color: #333;
+          color: white;
+          text-align: center;
+          padding: 10px;
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+      }
+      footer a {
+          color: #ff6600;
+          text-decoration: none;
+      }
+      footer a:hover {
+          text-decoration: underline;
+      }
+  </style>
 </head>
 <body>
   <header>
@@ -13,23 +89,35 @@
 
   <main>
     <section class="info-section">
-      <h2>Safety Tips</h2>
+      <h2>Stay Safe on LoveConnect</h2>
       <p>Your safety is our priority. Here are some tips to help you stay safe while using LoveConnect:</p>
       <ul>
         <li><strong>Protect Your Personal Information:</strong> Avoid sharing sensitive information like your address or financial details.</li>
         <li><strong>Meet in Public Places:</strong> For your first few meetings, choose public places where you feel comfortable and safe.</li>
         <li><strong>Trust Your Instincts:</strong> If something feels off, don't hesitate to end the conversation or block the user.</li>
         <li><strong>Report Suspicious Behavior:</strong> Use our reporting feature to notify us of any suspicious activity.</li>
+        <li><strong>Use Secure Communication:</strong> Prefer using the app's built-in messaging system over sharing personal contact details.</li>
+        <li><strong>Inform a Friend:</strong> Let a friend or family member know your plans when meeting someone new.</li>
       </ul>
       <p>Remember, your safety and well-being are paramount. Enjoy connecting with others while staying safe!</p>
-<main></main>
+    </section>
+  </main>
    
-      <footer>
-        <div class="footer-content">
-          <p>&copy; 2024 LoveConnect. All rights reserved.</p>
-          <p><a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-service.html">Terms of Service</a></p>
-        </div>
-      </footer>
-    </body>
-    </html>
-    
+  <footer>
+    <div class="footer-content">
+      <p>&copy; 2025 LoveConnect. All rights reserved.</p>
+      <p><a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-service.html">Terms of Service</a></p>
+    </div>
+  </footer>
+  <script>
+    function toggleMenu() {
+        var x = document.getElementById("dropdownMenu");
+        if (x.style.display === "block") {
+            x.style.display = "none";
+        } else {
+            x.style.display = "block";
+        }
+    }
+  </script>
+</body>
+</html>

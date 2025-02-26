@@ -74,21 +74,7 @@
     }
   }
   </style>
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        fetch('/api/check-subscription')
-          .then(response => response.json())
-          .then(data => {
-            if (!data.hasAccess) {
-              window.location.href = '/payment.html';
-            }
-          })
-          .catch(error => {
-            console.error('Error checking subscription status:', error);
-            window.location.href = '/payment.html';
-          });
-      });
-    </script>  
+
 </head>
 <body>
   <nav>

@@ -27,53 +27,108 @@
             position: absolute;
             top: 0;
             left: 0;
+            animation: zoomIn 15s infinite alternate;
         }
+
+        @keyframes zoomIn {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(1.1);
+            }
+        }
+
         .hero-content {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 100%;
-            color: #da7312;
+            color: #fff;
             text-align: center;
+            animation: fadeIn 2s ease-in-out;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .nav-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 20px;
+            animation: slideDown 1s ease-out;
         }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         .logo {
             width: 50px;
         }
+
         .menu-icon {
             display: none;
             font-size: 24px;
             cursor: pointer;
         }
+
         .dropdown-content {
             list-style: none;
             padding: 0;
             margin: 0;
             display: flex;
         }
+
         .dropdown-content li {
             margin: 0 10px;
         }
+
         .dropdown-content a {
             color: white;
             text-decoration: none;
             font-weight: bold;
+            transition: color 0.3s;
         }
+
+        .dropdown-content a:hover {
+            color: #ff6600;
+        }
+
         .header-message {
             font-size: 2.5em;
             margin: 20px 0;
+            animation: bounceIn 1.5s ease-in-out;
         }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
         .center-links {
             display: flex;
             justify-content: center;
             gap: 10px;
         }
+
         .btn {
             padding: 10px 20px;
             border: none;
@@ -82,13 +137,21 @@
             color: white;
             font-size: 1em;
             cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
         }
+
         .btn-primary {
             background-color: #007bff;
         }
+
         .btn-secondary {
             background-color: #6c757d;
         }
+
+        .btn:hover {
+            transform: translateY(-5px);
+        }
+
         footer {
             background-color: #333;
             color: white;
@@ -98,6 +161,7 @@
             bottom: 0;
             width: 100%;
         }
+
         @media (max-width: 768px) {
             .header-message {
                 font-size: 1.8em;
@@ -135,11 +199,11 @@
                     <i class="fas fa-bars"></i>
                 </a>
                 <ul id="dropdownMenu" class="dropdown-content">
-                    <li><a href="user-guides.html">User guides</a></li>
+                    <li><a href="user-guides">User guides</a></li>
                     <li><a href="safety-tips.html">Safety</a></li>
                     <li><a href="contacts.html">Contact Us</a></li>
-                    <li><a href="registration.html">Register</a></li>
-                    <li><a href="login1.html">Login</a></li>
+                    <li><a href="register">Register</a></li>
+                    <li><a href="login1">Login</a></li>
                     <li><a href="about-app.html">About</a></li>
                 </ul>
                 <img src="images/logo.png" alt="Logo" class="logo">
@@ -147,8 +211,8 @@
             <h1>Welcome to LoveConnect</h1>
             <h2 class="header-message">LoveConnect: Find One by Click</h2>
             <div class="center-links">
-                <a href="registration.html" class="btn btn-primary">Create An Account</a>
-                <a href="login1.html" class="btn btn-secondary">Log In</a>
+                <a href="register" class="btn btn-primary">Create An Account</a>
+                <a href="login1" class="btn btn-secondary">Log In</a>
             </div>
         </div>
     </header>

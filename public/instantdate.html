@@ -1,143 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Instant Date</title>
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    .user-card-container {
-      display: flex;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      justify-content: start;
-      padding-left: 10px; /* Adjust for padding */
-    }
-    .user-card {
-      position: relative;
-      width: 500px; /* Increased width for better visibility */
-      margin: 10px; /* Adjusted margin for better spacing */
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      text-align: center;
-      scroll-snap-align: start;
-      flex: 0 0 auto;
-    }
-    .user-card img {
-      width: 100%;
-      height: 500px; /* Increased height for better visibility */
-      object-fit: cover;
-    }
-    .user-info {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(0, 0, 0, 0.5);
-      color: white;
-      padding: 10px;
-      text-align: left;
-      font-size: 0.9em;
-    }
-  </style>
-  <script>
-    // Subscription check script
-    document.addEventListener('DOMContentLoaded', () => {
-      fetch('/api/check-subscription')
-        .then(response => response.json())
-        .then(data => {
-          if (!data.hasAccess) {
-            window.location.href = '/payment.html';
-          }
-        })
-        .catch(error => {
-          console.error('Error checking subscription status:', error);
-          window.location.href = '/payment.html';
-        });
-    });
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profiles - Find One by Click</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .profile-card {
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .profile-card img {
+            width: 100%;
+            height: auto;
+        }
+        .profile-info {
+            padding: 15px;
+        }
+        .profile-info h2 {
+            margin: 10px 0;
+            font-size: 24px;
+        }
+        .profile-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes heartPopup {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+        .actions {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+        .actions button {
+            background-color: #007bff;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .actions button:hover {
+            background-color: #0056b3;
+        }
+        .heart-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            color: #ff6347;
+            animation: heartPopup 1s ease-in-out;
+            opacity: 0;
+        }
+        /* Bottom Navigation Styles */
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: hsl(0, 66%, 64%);
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        .bottom-nav a {
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .bottom-nav a i {
+            display: block;
+            font-size: 20px;
+        }
+        .bottom-nav a.active {
+            color: rgb(0, 0, 0);
+        }
+    </style>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a> |
-    <a href="daily-discovery.html">daily-discovery</a> |
-    <a href="fitness-buddies.html">fitness-buddies</a> |
-    <a href="relationship-goals.html">relationship-goals</a> |
-    <a href="quick-matches.html">quick-matches</a> |
-    <a href="login.html">Logout</a>
-  </nav>
-  <hr>
-  <header></header>
-  <main>
-    <section class="instant-date-section">
-      <h2>Find Someone Free to Meet Now</h2>
-      <div id="instant-date-container" class="user-card-container">
-        <!-- Available users will be dynamically loaded here -->
-      </div>
-    </section>
-  </main>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchCurrentlyOnlineUsers();
-    });
+    <div class="container">
+        <h1>User Profiles</h1>
+        <div id="profiles-container">
+            <!-- Profile cards will be dynamically inserted here -->
+        </div>
+    </div>
+    <nav class="bottom-nav">
+        <a href="/">Home</a> | <a href="/profile">Profile</a> | <a href="/matches">Matches</a> | <a href="/nearby">Nearby Users</a> | <a href="/chatlist">Messages</a> | <a href="/login">Logout</a>
+    </nav>
 
-    function fetchCurrentlyOnlineUsers() {
-      fetch('/api/currently-online-users')
-        .then(response => response.json())
-        .then(users => {
-          const container = document.getElementById('instant-date-container');
-          container.innerHTML = '';
-          users.forEach(user => {
-            const userElement = document.createElement('div');
-            userElement.className = 'user-card';
-            userElement.innerHTML = `
-              <img src="${user.profilePicture}" alt="${user.username}" onclick="startChat('${user.id}')">
-              <div class="user-info">
-                <h2>${user.username}</h2>
-                <p><strong>Age:</strong> ${user.age || 'Not Provided'}</p>
-                <p><strong>Interests:</strong> ${user.interests || 'Not Provided'}</p>
-              </div>
-            `;
-            container.appendChild(userElement);
-          });
-        })
-        .catch(error => console.error('Error fetching users:', error));
-    }
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch(`/api/profiles-users`)
+                .then(response => response.json())
+                .then(users => {
+                    const container = document.getElementById('profiles-container');
+                    users.forEach(user => {
+                        const profileCard = document.createElement('div');
+                        profileCard.className = 'profile-card';
+                        
+                        const profileImage = user.profilePicture || 'default-profile.png';
+                        profileCard.innerHTML = `
+                                                    <a href="/messages.html?userId=${user.id}&username=${encodeURIComponent(user.username)}">
+                            <img src="${profileImage}" alt="Profile Image">
+                            <div class="profile-info">
+                                <h2>${user.username}</h2>
+                                <p>Age: ${user.age}</p>
+                                <p>Location: ${user.location}</p>
+                                <p>Interests: ${user.interests}</p>
+                            </div>
+                            <div class="actions">
+                                <button onclick="likeProfile(${user.id}, this)">Like</button>
+                                <button onclick="dislikeProfile(${user.id}, this)">Dislike</button>
+                                <div class="heart-popup" id="heart-popup-${user.id}">&#10084;</div>
+                                
+                            </div>
+                        `;
+                        container.appendChild(profileCard);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching user profiles:', error);
+                });
+        });
 
-    function startChat(userId) {
-      window.location.href = `/messages.html?userId=${userId}`;
-    }
+        function likeProfile(userId, button) {
+            fetch('/api/like', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            })
+            .then(response => {
+                if (response.ok) {
+                    showHeartPopup(userId);
+                }
+            })
+            .catch(error => {
+                console.error('Error liking profile:', error);
+            });
+        }
 
-    // Swiping functionality
-    let isDown = false;
-    let startX;
-    let scrollLeft;
+        function dislikeProfile(userId, button) {
+            fetch('/api/dislike', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            })
+            .then(response => {
+                if (response.ok) {
+                    showHeartPopup(userId);
+                }
+            })
+            .catch(error => {
+                console.error('Error disliking profile:', error);
+            });
+        }
 
-    const container = document.querySelector('.user-card-container');
-    container.addEventListener('mousedown', (e) => {
-      isDown = true;
-      container.classList.add('active');
-      startX = e.pageX - container.offsetLeft;
-      scrollLeft = container.scrollLeft;
-    });
-    container.addEventListener('mouseleave', () => {
-      isDown = false;
-      container.classList.remove('active');
-    });
-    container.addEventListener('mouseup', () => {
-      isDown = false;
-      container.classList.remove('active');
-    });
-    container.addEventListener('mousemove', (e) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = e.pageX - container.offsetLeft;
-      const walk = (x - startX) * 3; //scroll-fast
-      container.scrollLeft = scrollLeft - walk;
-    });
-  </script>
+        function showHeartPopup(userId) {
+            const popup = document.getElementById(`heart-popup-${userId}`);
+            popup.style.opacity = 1;
+            setTimeout(() => {
+                popup.style.opacity = 0;
+            }, 1000);
+        }
+    </script>
 </body>
 </html>

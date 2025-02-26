@@ -69,7 +69,13 @@ const User = sequelize.define('User', {
   },
   interests: {
     type: DataTypes.TEXT,
-    allowNull: true
+    allowNull: true,
+    get() {
+      return this.getDataValue('interests') ? JSON.parse(this.getDataValue('interests')) : [];
+    },
+    set(val) {
+      this.setDataValue('interests', JSON.stringify(val));
+    }
   },
   instantDate: {
     type: DataTypes.BOOLEAN,
@@ -104,6 +110,14 @@ const User = sequelize.define('User', {
   theme: {
     type: DataTypes.STRING,
     defaultValue: 'light'
+  },
+    latitude: {
+    type: DataTypes.FLOAT,
+    allowNull: true
+  },
+  longitude: {
+    type: DataTypes.FLOAT,
+    allowNull: true
   },
   language: {
     type: DataTypes.STRING,
@@ -171,10 +185,13 @@ const Message = sequelize.define('Message', {
     allowNull: false,
     defaultValue: Sequelize.NOW
   },
-  messageType: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    defaultValue: 'text' // Default messageType is 'text'
+  read: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  favorite: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 });
 
@@ -271,6 +288,11 @@ app.get('/register', (req, res) => {
 // Route to serve the login.html file
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Route to serve the login.html file
+app.get('/login1', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login1.html'));
 });
 
 // Route to serve the profile.html file
@@ -653,35 +675,115 @@ app.post('/api/send-message', requireLogin, async (req, res) => {
     }
 });
 
-// Fetch the chat list for a user
+// Fetch the chat list for a user with filters and unread message count
 app.get('/api/chat-list', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const { filter } = req.query;
+
+  try {
+    let whereClause = {
+      [Op.or]: [
+        { fromUserId: userId },
+        { toUserId: userId }
+      ]
+    };
+
+    if (filter === 'unread') {
+      whereClause = {
+        ...whereClause,
+        read: false // Assuming 'read' is a boolean field in Message model indicating if the message is read
+      };
+    } else if (filter === 'favorites') {
+      whereClause = {
+        ...whereClause,
+        favorite: true // Assuming 'favorite' is a boolean field in Message model indicating if the message is favorited
+      };
+    }
+
+    const messages = await Message.findAll({
+      where: whereClause,
+      attributes: ['fromUserId', 'toUserId', 'read']
+    });
+
+    const chatUserIds = new Set();
+    const unreadCounts = {};
+
+    messages.forEach(msg => {
+      if (msg.fromUserId != userId) {
+        chatUserIds.add(msg.fromUserId);
+        if (!msg.read) {
+          unreadCounts[msg.fromUserId] = (unreadCounts[msg.fromUserId] || 0) + 1;
+        }
+      }
+      if (msg.toUserId != userId) {
+        chatUserIds.add(msg.toUserId);
+        if (!msg.read) {
+          unreadCounts[msg.toUserId] = (unreadCounts[msg.toUserId] || 0) + 1;
+        }
+      }
+    });
+
+    const chatUsers = await User.findAll({
+      where: { id: Array.from(chatUserIds) },
+      attributes: ['id', 'username', 'profilePicture']
+    });
+
+    res.json(chatUsers.map(user => ({
+      ...user.toJSON(),
+      unreadCount: unreadCounts[user.id] || 0
+    })));
+  } catch (error) {
+    console.error('Error fetching chat list:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Mark messages as read
+app.post('/api/mark-as-read', requireLogin, async (req, res) => {
+  const { fromUserId } = req.body;
+  const userId = req.session.userId;
+
+  try {
+    await Message.update(
+      { read: true },
+      {
+        where: {
+          fromUserId,
+          toUserId: userId,
+          read: false
+        }
+      }
+    );
+    res.send('Messages marked as read');
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Toggle favorite status
+app.post('/api/toggle-favorite', requireLogin, async (req, res) => {
+  const { chatUserId, isFavorite } = req.body;
   const userId = req.session.userId;
 
   try {
     const messages = await Message.findAll({
       where: {
         [Op.or]: [
-          { fromUserId: userId },
-          { toUserId: userId }
+          { fromUserId: userId, toUserId: chatUserId },
+          { fromUserId: chatUserId, toUserId: userId }
         ]
-      },
-      attributes: ['fromUserId', 'toUserId']
+      }
     });
 
-    const chatUserIds = new Set();
-    messages.forEach(msg => {
-      if (msg.fromUserId != userId) chatUserIds.add(msg.fromUserId);
-      if (msg.toUserId != userId) chatUserIds.add(msg.toUserId);
-    });
+    for (const message of messages) {
+      message.favorite = isFavorite;
+      await message.save();
+    }
 
-    const chatUsers = await User.findAll({
-      where: { id: Array.from(chatUserIds) },
-      attributes: ['id', 'username']
-    });
-
-    res.json(chatUsers);
+    res.send('Favorite status updated');
   } catch (error) {
-    console.error('Error fetching chat list:', error);
+    console.error('Error toggling favorite status:', error);
     res.status(500).send('Internal Server Error');
   }
 });
@@ -2444,40 +2546,72 @@ app.post('/api/add-response', (req, res) => {
     res.json({ success: true });
 });
 
-
-const Like = sequelize.define('Like', {
+// Define the BlockedUser model
+const BlockedUser = sequelize.define('BlockedUser', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
   userId: {
     type: DataTypes.INTEGER,
     allowNull: false
   },
-  likedUserId: {
+  blockedUserId: {
     type: DataTypes.INTEGER,
     allowNull: false
   }
 });
 
-const Dislike = sequelize.define('Dislike', {
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  dislikedUserId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  }
-});
+// Sync the model with the database
+BlockedUser.sync();
 
-const Notification = sequelize.define('Notification', {
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  message: {
-    type: DataTypes.STRING,
-    allowNull: false
-  }
-});
-
+  // Define the Like model
+  const Like = sequelize.define('Like', {
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    likedUserId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    }
+  });
+  
+  // Define the Dislike model
+  const Dislike = sequelize.define('Dislike', {
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    dislikedUserId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    }
+  });
+  
+  // Define the Notification model
+  const Notification = sequelize.define('Notification', {
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    senderId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    message: {
+      type: DataTypes.STRING,
+      allowNull: false
+    }
+  });
+  
+  // Define associations
+  User.hasMany(Notification, { foreignKey: 'userId' });
+  Notification.belongsTo(User, { foreignKey: 'userId', as: 'receiver' });
+  User.hasMany(Notification, { foreignKey: 'senderId' });
+  Notification.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
+  
 sequelize.sync({ force: false }).then(() => {
   console.log('Database & tables created!');
 });
@@ -2492,14 +2626,16 @@ app.get('/api/nearby-users', async (req, res) => {
   }
 });
 
-app.post('/api/like', async (req, res) => {
+
+// Like a user
+app.post('/api/like', requireLogin, async (req, res) => {
   const { userId } = req.body;
   try {
     await Like.create({ userId: req.session.userId, likedUserId: userId });
     const likedUser = await User.findByPk(userId);
     const username = likedUser ? likedUser.username : 'Unknown User';
     const message = `${req.session.username} liked your profile.`;
-    await Notification.create({ userId, message });
+    await Notification.create({ userId, senderId: req.session.userId, message });
     res.send('Liked');
   } catch (error) {
     console.error('Error liking user:', error);
@@ -2507,14 +2643,15 @@ app.post('/api/like', async (req, res) => {
   }
 });
 
-app.post('/api/dislike', async (req, res) => {
+// Dislike a user
+app.post('/api/dislike', requireLogin, async (req, res) => {
   const { userId } = req.body;
   try {
     await Dislike.create({ userId: req.session.userId, dislikedUserId: userId });
     const dislikedUser = await User.findByPk(userId);
     const username = dislikedUser ? dislikedUser.username : 'Unknown User';
     const message = `${req.session.username} disliked your profile.`;
-    await Notification.create({ userId, message });
+    await Notification.create({ userId, senderId: req.session.userId, message });
     res.send('Disliked');
   } catch (error) {
     console.error('Error disliking user:', error);
@@ -2522,23 +2659,32 @@ app.post('/api/dislike', async (req, res) => {
   }
 });
 
-app.get('/api/likes-dislikes', async (req, res) => {
-  try {
-    const totalLikes = await Like.count({ where: { likedUserId: req.session.userId } });
-    const totalDislikes = await Dislike.count({ where: { dislikedUserId: req.session.userId } });
-    const notifications = await Notification.findAll({ where: { userId: req.session.userId }, order: [['createdAt', 'DESC']] });
-    res.json({
-      totalLikes,
-      totalDislikes,
-      notifications: notifications.map(notification => ({ message: notification.message }))
-    });
-  } catch (error) {
-    console.error('Error fetching likes and dislikes:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-
+// Fetch likes and dislikes notifications
+  app.get('/api/likes-dislikes', requireLogin, async (req, res) => {
+    try {
+      const totalLikes = await Like.count({ where: { likedUserId: req.session.userId } });
+      const totalDislikes = await Dislike.count({ where: { dislikedUserId: req.session.userId } });
+      const notifications = await Notification.findAll({ 
+        where: { userId: req.session.userId }, 
+        include: [{ model: User, as: 'sender', attributes: ['username'] }],
+        order: [['createdAt', 'DESC']] 
+      });
+  
+      res.json({
+        totalLikes,
+        totalDislikes,
+        notifications: notifications.map(notification => ({
+          message: notification.message,
+          senderId: notification.senderId,
+          senderUsername: notification.sender.username
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching likes and dislikes:', error);
+      res.status(500).send('Internal Server Error');
+    }
+  });
+  
 // In-memory data storage for simplicity
 let users = [
     { id: 1, username: 'User1', age: 25, gender: 'Male', bio: 'Bio1', interests: 'Music, Sports', location: 'Blantyre', profilePicture: 'path/to/image1.jpg' },
@@ -2559,6 +2705,167 @@ app.get('/api/location-matches', (req, res) => {
     res.json(locationMatches);
 });
 
+
+// Endpoint to send a voice note
+app.post('/api/send-voice-note', upload.single('audio'), async (req, res) => {
+    const { toUserId } = req.body;
+    const fromUserId = req.session.userId; // Assume userId is stored in session
+    const filePath = req.file.path;
+
+    try {
+        const newMessage = await Message.create({
+            fromUserId,
+            toUserId,
+            content: filePath,
+            messageType: 'voice'
+        });
+        res.status(201).json(newMessage);
+    } catch (error) {
+        console.error('Error sending voice note:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// Fetch user profiles based on different interests and opposite genders
+app.get('/api/profiles-users', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+
+    const oppositeGender = user.gender === 'male' ? 'female' : 'male';
+
+    const profiles = await User.findAll({
+      attributes: ['id', 'username', 'profilePicture', 'age', 'location', 'interests'],
+      where: {
+        gender: oppositeGender,
+        id: {
+          [Op.ne]: userId
+        },
+        interests: {
+          [Op.notIn]: user.interests ? JSON.parse(user.interests) : []
+        }
+      }
+    });
+
+    res.json(profiles);
+  } catch (error) {
+    console.error('Error fetching user profiles:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Fetch user profiles based on location
+app.get('/api/location-matches', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+
+    const matches = await User.findAll({
+      attributes: [
+        'id', 'username', 'profilePicture', 'age', 'gender', 'location', 'bio', 'interests',
+        [sequelize.literal(`(6371 * acos(cos(radians(${user.latitude})) * cos(radians(latitude)) * cos(radians(longitude) - radians(${user.longitude})) + sin(radians(${user.latitude})) * sin(radians(latitude))))`), 'distance']
+      ],
+      where: {
+        gender: user.gender === 'male' ? 'female' : 'male',
+        interests: {
+          [Op.notIn]: user.interests
+        },
+        id: {
+          [Op.ne]: userId
+        }
+      },
+      order: sequelize.col('distance')
+    });
+
+    res.json(matches);
+  } catch (error) {
+    console.error('Error fetching location matches:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Fetch nearby users
+app.get('/api/find-nearby-users', async (req, res) => {
+  const userId = req.session.userId;
+  const distance = parseFloat(req.query.distance);
+  const ageRange = req.query.ageRange.split('-').map(Number);
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+
+    const nearbyUsers = await User.findAll({
+      attributes: [
+        'id', 'username', 'profilePicture', 'age', 'latitude', 'longitude',
+        [sequelize.literal(`(6371 * acos(cos(radians(${user.latitude})) * cos(radians(latitude)) * cos(radians(longitude) - radians(${user.longitude})) + sin(radians(${user.latitude})) * sin(radians(latitude))))`), 'distance']
+      ],
+      where: {
+        age: {
+          [Op.between]: ageRange
+        },
+        [Op.and]: [
+          sequelize.literal(`(6371 * acos(cos(radians(${user.latitude})) * cos(radians(latitude)) * cos(radians(longitude) - radians(${user.longitude})) + sin(radians(${user.latitude})) * sin(radians(latitude)))) <= ${distance}`)
+        ],
+        id: {
+          [Op.ne]: userId
+        }
+      },
+      order: sequelize.col('distance')
+    });
+
+    res.json(nearbyUsers);
+  } catch (error) {
+    console.error('Error fetching nearby users:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Fetch nearby users of the opposite gender
+app.get('/api/nearby-users', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const { latitude, longitude } = req.query;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+
+    const oppositeGender = user.gender === 'male' ? 'female' : 'male';
+
+    const nearbyUsers = await User.findAll({
+      attributes: [
+        'id', 'username', 'profilePicture', 'age', 'gender', 'location', 'bio', 'interests',
+        [sequelize.literal(`(6371 * acos(cos(radians(${latitude})) * cos(radians(latitude)) * cos(radians(longitude) - radians(${longitude})) + sin(radians(${latitude})) * sin(radians(latitude))))`), 'distance']
+      ],
+      where: {
+        gender: oppositeGender,
+        id: {
+          [Op.ne]: userId
+        },
+        [Op.and]: [
+          sequelize.literal(`(6371 * acos(cos(radians(${latitude})) * cos(radians(latitude)) * cos(radians(longitude) - radians(${longitude})) + sin(radians(${latitude})) * sin(radians(latitude)))) <= 50`) // Within 50 km radius
+        ]
+      },
+      order: sequelize.col('distance')
+    });
+
+    res.json(nearbyUsers);
+  } catch (error) {
+    console.error('Error fetching nearby users:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
 // Start the server
 const port = 3000;

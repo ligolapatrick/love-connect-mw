@@ -66,6 +66,7 @@
             margin: 0;
             font-size: 16px;
             color: #333;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -88,7 +89,6 @@
             <!-- Notifications will be dynamically loaded here -->
         </div>
     </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             fetch('/api/likes-dislikes')
@@ -101,7 +101,7 @@
                     data.notifications.forEach(notification => {
                         const notificationElement = document.createElement('div');
                         notificationElement.className = 'notification';
-                        notificationElement.innerHTML = `<p>${notification.message}</p>`;
+                        notificationElement.innerHTML = `<p onclick="redirectToChat(${notification.senderId})">${notification.senderUsername} ${notification.message}</p>`;
                         notificationsContainer.appendChild(notificationElement);
                     });
                 })
@@ -109,6 +109,12 @@
                     console.error('Error fetching likes and dislikes:', error);
                 });
         });
+    
+        function redirectToChat(userId) {
+            window.location.href = `messages.html?userId=${userId}`;
+        }
+        
     </script>
+    
 </body>
 </html>
