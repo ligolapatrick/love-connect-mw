@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to LoveConnect</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="manifest" href="/manifest.json"> <!-- Link to the manifest file -->
     <style>
         body, html {
@@ -98,7 +98,25 @@
     font-weight: bold;
     transition: color 0.3s;
 }
-
+.menu-icon {
+            display: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .dropdown-content {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+        }
+        .dropdown-content li {
+            margin: 0 10px;
+        }
+        .dropdown-content a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
 .dropdown-content a:hover {
     color: #ff6600;
 }
@@ -180,32 +198,31 @@ footer {
 }
 
 @media (max-width: 768px) {
-    .header-message {
-        font-size: 1.8em;
-    }
-    .nav-container {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .menu-icon {
-        display: block;
-    }
-    .dropdown-content {
-        flex-direction: column;
-        display: none;
-        width: 100%;
-        background-color: rgba(0, 0, 0, 0.8);
-    }
-    .dropdown-content li {
-        text-align: center;
-        margin: 10px 0;
-    }
-    .dropdown-content a {
-        display: block;
-        padding: 10px;
-    }
-}
-
+            .header-message {
+                font-size: 1.8em;
+            }
+            .nav-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .menu-icon {
+                display: block;
+            }
+            .dropdown-content {
+                flex-direction: column;
+                display: none;
+                width: 100%;
+                background-color: rgba(0, 0, 0, 0.8);
+            }
+            .dropdown-content li {
+                text-align: center;
+                margin: 10px 0;
+            }
+            .dropdown-content a {
+                display: block;
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -214,14 +231,14 @@ footer {
         <div class="hero-content">
             <div class="nav-container">
                 <a href="javascript:void(0);" class="menu-icon" onclick="toggleMenu()">
-                    <img src="icons/menu.png" alt="Menu Icon">
+                    <i class="fas fa-bars"></i>
                 </a>
                 <ul id="dropdownMenu" class="dropdown-content">
-                    <li><a href="user-guides">User guides</a></li>
+                    <li><a href="user-guides.html">User guides</a></li>
                     <li><a href="safety-tips.html">Safety</a></li>
                     <li><a href="contacts.html">Contact Us</a></li>
-                    <li><a href="register">Register</a></li>
-                    <li><a href="login1">Login</a></li>
+                    <li><a href="registration.html">Register</a></li>
+                    <li><a href="login1.html">Login</a></li>
                     <li><a href="about-app.html">About</a></li>
                 </ul>
                 <img src="images/logo.png" alt="Logo" class="logo">
@@ -241,7 +258,7 @@ footer {
         <p>&copy; 2025 LoveConnect. All rights reserved.</p>
     </footer>
     <script>
-        function toggleMenu() {
+         function toggleMenu() {
             var x = document.getElementById("dropdownMenu");
             if (x.style.display === "block") {
                 x.style.display = "none";
@@ -249,7 +266,6 @@ footer {
                 x.style.display = "block";
             }
         }
-
         // Register the service worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js')
