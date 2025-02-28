@@ -150,6 +150,11 @@ const User = sequelize.define('User', {
   autoDownload: {
     type: DataTypes.STRING,
     defaultValue: 'wifi'
+  },
+  role: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'user', // Defaults to 'user', admin accounts can manually be set to 'admin'
   }
 });
 
@@ -520,26 +525,6 @@ app.post('/profile', upload.single('profilePicture'), async (req, res) => {
   }
 });
 
-// Route to get matches for a user
-app.get('/api/matches', requireLogin, async (req, res) => {
-  const userId = req.session.userId;
-  const user = await User.findByPk(userId);
-  if (user) {
-    const matches = await User.findAll({
-      where: {
-        id: { [Sequelize.Op.ne]: userId },
-        interests: { [Sequelize.Op.like]: `%${user.interests}%` },
-        age: {
-          [Sequelize.Op.between]: [user.age - 2, user.age + 2]
-        }
-      }
-    });
-    res.json(matches);
-  } else {
-    res.send('User not found.');
-  }
-});
-
 app.get('/api/currently-online-users', async (req, res) => {
   try {
     const users = await User.findAll({
@@ -691,36 +676,33 @@ app.get('/api/chat-list', requireLogin, async (req, res) => {
     if (filter === 'unread') {
       whereClause = {
         ...whereClause,
-        read: false // Assuming 'read' is a boolean field in Message model indicating if the message is read
+        read: false
       };
     } else if (filter === 'favorites') {
       whereClause = {
         ...whereClause,
-        favorite: true // Assuming 'favorite' is a boolean field in Message model indicating if the message is favorited
+        favorite: true
       };
     }
 
     const messages = await Message.findAll({
       where: whereClause,
-      attributes: ['fromUserId', 'toUserId', 'read']
+      attributes: ['fromUserId', 'toUserId', 'content', 'createdAt', 'read']
     });
 
     const chatUserIds = new Set();
     const unreadCounts = {};
+    const lastMessageTimes = {};
 
     messages.forEach(msg => {
-      if (msg.fromUserId != userId) {
-        chatUserIds.add(msg.fromUserId);
-        if (!msg.read) {
-          unreadCounts[msg.fromUserId] = (unreadCounts[msg.fromUserId] || 0) + 1;
-        }
+      const otherUserId = msg.fromUserId === userId ? msg.toUserId : msg.fromUserId;
+      chatUserIds.add(otherUserId);
+      if (!msg.read && msg.toUserId === userId) {
+        unreadCounts[otherUserId] = (unreadCounts[otherUserId] || 0) + 1;
       }
-      if (msg.toUserId != userId) {
-        chatUserIds.add(msg.toUserId);
-        if (!msg.read) {
-          unreadCounts[msg.toUserId] = (unreadCounts[msg.toUserId] || 0) + 1;
-        }
-      }
+      lastMessageTimes[otherUserId] = lastMessageTimes[otherUserId]
+        ? new Date(Math.max(new Date(lastMessageTimes[otherUserId]), new Date(msg.createdAt)))
+        : msg.createdAt;
     });
 
     const chatUsers = await User.findAll({
@@ -730,7 +712,8 @@ app.get('/api/chat-list', requireLogin, async (req, res) => {
 
     res.json(chatUsers.map(user => ({
       ...user.toJSON(),
-      unreadCount: unreadCounts[user.id] || 0
+      unreadCount: unreadCounts[user.id] || 0,
+      lastMessageTime: lastMessageTimes[user.id] || null
     })));
   } catch (error) {
     console.error('Error fetching chat list:', error);
@@ -2546,6 +2529,475 @@ app.post('/api/add-response', (req, res) => {
     res.json({ success: true });
 });
 
+
+
+// Define the Post model
+const Post = sequelize.define('Post', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id'
+    },
+    allowNull: false
+  },
+  image1: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  image2: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  caption: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  }
+});
+
+// Define the Comment model
+const Comment = sequelize.define('Comment', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  postId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: 'Posts', // Avoid circular references by specifying table name
+      key: 'id'
+    },
+    allowNull: false
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: 'Users', // Use table name
+      key: 'id'
+    },
+    allowNull: false
+  },
+  parentCommentId: {
+    type: DataTypes.INTEGER,
+    allowNull: true // Null for top-level comments
+  },
+  text: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  }
+});
+
+// Define Comment associations
+Comment.associate = (models) => {
+  Comment.hasMany(models.Comment, {
+    as: 'Replies',
+    foreignKey: 'parentCommentId',
+    onDelete: 'CASCADE'
+  });
+
+  Comment.belongsTo(models.Comment, {
+    as: 'Parent',
+    foreignKey: 'parentCommentId',
+    onDelete: 'CASCADE'
+  });
+
+  Comment.belongsTo(models.Post, {
+    foreignKey: 'postId',
+    onDelete: 'CASCADE'
+  });
+
+  Comment.belongsTo(models.User, {
+    foreignKey: 'userId',
+    onDelete: 'CASCADE'
+  });
+};
+
+module.exports = { Comment };
+
+
+// Define the PostLike model
+const PostLike = sequelize.define('PostLike', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  postId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Post,
+      key: 'id'
+    },
+    allowNull: false
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id'
+    },
+    allowNull: false
+  }
+});
+
+// Define the PostDislike model
+const PostDislike = sequelize.define('PostDislike', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  postId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Post,
+      key: 'id'
+    },
+    allowNull: false
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id'
+    },
+    allowNull: false
+  }
+});
+
+// Initialize associations
+User.hasMany(Post, { foreignKey: 'userId' });
+Post.belongsTo(User, { foreignKey: 'userId' });
+
+Post.hasMany(Comment, { foreignKey: 'postId' });
+Comment.belongsTo(Post, { foreignKey: 'postId' });
+
+Comment.belongsTo(User, { foreignKey: 'userId' });
+
+Comment.hasMany(Comment, { as: 'Replies', foreignKey: 'parentCommentId' });
+Comment.belongsTo(Comment, { as: 'Parent', foreignKey: 'parentCommentId' });
+
+Post.hasMany(PostLike, { foreignKey: 'postId' });
+Post.hasMany(PostDislike, { foreignKey: 'postId' });
+PostLike.belongsTo(Post, { foreignKey: 'postId' });
+PostDislike.belongsTo(Post, { foreignKey: 'postId' });
+
+PostLike.belongsTo(User, { foreignKey: 'userId' });
+PostDislike.belongsTo(User, { foreignKey: 'userId' });
+
+// Route to get posts created by the logged-in user
+app.get('/api/get-user-posts', async (req, res) => {
+  try {
+    const { userId } = req.session; // Ensure the userId is in the session
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'User not authenticated.' });
+    }
+
+    const posts = await Post.findAll({
+      where: { userId }, // Only return posts by the logged-in user
+      include: [
+        { model: User, attributes: ['username'] },
+        { model: Comment, include: [User] },
+        { model: PostLike },
+        { model: PostDislike }
+      ],
+      order: [['createdAt', 'DESC']] // Optional: Order by newest first
+    });
+
+    const formattedPosts = posts.map(post => ({
+      id: post.id,
+      userId: post.userId,
+      image1: post.image1,
+      image2: post.image2,
+      caption: post.caption,
+      username: post.User.username,
+      likes: post.PostLikes.length,
+      dislikes: post.PostDislikes.length,
+      comments: post.Comments.map(comment => ({
+        id: comment.id,
+        text: comment.text,
+        username: comment.User.username
+      }))
+    }));
+
+    res.json(formattedPosts);
+  } catch (error) {
+    console.error('Error fetching user posts:', error);
+    res.status(500).json({ success: false, error: 'Error fetching user posts' });
+  }
+});
+
+
+// Route to get all public posts
+app.get('/api/get-public-posts', async (req, res) => {
+  try {
+    const posts = await Post.findAll({
+      include: [
+        { model: User, attributes: ['username'] },
+        { model: Comment, include: [User] },
+        { model: PostLike },
+        { model: PostDislike }
+      ],
+      order: [['createdAt', 'DESC']] // Optional: Order by newest first
+    });
+
+    const formattedPosts = posts.map(post => ({
+      id: post.id,
+      userId: post.userId,
+      image1: post.image1,
+      image2: post.image2,
+      caption: post.caption,
+      username: post.User.username,
+      likes: post.PostLikes.length,
+      dislikes: post.PostDislikes.length,
+      comments: post.Comments.map(comment => ({
+        id: comment.id,
+        text: comment.text,
+        username: comment.User.username
+      }))
+    }));
+
+    res.json(formattedPosts);
+  } catch (error) {
+    console.error('Error fetching public posts:', error);
+    res.status(500).json({ success: false, error: 'Error fetching public posts' });
+  }
+});
+
+
+// Route to like a post
+app.post('/api/like-post/:postId', async (req, res) => {
+  try {
+    const { userId } = req.session; // Logged-in user ID
+    const { postId } = req.params;
+
+    const existingLike = await PostLike.findOne({ where: { userId, postId } });
+    const existingDislike = await PostDislike.findOne({ where: { userId, postId } });
+
+    if (existingLike) {
+      // Remove like if it exists
+      await existingLike.destroy();
+      return res.json({ message: 'Like removed.' });
+    }
+
+    if (existingDislike) {
+      // Remove dislike if it exists
+      await existingDislike.destroy();
+    }
+
+    // Add new like
+    await PostLike.create({ userId, postId });
+    res.json({ message: 'Post liked.' });
+  } catch (error) {
+    console.error('Error liking post:', error);
+    res.status(500).json({ error: 'Error liking post' });
+  }
+});
+
+// Route to dislike a post
+app.post('/api/dislike-post/:postId', async (req, res) => {
+  try {
+    const { userId } = req.session; // Logged-in user ID
+    const { postId } = req.params;
+
+    const existingDislike = await PostDislike.findOne({ where: { userId, postId } });
+    const existingLike = await PostLike.findOne({ where: { userId, postId } });
+
+    if (existingDislike) {
+      // Remove dislike if it exists
+      await existingDislike.destroy();
+      return res.json({ message: 'Dislike removed.' });
+    }
+
+    if (existingLike) {
+      // Remove like if it exists
+      await existingLike.destroy();
+    }
+
+    // Add new dislike
+    await PostDislike.create({ userId, postId });
+    res.json({ message: 'Post disliked.' });
+  } catch (error) {
+    console.error('Error disliking post:', error);
+    res.status(500).json({ error: 'Error disliking post' });
+  }
+});
+
+// Route to comment on a post
+app.post('/api/comment-post/:postId', async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const { postId } = req.params;
+    const { comment } = req.body;
+
+    const newComment = await Comment.create({ postId, userId, text: comment });
+    res.json({ success: true, comment: newComment });
+  } catch (error) {
+    console.error('Error posting comment:', error);
+    res.status(500).json({ success: false, error: 'Error posting comment' });
+  }
+});
+
+app.post('/api/reply-comment/:commentId', async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const { commentId } = req.params;
+    const { comment } = req.body;
+
+    const parentComment = await Comment.findByPk(commentId);
+    if (!parentComment) {
+      return res.status(404).json({ success: false, error: 'Parent comment not found' });
+    }
+
+    const newReply = await Comment.create({
+      postId: parentComment.postId,
+      userId,
+      parentCommentId: commentId,
+      text: comment
+    });
+
+    res.json({ success: true, reply: newReply });
+  } catch (error) {
+    console.error('Error posting reply:', error);
+    res.status(500).json({ success: false, error: 'Error posting reply' });
+  }
+});
+
+// Route to delete a post
+app.delete('/api/delete-post/:postId', async (req, res) => {
+  try {
+    const { userId } = req.session; // Assume userId is stored in session
+    const { postId } = req.params;
+
+    const post = await Post.findByPk(postId);
+    if (post.userId !== userId) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    await post.destroy();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    res.status(500).json({ success: false, error: 'Error deleting post' });
+  }
+});
+
+// Route to create a post
+app.post('/api/create-post', upload.fields([{ name: 'image1' }, { name: 'image2' }]), async (req, res) => {
+  try {
+    const { userId } = req.session; // Ensure the userId is in the session
+    const { caption } = req.body;
+
+    // Ensure image paths are stored as relative URLs
+    const image1 = req.files['image1'] ? `/uploads/${req.files['image1'][0].filename}` : null;
+    const image2 = req.files['image2'] ? `/uploads/${req.files['image2'][0].filename}` : null;
+
+    const newPost = await Post.create({ userId, image1, image2, caption });
+    res.json({ success: true, post: newPost });
+  } catch (error) {
+    console.error('Error creating post:', error);
+    res.status(500).json({ success: false, error: 'Error creating post' });
+  }
+});
+
+app.get('/api/get-comments/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const comments = await Comment.findAll({
+      where: { postId },
+      include: [{ model: User, attributes: ['username'] }],
+      order: [['createdAt', 'DESC']]
+    });
+
+    const formattedComments = comments.map(comment => ({
+      id: comment.id,
+      text: comment.text,
+      username: comment.User.username,
+      createdAt: comment.createdAt
+    }));
+    res.json(formattedComments);
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    res.status(500).json({ success: false, error: 'Error fetching comments' });
+  }
+});
+// Recent Posts
+app.get('/api/posts/recent', async (req, res) => {
+  try {
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+    const posts = await Post.findAll({
+      where: { createdAt: { [Op.gte]: twoWeeksAgo } },
+      include: [
+        { model: User, attributes: ['username'] },
+        { model: PostLike },
+        { model: PostDislike }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json(posts);
+  } catch (error) {
+    console.error('Error fetching recent posts:', error);
+    res.status(500).json({ error: 'Error fetching recent posts' });
+  }
+});
+
+// Old Posts
+app.get('/api/posts/old', async (req, res) => {
+  try {
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+    const posts = await Post.findAll({
+      where: { createdAt: { [Op.lt]: twoWeeksAgo } },
+      include: [
+        { model: User, attributes: ['username'] },
+        { model: PostLike },
+        { model: PostDislike }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json(posts);
+  } catch (error) {
+    console.error('Error fetching old posts:', error);
+    res.status(500).json({ error: 'Error fetching old posts' });
+  }
+});
+
+// Popular Posts
+app.get('/api/posts/popular', async (req, res) => {
+  try {
+    const posts = await Post.findAll({
+      include: [
+        { model: User, attributes: ['username'] },
+        { model: PostLike }
+      ],
+      attributes: {
+        include: [
+          [sequelize.fn('COUNT', sequelize.col('PostLikes.id')), 'likeCount']
+        ]
+      },
+      group: ['Post.id'],
+      having: sequelize.where(sequelize.fn('COUNT', sequelize.col('PostLikes.id')), '>', 50),
+      order: [[sequelize.literal('likeCount'), 'DESC']]
+    });
+
+    res.json(posts);
+  } catch (error) {
+    console.error('Error fetching popular posts:', error);
+    res.status(500).json({ error: 'Error fetching popular posts' });
+  }
+});
+
 // Define the BlockedUser model
 const BlockedUser = sequelize.define('BlockedUser', {
   id: {
@@ -2864,6 +3316,335 @@ app.get('/api/nearby-users', requireLogin, async (req, res) => {
   } catch (error) {
     console.error('Error fetching nearby users:', error);
     res.status(500).send('Internal Server Error');
+  }
+});
+
+// Fetch matches
+app.get('/api/matches', async (req, res) => {
+  const userId = req.session.userId;
+  const user = await User.findByPk(userId);
+  if (user) {
+    const userInterests = JSON.parse(user.interests) || [];
+    const interestConditions = userInterests.map(interest => ({
+      interests: { [Sequelize.Op.like]: `%${interest}%` }
+    }));
+
+    const matches = await User.findAll({
+      where: {
+        id: { [Sequelize.Op.ne]: userId },
+        [Sequelize.Op.or]: interestConditions,
+        age: {
+          [Sequelize.Op.between]: [user.age - 2, user.age + 2]
+        }
+      }
+    });
+    res.json(matches);
+  } else {
+    res.status(404).send('User not found.');
+  }
+});
+
+// Route to get random users
+app.get('/api/get-random-users', async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const genderPreference = user.gender === 'male' ? 'female' : 'male';
+    const randomUsers = await User.findAll({
+      where: {
+        gender: genderPreference,
+        id: { [Sequelize.Op.ne]: userId }
+      },
+      limit: 20,
+      order: Sequelize.literal('random()')
+    });
+
+    res.json(randomUsers);
+  } catch (error) {
+    console.error('Error fetching random users:', error);
+    res.status(500).json({ success: false, error: 'Error fetching random users' });
+  }
+});
+
+app.get('/api/mutual-interests', async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const userInterests = JSON.parse(user.interests || '[]');
+
+    const matches = await User.findAll({
+      where: {
+        id: { [Op.ne]: userId },
+        interests: { [Op.ne]: null },
+      },
+      attributes: ['id', 'username', 'age', 'bio', 'profilePicture', 'interests'],
+    });
+
+    const mutualMatches = matches
+      .map(match => {
+        const matchInterests = JSON.parse(match.interests || '[]');
+        const sharedInterests = userInterests.filter(interest => matchInterests.includes(interest));
+        if (sharedInterests.length > 0) {
+          return { ...match.toJSON(), mutualInterests: sharedInterests };
+        }
+        return null;
+      })
+      .filter(match => match !== null);
+
+    res.json(mutualMatches);
+  } catch (error) {
+    console.error('Error fetching mutual interests:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+// Haversine formula function to calculate distance between two geocoordinates
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const toRad = (value) => (value * Math.PI) / 180;
+  const R = 6371; // Radius of the Earth in kilometers
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in kilometers
+}
+
+// Route to fetch location-based matches
+app.get('/api/location-matches', async (req, res) => {
+  try {
+    const { userId } = req.session; // Get logged-in user ID from the session
+    const user = await User.findByPk(userId);
+
+    if (!user || !user.latitude || !user.longitude) {
+      return res.status(404).json({ success: false, message: 'User location not available' });
+    }
+
+    const maxDistanceKm = 10; // Define maximum distance in kilometers
+
+    // Fetch all users with latitude and longitude who are not the logged-in user
+    const matches = await User.findAll({
+      where: {
+        id: { [Op.ne]: userId }, // Exclude the logged-in user
+        latitude: { [Op.ne]: null },
+        longitude: { [Op.ne]: null },
+      },
+      attributes: ['id', 'username', 'age', 'bio', 'profilePicture', 'latitude', 'longitude'],
+    });
+
+    // Filter users based on distance
+    const locationMatches = matches
+      .map(match => {
+        const distance = calculateDistance(
+          user.latitude,
+          user.longitude,
+          match.latitude,
+          match.longitude
+        );
+        if (distance <= maxDistanceKm) {
+          return {
+            ...match.toJSON(),
+            distance: distance.toFixed(1), // Include distance rounded to one decimal point
+          };
+        }
+        return null;
+      })
+      .filter(match => match !== null); // Remove users outside the max distance
+
+    res.json(locationMatches); // Send filtered matches as response
+  } catch (error) {
+    console.error('Error fetching location matches:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+// Function to calculate distance using the Haversine formula
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const toRad = (value) => (value * Math.PI) / 180; // Convert degrees to radians
+  const R = 6371; // Radius of the Earth in kilometers
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in kilometers
+}
+
+app.get('/api/search-users', async (req, res) => {
+  try {
+    const { distance, ageRange, gender } = req.query;
+
+    const [minAge, maxAge] = ageRange.split('-').map(Number); // Parse age range
+    const userId = req.session.userId; // Logged-in user's ID
+    const user = await User.findByPk(userId);
+
+    if (!user || !user.latitude || !user.longitude) {
+      return res.status(400).json({ message: 'Your location is not available.' });
+    }
+
+    const maxDistanceKm = parseFloat(distance) || 10; // Fallback to 10km if not provided
+
+    const matches = await User.findAll({
+      where: {
+        id: { [Op.ne]: userId }, // Exclude logged-in user
+        gender: gender || { [Op.ne]: null }, // Match gender if provided
+        age: { [Op.between]: [minAge || 18, maxAge || 100] },
+        latitude: { [Op.ne]: null },
+        longitude: { [Op.ne]: null },
+      },
+      attributes: ['id', 'username', 'age', 'bio', 'profilePicture', 'latitude', 'longitude'], // Include necessary fields
+    });
+
+    const filteredUsers = matches
+      .map(match => {
+        const distance = calculateDistance(user.latitude, user.longitude, match.latitude, match.longitude);
+        if (distance <= maxDistanceKm) {
+          return {
+            ...match.toJSON(),
+            distance: distance.toFixed(1), // Include distance rounded to 1 decimal place
+          };
+        }
+        return null; // Exclude users outside max distance
+      })
+      .filter(user => user !== null); // Remove users who are null
+
+    res.json(filteredUsers); // Send filtered users to the frontend
+  } catch (error) {
+    console.error('Error searching users:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+
+
+
+//for admin login only starting from here 
+
+
+const ADMIN_EMAIL = "ligolapatrick61@gmail.com";
+const ADMIN_PASSWORD = "4123trecks";
+
+// Admin login route
+app.post("/admin/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    req.session.adminLoggedIn = true;
+    res.redirect("/admin/dashboard");
+  } else {
+    res.status(401).send("Invalid admin credentials.");
+  }
+});
+
+// Middleware to protect admin-only routes
+const requireAdmin = (req, res, next) => {
+  if (req.session.adminLoggedIn) {
+    next(); // Proceed to the requested admin route
+  } else {
+    res.redirect("/admin/login"); // Redirect to login page
+  }
+};
+
+app.get("/admin/dashboard", requireAdmin, (req, res) => {
+  // Send the static HTML file for the admin dashboard
+  res.sendFile(path.join(__dirname, 'public', 'dashboardadmin.html'));
+});
+
+
+app.post("/admin/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    req.session.adminLoggedIn = true;
+    res.redirect("/admin/dashboard");
+  } else {
+    res.status(401).send("Invalid email or password.");
+  }
+});
+
+// Fetch all users for the dashboard
+app.get("/admin/api/users", requireAdmin, async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: ["id", "username", "fullPhoneNumber", "createdAt"],
+    });
+    res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Fetch all posts for the dashboard
+app.get("/admin/api/posts", requireAdmin, async (req, res) => {
+  try {
+    const posts = await Post.findAll({
+      include: [{ model: User, attributes: ["username"] }],
+      order: [["createdAt", "DESC"]],
+    });
+    res.json(posts);
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/admin/delete-user/:userId", requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    await User.destroy({ where: { id: userId } });
+    res.redirect("/admin/dashboard");
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.post("/admin/delete-post/:postId", requireAdmin, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    await Post.destroy({ where: { id: postId } });
+    res.redirect("/admin/dashboard");
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// Route to search for a user by phone number
+app.get('/admin/search-user', requireAdmin, async (req, res) => {
+  const { phoneNumber } = req.query; // Get the query parameter for the phone number
+
+  try {
+    // Search for the user using the fullPhoneNumber
+    const user = await User.findOne({
+      where: { fullPhoneNumber: phoneNumber },
+      attributes: ['id', 'username', 'fullPhoneNumber', 'role', 'createdAt', 'online'] // Limit fields
+    });
+
+    if (user) {
+      res.json({ success: true, user });
+    } else {
+      res.json({ success: false, message: 'User not found.' });
+    }
+  } catch (error) {
+    console.error('Error searching user:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
 
