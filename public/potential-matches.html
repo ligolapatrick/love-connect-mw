@@ -48,19 +48,36 @@
     .swipe-container .profile-container {
       scroll-snap-align: center;
     }
-    .heart-popup {
-      position: absolute;
-      bottom: 50%;
-      left: 50%;
-      transform: translate(-50%, 50%);
-      font-size: 2em;
-      display: none;
-      animation: popUpAndFade 2s forwards;
-    }
-    @keyframes popUpAndFade {
-      0% { display: block; opacity: 1; }
-      100% { display: none; opacity: 0; }
-    }
+    .message-button {
+  background-color: transparent;
+  color: #007bff;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5em;
+  transition: color 0.3s;
+}
+
+.message-button:hover {
+  color: #0056b3;
+}
+
+.heart-popup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3em;
+  color: #ff6347;
+  animation: heartPopup 1s ease-in-out;
+  opacity: 0;
+}
+
+@keyframes heartPopup {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.5); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
     .user-card-buttons {
       position: absolute;
       bottom: 50px;
@@ -119,6 +136,35 @@
         padding: 3px;
       }
     }
+/* Bottom Navigation Styles */
+.bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: hsl(120, 19%, 31%);
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .bottom-nav a {
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .bottom-nav a img {
+            display: block;
+            width: 20px;
+            height: 30px;
+            margin: 0 auto;
+        }
+
+        .bottom-nav a.active {
+            color: rgb(0, 0, 0);
+        }
+
   </style>
 </head>
 <body>
@@ -129,92 +175,98 @@
   <main>
     <div class="swipe-container" id="matches"></div>
     <div class="loading" id="loading">Loading matches...</div>
+
     <nav class="bottom-nav">
-      <a href="/">Home</a>
-      <a href="profile.html">Profile</a>
-      <a href="matches.html">Matches</a>
-      <a href="online.html">Online</a>
-      <a href="settings.html">Settings</a>
-      <a href="login.html">Logout</a>
+      <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
+      <a href="profile.html"><img src="icons/profile.png" alt="Profile">Profile</a>
+      <a href="matches.html"><img src="icons/matches.png" alt="Matches">Matches</a>
+      <a href="settings.html"><img src="icons/settings.png" alt="Settings">Settings</a>
+      <a href="login.html"><img src="icons/logout.png" alt="Logout">Logout</a>
     </nav>
   </main>
 
   <script>
-    async function fetchMatches() {
-      const userId = sessionStorage.getItem('userId');
+async function fetchMatches() {
+  const userId = sessionStorage.getItem('userId');
 
-      try {
-        const response = await fetch(`/api/location-matches`);
-        const data = await response.json();
+  try {
+    const response = await fetch(`/api/location-matches`);
+    const data = await response.json();
 
-        document.getElementById('loading').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
 
-        const matchesDiv = document.getElementById('matches');
-        matchesDiv.innerHTML = '';
+    const matchesDiv = document.getElementById('matches');
+    matchesDiv.innerHTML = '';
 
-        data.forEach(match => {
+    data.forEach(match => {
       const matchDiv = document.createElement('div');
       matchDiv.className = 'profile-container';
-      matchDiv.onclick = () => {
-        window.location.href = `/messages.html?userId=${match.id}&username=${encodeURIComponent(match.username)}`;
-      };
-          const profilePicture = match.profilePicture || 'default-profile.png';
-          matchDiv.innerHTML = `
-            <img src="${profilePicture}" alt="Profile Picture" class="profile-picture">
-            <div class="profile-details">
-              <h2>${match.username}</h2>
-              <p><strong>Age:</strong> ${match.age}</p>
-              <p><strong>Gender:</strong> ${match.gender}</p>
-              <p><strong>Bio:</strong> ${match.bio}</p>
-              <p><strong>Interests:</strong> ${match.interests ? match.interests.split(',').join(', ') : 'Not provided'}</p>
-            </div>
-            <div class="user-card-buttons">
-              <button class="like-button" onclick="likeUser(${match.id})">Like</button>
-                         <button class="dislike-button" onclick="dislikeUser(${match.id})">Dislike</button>
-            </div>
-            <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
-            <button class="message-button" onclick="messageUser(${match.id})">Message</button>
-          `;
-          matchesDiv.appendChild(matchDiv);
-        });
-      } catch (error) {
-        document.getElementById('loading').textContent = 'Failed to load matches. Please try again later.';
-      }
-    }
 
-    function showHeartPopup(userId) {
-      const heartPopup = document.getElementById(`heart-popup-${userId}`);
-      heartPopup.style.display = 'block';
-      setTimeout(() => {
-        heartPopup.style.display = 'none';
-      }, 2000);
-    }
+      const profilePicture = match.profilePicture || 'default-profile.png';
+      matchDiv.innerHTML = `
+        <img src="${profilePicture}" alt="Profile Picture" class="profile-picture">
+        <div class="profile-details">
+          <h2>${match.username}</h2>
+          <p><strong>Age:</strong> ${match.age}</p>
+          <p><strong>Gender:</strong> ${match.gender}</p>
+          <p><strong>Bio:</strong> ${match.bio}</p>
+          <p><strong>Interests:</strong> ${match.interests ? match.interests.split(',').join(', ') : 'Not provided'}</p>
+        </div>
+        <div class="user-card-buttons">
+           <button class="like-button" onclick="likeUser(${match.id})">
+                <img src="icons/like.png" alt="Like">
+              </button>
+              <button class="dislike-button" onclick="dislikeUser(${match.id})">
+                <img src="icons/dislike.png" alt="Dislike">
+              </button>
 
-    async function likeUser(userId) {
-      const response = await fetch('/api/like', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-      });
-      const data = await response.json();
-      if (data.success) {
-        showHeartPopup(userId);
-      }
-    }
+          <button class="message-button" onclick="messageUser(${match.id}, '${match.username}')">
+            <img src="icons/message.png" alt="Message">
+          </button>
+        </div>
+        <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
+      `;
+      matchesDiv.appendChild(matchDiv);
+    });
+  } catch (error) {
+    document.getElementById('loading').textContent = 'Failed to load matches. Please try again later.';
+  }
+}
 
-    async function dislikeUser(userId) {
-      await fetch('/api/dislike', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-      });
-    }
+function showHeartPopup(userId) {
+  const heartPopup = document.getElementById(`heart-popup-${userId}`);
+  heartPopup.style.opacity = 1;
+  setTimeout(() => {
+    heartPopup.style.opacity = 0;
+  }, 1000);
+}
 
-    function messageUser(userId) {
-      window.location.href = `messages.html?userId=${userId}`;
-    }
+async function likeUser(userId) {
+  const response = await fetch('/api/like', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId })
+  });
+  const data = await response.json();
+  if (data.success) {
+    showHeartPopup(userId);
+  }
+}
 
-    window.onload = fetchMatches;
+async function dislikeUser(userId) {
+  await fetch('/api/dislike', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId })
+  });
+}
+
+function messageUser(userId, username) {
+  window.location.href = `/messages.html?userId=${userId}&username=${encodeURIComponent(username)}`;
+}
+
+window.onload = fetchMatches;
+
   </script>
 </body>
 </html>

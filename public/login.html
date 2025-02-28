@@ -4,190 +4,208 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to LoveConnect</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="/manifest.json"> <!-- Link to the manifest file -->
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-        }
-        .hero {
-            position: relative;
-            height: 100vh;
-            width: 100%;
-            overflow: hidden;
-        }
-        .hero-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-            animation: zoomIn 15s infinite alternate;
-        }
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
 
-        @keyframes zoomIn {
-            0% {
-                transform: scale(1);
-            }
-            100% {
-                transform: scale(1.1);
-            }
-        }
+.hero {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+}
 
-        .hero-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%;
-            color: #fff;
-            text-align: center;
-            animation: fadeIn 2s ease-in-out;
-        }
+.hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+    animation: zoomIn 15s infinite alternate;
+}
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+@keyframes zoomIn {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1.1);
+    }
+}
 
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            animation: slideDown 1s ease-out;
-        }
+.hero-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    color: #fff;
+    text-align: center;
+    animation: fadeIn 2s ease-in-out;
+}
 
-        @keyframes slideDown {
-            from { transform: translateY(-100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-        .logo {
-            width: 50px;
-        }
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    animation: slideDown 1s ease-out;
+}
 
-        .menu-icon {
-            display: none;
-            font-size: 24px;
-            cursor: pointer;
-        }
+@keyframes slideDown {
+    from { transform: translateY(-100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
 
-        .dropdown-content {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-        }
+.logo {
+    width: 50px;
+}
 
-        .dropdown-content li {
-            margin: 0 10px;
-        }
+.menu-icon {
+    display: none;
+    font-size: 24px;
+    cursor: pointer;
+}
 
-        .dropdown-content a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-            transition: color 0.3s;
-        }
+.dropdown-content {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+}
 
-        .dropdown-content a:hover {
-            color: #ff6600;
-        }
+.dropdown-content li {
+    margin: 0 10px;
+}
 
-        .header-message {
-            font-size: 2.5em;
-            margin: 20px 0;
-            animation: bounceIn 1.5s ease-in-out;
-        }
+.dropdown-content a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s;
+}
 
-        @keyframes bounceIn {
-            0% {
-                opacity: 0;
-                transform: scale(0.3);
-            }
-            50% {
-                opacity: 1;
-                transform: scale(1.05);
-            }
-            70% {
-                transform: scale(0.9);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
+.dropdown-content a:hover {
+    color: #ff6600;
+}
 
-        .center-links {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
+.header-message {
+    font-size: 2.5em;
+    margin: 20px 0;
+    animation: bounceIn 1.5s ease-in-out;
+}
 
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            color: white;
-            font-size: 1em;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.3s;
-        }
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
 
-        .btn-primary {
-            background-color: #007bff;
-        }
+.center-links {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
 
-        .btn-secondary {
-            background-color: #6c757d;
-        }
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    color: white;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
 
-        .btn:hover {
-            transform: translateY(-5px);
-        }
+.btn-primary {
+    background-color: #007bff;
+}
 
-        footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 10px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-        }
+.btn-secondary {
+    background-color: #6c757d;
+}
 
-        @media (max-width: 768px) {
-            .header-message {
-                font-size: 1.8em;
-            }
-            .nav-container {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .menu-icon {
-                display: block;
-            }
-            .dropdown-content {
-                flex-direction: column;
-                display: none;
-                width: 100%;
-                background-color: rgba(0, 0, 0, 0.8);
-            }
-            .dropdown-content li {
-                text-align: center;
-                margin: 10px 0;
-            }
-            .dropdown-content a {
-                display: block;
-                padding: 10px;
-            }
-        }
+.btn:hover {
+    transform: translateY(-5px);
+}
+
+.download-links {
+    margin-top: 20px;
+}
+
+.download-links a {
+    display: inline-block;
+    margin: 0 10px;
+    transition: transform 0.3s;
+}
+
+.download-links a:hover {
+    transform: translateY(-5px);
+}
+
+footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .header-message {
+        font-size: 1.8em;
+    }
+    .nav-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .menu-icon {
+        display: block;
+    }
+    .dropdown-content {
+        flex-direction: column;
+        display: none;
+        width: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+    .dropdown-content li {
+        text-align: center;
+        margin: 10px 0;
+    }
+    .dropdown-content a {
+        display: block;
+        padding: 10px;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -196,7 +214,7 @@
         <div class="hero-content">
             <div class="nav-container">
                 <a href="javascript:void(0);" class="menu-icon" onclick="toggleMenu()">
-                    <i class="fas fa-bars"></i>
+                    <img src="icons/menu.png" alt="Menu Icon">
                 </a>
                 <ul id="dropdownMenu" class="dropdown-content">
                     <li><a href="user-guides">User guides</a></li>
@@ -214,6 +232,9 @@
                 <a href="register" class="btn btn-primary">Create An Account</a>
                 <a href="login1" class="btn btn-secondary">Log In</a>
             </div>
+            <div class="download-links">
+                <button class="btn btn-primary" id="installButton">Add to Home Screen</button>
+            </div>
         </div>
     </header>
     <footer>
@@ -228,6 +249,45 @@
                 x.style.display = "block";
             }
         }
+
+        // Register the service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(function(registration) {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch(function(error) {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+
+        // Prompt the user to add the web app to their home screen
+        let deferredPrompt;
+        const installButton = document.getElementById('installButton');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the default prompt from showing
+            e.preventDefault();
+            // Save the event for triggering later
+            deferredPrompt = e;
+            // Show the install button
+            installButton.style.display = 'block';
+        });
+
+        installButton.addEventListener('click', (e) => {
+            // Hide the install button
+            installButton.style.display = 'none';
+            // Show the prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the A2HS prompt');
+                } else {
+                    console.log('User dismissed the A2HS prompt');
+                }
+                deferredPrompt = null;
+            });
+        });
     </script>
 </body>
 </html>

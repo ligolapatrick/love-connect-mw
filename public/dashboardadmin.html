@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <style>
+    /* General Styles */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: hsl(0, 15%, 37%);
+    }
+    header {
+      background: linear-gradient(90deg, #4CAF50, #2A9DF4);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+
+    main {
+      padding: 20px;
+      margin: auto;
+      max-width: 1200px;
+    }
+
+    /* Search Bar */
+    .search-bar {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      justify-content: space-between;
+    }
+    .search-bar input {
+      padding: 12px;
+      flex: 1;
+      min-width: 200px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .search-bar button {
+      padding: 12px 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .search-bar button:hover {
+      background: #388E3C;
+    }
+
+    /* Results and Tables */
+    .search-results {
+      margin-top: 20px;
+      font-size: 16px;
+      padding: 10px;
+      background: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .search-results span {
+      font-weight: bold;
+    }
+
+    h2 {
+      margin-top: 40px;
+      color: #333;
+      font-size: 1.4rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    table th, table td {
+      padding: 15px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+    table th {
+      background-color: #4CAF50;
+      color: white;
+    }
+    table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    table tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    /* Responsive Design */
+    @media screen and (max-width: 768px) {
+      header h1 {
+        font-size: 1.5rem;
+      }
+      .search-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .search-bar input, .search-bar button {
+        width: 100%;
+      }
+    }
+
+    @media screen and (max-width: 480px) {
+      header h1 {
+        font-size: 1.2rem;
+      }
+      table th, table td {
+        padding: 10px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Admin Dashboard</h1>
+  </header>
+  <main>
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <input type="text" id="phoneNumber" placeholder="Search by phone number">
+      <button onclick="searchUser()">Search</button>
+    </div>
+    <!-- Search Results -->
+    <div class="search-results" id="searchResults"></div>
+
+    <!-- Manage Users -->
+    <h2>Manage Users</h2>
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Phone</th>
+        <th>Created At</th>
+        <th>Actions</th>
+      </tr>
+      <!-- Example row, dynamic data will be loaded -->
+    
+    <!-- Manage Posts -->
+    <h2>Manage Posts</h2>
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>Caption</th>
+        <th>Username</th>
+        <th>Created At</th>
+        <th>Actions</th>
+      </tr>
+      <!-- Example row, dynamic data will be loaded -->
+  
+      </tr>
+    </table>
+  </main>
+
+  <script>
+    // Fetch and display users
+    function loadUsers() {
+      fetch('/admin/api/users')
+        .then(response => response.json())
+        .then(users => {
+          const userTable = document.querySelector('table:nth-of-type(1)'); // First table for users
+          const rows = users.map(user => `
+            <tr>
+              <td>${user.id}</td>
+              <td>${user.username}</td>
+              <td>${user.fullPhoneNumber}</td>
+              <td>${new Date(user.createdAt).toLocaleString()}</td>
+              <td>
+                <form action="/admin/delete-user/${user.id}" method="POST">
+                  <button type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+          `);
+          userTable.innerHTML += rows.join('');
+        })
+        .catch(error => console.error('Error loading users:', error));
+    }
+  
+    // Fetch and display posts
+    function loadPosts() {
+      fetch('/admin/api/posts')
+        .then(response => response.json())
+        .then(posts => {
+          const postTable = document.querySelector('table:nth-of-type(2)'); // Second table for posts
+          const rows = posts.map(post => `
+            <tr>
+              <td>${post.id}</td>
+              <td>${post.caption}</td>
+              <td>${post.User.username}</td>
+              <td>${new Date(post.createdAt).toLocaleString()}</td>
+              <td>
+                <form action="/admin/delete-post/${post.id}" method="POST">
+                  <button type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+          `);
+          postTable.innerHTML += rows.join('');
+        })
+        .catch(error => console.error('Error loading posts:', error));
+    }
+  
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUsers();
+      loadPosts();
+    });
+  </script>
+  
+</body>
+</html>

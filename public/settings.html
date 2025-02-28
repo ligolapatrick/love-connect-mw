@@ -1,422 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Find One by Click</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-        }
-        .navbar {
-            background-color: #007bff;
-            color: white;
-            padding: 10px;
-            text-align: center;
-        }
-        .navbar img {
-            height: 50px;
-        }
-        .nav-links {
-            list-style: none;
-            padding: 0;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Users</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #ff4d4d;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    main {
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    .user-card {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .user-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      object-fit: cover;
+      margin-bottom: 10px;
+    }
+    .user-card-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .user-card-buttons button {
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .user-card-buttons button img {
+      width: 24px;
+      height: 24px;
+    }
+    .user-card-buttons button:hover img {
+      filter: brightness(0.8);
+    }
+    .heart-popup {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3em;
+      color: #ff6347;
+      animation: heartPopup 1s ease-in-out;
+      opacity: 0;
+    }
+    @keyframes heartPopup {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.5); opacity: 1; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+    
+
+
+    .user-card-container {
             display: flex;
-            justify-content: center;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            justify-content: start;
+            padding-left: 10px;
         }
-        .nav-links li {
-            margin: 0 10px;
-        }
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-        }
-        .settings-container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .settings-container h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .settings-group {
-            margin-bottom: 20px;
-        }
-        .settings-group h3 {
-            margin-bottom: 10px;
-        }
-        .settings-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .settings-group input, .settings-group select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
+        .user-card {
+            position: relative;
+            width: 500px;
+            margin: 10px;
             border: 1px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            scroll-snap-align: start;
+            flex: 0 0 auto;
         }
-        .settings-group button {
-            padding: 10px 20px;
-            background-color: #007bff;
+        .user-card img {
+            width: 100%;
+            height: 500px;
+            object-fit: cover;
+        }
+        .user-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.5);
             color: white;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        .like-dislike-buttons {
+            position: absolute;
+            bottom: 50px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .like-dislike-buttons button {
+            padding: 5px 10px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
-        .settings-group button:hover {
-            background-color: #0056b3;
+        .like-button {
+            background-color: #28a745;
+            color: white;
         }
-        /* Media Queries for smaller screens */
-@media only screen and (max-width: 768px) {
-  .user-card {
-      width: 100%;
-      margin: 0.5rem 0;
-  }
-
-  .top-nav {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-  }
-
-  .top-nav a {
-      margin: 0.5rem 0;
-  }
-}
-
-@media only screen and (max-width: 480px) {
-  header {
-      padding: 0.5rem;
-  }
-
-  .user-card {
-      padding: 0.5rem;
-  }
-
-  .user-card-buttons button {
-      padding: 0.25rem 0.5rem;
-      margin: 0.25rem 0;
-  }
-
-  .top-nav a {
-      font-size: 1.2rem;
-  }
-}
-   /* Media Queries for Responsive Design */
-   @media (max-width: 768px) {
-    .user-card {
-      width: 90%; /* Adjusted width for smaller screens */
-    }
-  }
-
-  @media (max-width: 480px) {
-    .user-card {
-      width: 100%; /* Full width for very small screens */
-    }
-    .message-input {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .message-input input {
-      width: 100%;
-      margin-bottom: 5px;
-    }
-    .message-input button {
-      width: 100%;
-    }
-  }
-    </style>
+        .dislike-button {
+            background-color: #dc3545;
+            color: white;
+        }
+        .like-button.liked,
+        .dislike-button.disliked {
+            opacity: 0.5;
+        }
+       
+        .heart-popup {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform: translate(-50%, 50%);
+            font-size: 2em;
+            display: none;
+            animation: popUpAndFade 2s forwards;
+        }
+        @keyframes popUpAndFade {
+            0% { display: block; opacity: 1; }
+            100% { display: none; opacity: 0; }
+        }
+        @media (max-width: 768px) {
+            .user-card {
+                width: 300px;
+                margin: 10px 5px;
+            }
+            .user-card img {
+                height: 350px;
+            }
+            .user-info {
+                font-size: 0.8em;
+                padding: 5px;
+            }
+        }
+        @media (max-width: 480px) {
+            .user-card {
+                width: 350px;
+            }
+            .user-card img {
+                height: 500px;
+            }
+            .user-info {
+                font-size: 0.7em;
+                padding: 3px;
+            }
+        }
+  </style>
 </head>
 <body>
-    <nav class="navbar">
-        <img src="images/LoveConnect logo.png" alt="LoveConnect Logo">
-        <ul class="nav-links">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="profile.html">Profile</a></li>
-            <li><a href="matches.html">Matches</a></li>
-            <li><a href="messages.html">Messages</a></li>
-            <li><a href="settings.html">Settings</a></li>
-            <li><a href="login.html">Logout</a></li>
-        </ul>
-    </nav>
+  <header>
+    <h1>Random Users</h1>
+  </header>
+  <main>
+    <div class="user-list" id="userList"></div>
+  </main>
 
-    <div class="settings-container">
-        <h2>Settings</h2>
-
-        <!-- Notification Settings -->
-        <div class="settings-group">
-            <h3>Notification Settings</h3>
-            <label for="notifications">Notifications</label>
-            <select id="notifications" name="notifications">
-                <option value="all">All</option>
-                <option value="mentions">Mentions Only</option>
-                <option value="none">None</option>
-            </select>
-            <button type="button" onclick="saveNotificationSettings()">Save Notification Settings</button>
-        </div>
-
-        <!-- Privacy Settings -->
-        <div class="settings-group">
-            <h3>Privacy Settings</h3>
-            <label for="privacy">Privacy</label>
-            <select id="privacy" name="privacy">
-                <option value="public">Public</option>
-                <option value="friends">Friends Only</option>
-                <option value="private">Private</option>
-            </select>
-            <button type="button" onclick="savePrivacySettings()">Save Privacy Settings</button>
-        </div>
-
-        <!-- Theme Settings -->
-        <div class="settings-group">
-            <h3>Theme Settings</h3>
-            <label for="theme">Theme</label>
-            <select id="theme" name="theme">
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-            </select>
-            <button type="button" onclick="saveThemeSettings()">Save Theme Settings</button>
-        </div>
-
-        <!-- Language Settings -->
-        <div class="settings-group">
-            <h3>Language Settings</h3>
-            <label for="language">Language</label>
-            <select id="language" name="language">
-                <option value="en">English</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <!-- Add more languages as needed -->
-            </select>
-            <button type="button" onclick="saveLanguageSettings()">Save Language Settings</button>
-        </div>
-
-        <!-- Subscription Settings -->
-        <div class="settings-group">
-            <h3>Subscription Settings</h3>
-            <label for="subscription">Subscription</label>
-            <select id="subscription" name="subscription">
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-            </select>
-            <button type="button" onclick="saveSubscriptionSettings()">Save Subscription Settings</button>
-        </div>
-
-        <!-- Appearance Settings -->
-        <div class="settings-group">
-            <h3>Appearance Settings</h3>
-            <label for="fontSize">Font Size</label>
-            <select id="fontSize" name="fontSize">
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-            </select>
-            <button type="button" onclick="saveAppearanceSettings()">Save Appearance Settings</button>
-        </div>
-
-        <!-- Security Settings -->
-        <div class="settings-group">
-            <h3>Security Settings</h3>
-            <label for="twoFactorAuth">Two-Factor Authentication</label>
-            <select id="twoFactorAuth" name="twoFactorAuth">
-                <option value="enabled">Enabled</option>
-                <option value="disabled">Disabled</option>
-            </select>
-            <button type="button" onclick="saveSecuritySettings()">Save Security Settings</button>
-        </div>
-
-        <!-- Data Settings -->
-        <div class="settings-group">
-            <h3>Data Settings</h3>
-            <label for="dataDownload">Download Your Data</label>
-            <button id="dataDownload" name="dataDownload" onclick="downloadData()">Download</button>
-            
-            <label for="deleteAccount">Delete Account</label>
-            <button id="deleteAccount" name="deleteAccount" onclick="deleteAccount()">Delete</button>
-        </div>
-
-        <!-- Connection Settings -->
-        <div class="settings-group">
-            <h3>Connection Settings</h3>
-            <label for="connectFacebook">Connect to Facebook</label>
-            <button id="connectFacebook" name="connectFacebook" onclick="connectFacebook()">Connect</button>
-            
-            <label for="connectGoogle">Connect to Google</label>
-            <button id="connectGoogle" name="connectGoogle" onclick="connectGoogle()">Connect</button>
-        </div>
-
-        <!-- Online Status Settings -->
-        <div class="settings-group">
-            <h3>Online Status Settings</h3>
-            <label for="onlineStatus">Show Online Status</label>
-            <select id="onlineStatus" name="onlineStatus">
-                <option value="enabled">Enabled</option>
-                <option value="disabled">Disabled</option>
-            </select>
-            <button type="button" onclick="saveOnlineStatusSettings()">Save Online Status Settings</button>
-        </div>
-
-        <!-- Last Seen Settings -->
-        <div class="settings-group">
-            <h3>Last Seen Settings</h3>
-            <label for="lastSeen">Show Last Seen</label>
-            <select id="lastSeen" name="lastSeen">
-                <option value="everyone">Everyone</option>
-                <option value="friends">Friends</option>
-                <option value="none">None</option>
-            </select>
-            <button type="button" onclick="saveLastSeenSettings()">Save Last Seen Settings</button>
-        </div>
-
-        <!-- Read Receipts Settings -->
-        <div class="settings-group">
-            <h3>Read Receipts Settings</h3>
-            <label for="readReceipts">Send Read Receipts</label>
-            <select id="readReceipts" name="readReceipts">
-                <option value="enabled">Enabled</option>
-                <option value="disabled">Disabled</option>
-            </select>
-            <button type="button" onclick="saveReadReceiptsSettings()">Save Read Receipts Settings</button>
-        </div>
-
-        <!-- Auto-download Media Settings -->
-        <div class="settings-group">
-            <h3>Auto-download Media Settings</h3>
-            <label for="autoDownload">Auto-download Media</label>
-            <select id="autoDownload" name="autoDownload">
-                <option value="wifi">When connected to Wi-Fi</option>
-                <option value="always">Always</option>
-                <option value="never">Never</option>
-            </select>
-            <button type="button" onclick="saveAutoDownloadSettings()">Save Auto-download Settings</button>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            fetch('/api/settings')
-                .then(response => response.json())
-                .then(settings => {
-                    document.getElementById('notifications').value = settings.notifications;
-                    document.getElementById('privacy').value = settings.privacy;
-                    document.getElementById('theme').value = settings.theme;
-                    document.getElementById('language').value = settings.language;
-                    document.getElementById('subscription').value = settings.subscription;
-                    document.getElementById('fontSize').value = settings.fontSize;
-                    document.getElementById('twoFactorAuth').value = settings.twoFactorAuth;
-                    document.getElementById('onlineStatus').value = settings.onlineStatus;
-                    document.getElementById('lastSeen').value = settings.lastSeen;
-                    document.getElementById('readReceipts').value = settings.readReceipts;
-                    document.getElementById('autoDownload').value = settings.autoDownload;
-                })
-                .catch(error => {
-                    console.error('Error fetching settings:', error);
-                });
+  <script>
+    function fetchRandomUsers() {
+      fetch('/api/get-random-users')
+        .then(response => response.json())
+        .then(users => {
+          const userList = document.getElementById('userList');
+          userList.innerHTML = '';
+          users.forEach(user => {
+            const userDiv = document.createElement('div');
+            userDiv.className = 'user-card';
+            userDiv.innerHTML = `
+              <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
+              <div>
+                <h3>${user.username}</h3>
+                <p>${user.bio || 'No bio available'}</p>
+                <div class="user-card-buttons">
+                  <button onclick="dislikeUser(${user.id})">
+                    <img src="icons/dislike.png" alt="Dislike">
+                  </button>
+                  <button onclick="messageUser(${user.id})">
+                    <img src="icons/message.png" alt="Message">
+                  </button>
+                  <button onclick="likeUser(${user.id})">
+                    <img src="icons/like.png" alt="Like">
+                  </button>
+                </div>
+                <div class="heart-popup" id="heart-popup-${user.id}">❤️</div>
+              </div>
+            `;
+            userList.appendChild(userDiv);
+          });
+        }).catch(error => {
+          console.error('Error fetching random users:', error);
         });
+    }
 
-        function saveNotificationSettings() {
-            const settings = { notifications: document.getElementById('notifications').value };
-            updateSettings(settings, 'Notification settings saved successfully!');
-        }
+    function showHeartPopup(userId) {
+      const heartPopup = document.getElementById(`heart-popup-${userId}`);
+      heartPopup.style.opacity = 1;
+      setTimeout(() => {
+        heartPopup.style.opacity = 0;
+      }, 1000);
+    }
 
-        function savePrivacySettings() {
-            const settings = { privacy: document.getElementById('privacy').value };
-            updateSettings(settings, 'Privacy settings saved successfully!');
-        }
+    async function likeUser(userId) {
+      const response = await fetch('/api/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        showHeartPopup(userId);
+      }
+    }
 
-        function saveThemeSettings() {
-            const settings = { theme: document.getElementById('theme').value };
-            updateSettings(settings, 'Theme settings saved successfully!');
-        }
+    async function dislikeUser(userId) {
+      await fetch('/api/dislike', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+    }
 
-        function saveLanguageSettings() {
-            const settings = { language: document.getElementById('language').value };
-            updateSettings(settings, 'Language settings saved successfully!');
-        }
+    function messageUser(userId) {
+      window.location.href = `messages.html?userId=${userId}`;
+    }
 
-        function saveSubscriptionSettings() {
-            const settings = { subscription: document.getElementById('subscription').value };
-            updateSettings(settings, 'Subscription settings saved successfully!');
-        }
-
-        function saveAppearanceSettings() {
-            const settings = { fontSize: document.getElementById('fontSize').value };
-            updateSettings(settings, 'Appearance settings saved successfully!');
-        }
-
-        function saveSecuritySettings() {
-            const settings = { twoFactorAuth: document.getElementById('twoFactorAuth').value };
-            updateSettings(settings, 'Security settings saved successfully!');
-        }
-
-        function saveOnlineStatusSettings() {
-            const settings = { onlineStatus: document.getElementById('onlineStatus').value };
-            updateSettings(settings, 'Online status settings saved successfully!');
-        }
-
-        function saveLastSeenSettings() {
-            const settings = { lastSeen: document.getElementById('lastSeen').value };
-            updateSettings(settings, 'Last seen settings saved successfully!');
-        }
-
-        function saveReadReceiptsSettings() {
-            const settings = { readReceipts: document.getElementById('readReceipts').value };
-            updateSettings(settings, 'Read receipts settings saved successfully!');
-        }
-
-        function saveAutoDownloadSettings() {
-            const settings = { autoDownload: document.getElementById('autoDownload').value };
-            updateSettings(settings, 'Auto-download settings saved successfully!');
-        }
-
-        function updateSettings(settings, successMessage) {
-            fetch('/api/settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(settings)
-            })
-            .then(response => {
-                if (response.ok) {
-                    alert(successMessage);
-                } else {
-                    alert('Error saving settings. Please try again.');
-                }
-            })
-            .catch(error => {
-                console.error('Error saving settings:', error);
-            });
-        }
-
-        function downloadData() {
-            // Implement download data functionality
-            alert('Download data functionality not implemented yet.');
-        }
-
-        function deleteAccount() {
-            // Implement delete account functionality
-            alert('Delete account functionality not implemented yet.');
-        }
-
-        function connectFacebook() {
-            // Implement connect to Facebook functionality
-            alert('Connect to Facebook functionality not implemented yet.');
-        }
-
-        function connectGoogle() {
-            // Implement connect to Google functionality
-            alert('Connect to Google functionality not implemented yet.');
-        }
-    </script>
+    document.addEventListener('DOMContentLoaded', fetchRandomUsers);
+  </script>
 </body>
 </html>

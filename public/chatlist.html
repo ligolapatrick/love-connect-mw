@@ -147,6 +147,13 @@
     .bottom-nav a.active {
         color: rgb(0, 0, 0);
     }
+    .bottom-nav a img {
+            display: block;
+            width: 30px;
+            height: 30px;
+            margin: 0 auto;
+        }
+
 </style>
 
 </head>
@@ -164,7 +171,12 @@
     </ul>
     <main>
         <nav class="bottom-nav">
-            <a href="/">Home</a> | <a href="/profile">Profile</a> | <a href="/matches">Matches</a> | <a href="/nearby">Nearby Users</a> | <a href="/chatlist">Messages</a> | <a href="/login">Logout</a>
+            <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
+            <a href="/profile"><img src="icons/profile.png" alt="Profile"> Profile</a> 
+            <a href="/matches"><img src="icons/matches.png" alt="Matches"> Matches</a> | 
+            <a href="/nearby"><img src="icons/nearby.png" alt="Nearby"> NearbyUsers</a> | 
+            <a href="/chatlist"><img src="icons/message.png" alt="message"> Messages</a> | 
+            <a href="/login"><img src="icons/logout.png" alt="Home"> Logout</a>
         </nav>
     </main>
     <script>
@@ -186,6 +198,9 @@
         }
     
         function renderChatList(users) {
+            // Sort users by the most recent message time in descending order (newest first)
+            users.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+    
             const chatList = document.getElementById('chatList');
             chatList.innerHTML = '';
             users.forEach(user => {
@@ -254,7 +269,6 @@
         }
     
         function openChat(chatUserId, username) {
-            // Mark messages as read
             fetch(`/api/mark-as-read`, {
                 method: 'POST',
                 headers: {

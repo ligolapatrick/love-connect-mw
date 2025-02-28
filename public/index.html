@@ -26,7 +26,7 @@
     <div class="left-side">
       <section class="category">
         <div class="category-header">
-          <h2>nearby users</h2>
+          <h2>Near-You</h2>
         </div>
         <div class="single-card">
           <div class="user-card">
@@ -163,10 +163,10 @@
 </main>
 
 <nav class="bottom-nav">
-  <a href="/profile">Profile</a> |
-  <a href="/matches">Matches</a> |
-  <a href="/speed">Speed</a>  |
-  <a href="/chatlist">Messages</a> |
+  <a href="/chatlist"><img src="icons/messages.png" alt="Messages"> Messages</a>
+  <a href="/profile"><img src="icons/profile.png" alt="Profile"> Profile</a>
+  <a href="/matches"><img src="icons/matches.png" alt="Matches"> Matches</a>
+  <a href="/speed"><img src="icons/speed.png" alt="Speed"> Speed</a>
 </nav>
   
   <footer>
@@ -217,6 +217,53 @@
         };
       }
     });
+
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(function(registration) {
+        console.log('Service Worker registered with scope:', registration.scope);
+
+        return fetch('/vapidPublicKey')
+          .then(response => response.text())
+          .then(function(vapidPublicKey) {
+            return registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+            });
+          });
+      })
+      .then(function(subscription) {
+        console.log('User is subscribed:', subscription);
+
+        return fetch('/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(subscription)
+        });
+      })
+      .catch(function(error) {
+        console.error('Service Worker registration or subscription failed:', error);
+      });
+  } else {
+    console.warn('Push messaging is not supported.');
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
   </script>
   <style>
     /* Modal styles */
