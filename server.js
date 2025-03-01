@@ -320,6 +320,11 @@ app.get('/messages', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'messages.html'));
 });
 
+// Route to serve the messages.html file
+app.get('/notifications', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'notifications.html'));
+});
+
 // Route to serve the secretcrush.html file
 app.get('/secretcrush', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'secretcrush.html'));
@@ -613,6 +618,39 @@ app.get('/api/online-users', async (req, res) => {
 });
 
 // Fetch messages for a chat
+app.post('/api/send-message', requireLogin, async (req, res) => {
+    const { toUserId, content } = req.body;
+    const fromUserId = req.session.userId;
+
+    if (!toUserId || !content) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    try {
+        const newMessage = await Message.create({
+            fromUserId,
+            toUserId,
+            content,
+            timestamp: new Date(),
+            messageType: 'text'
+        });
+
+        // Create a notification for the recipient
+        const senderUser = await User.findByPk(fromUserId);
+        const senderName = senderUser ? senderUser.username : 'Unknown User';
+        const notificationMessage = `${senderName} sent you a message.`;
+
+        await Notification.create({ userId: toUserId, senderId: fromUserId, message: notificationMessage });
+
+        console.log('Message created:', newMessage);
+        res.status(201).json(newMessage);
+    } catch (error) {
+        console.error('Error sending message:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// Send a message
 app.get('/api/messages', requireLogin, async (req, res) => {
     const userId = req.session.userId;
     const chatUserId = req.query.chatUserId;
@@ -630,32 +668,6 @@ app.get('/api/messages', requireLogin, async (req, res) => {
         res.json(messages);
     } catch (error) {
         console.error('Error fetching messages:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});
-
-
-// Send a message
-app.post('/api/send-message', requireLogin, async (req, res) => {
-    const { toUserId, content } = req.body;
-    const fromUserId = req.session.userId; // Ensure this is the dynamic userId
-
-    if (!toUserId || !content) {
-        return res.status(400).json({ error: 'Missing required parameters' });
-    }
-
-    try {
-        const newMessage = await Message.create({
-            fromUserId,
-            toUserId,
-            content,
-            timestamp: new Date(),
-            messageType: 'text' // Ensure this is set if it's not in the request body
-        });
-        console.log('Message created:', newMessage);
-        res.status(201).json(newMessage);
-    } catch (error) {
-        console.error('Error sending message:', error);
         res.status(500).send('Internal Server Error');
     }
 });
@@ -814,13 +826,56 @@ app.post('/api/update-mood', async (req, res) => {
   }
 });
 
+app.get('/api/notifications', async (req, res) => {
+  const userId = req.session.userId;
+  try {
+    const notifications = await Notification.findAll({
+      where: { userId },
+      include: [{ model: User, as: 'sender', attributes: ['username'] }],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(notifications);
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+// Accept Mood Match Request
+app.post('/api/accept-mood-match', async (req, res) => {
+  const { userId } = req.body;
+  const fromUserId = req.session.userId;
+
+  try {
+    // Notify the user who sent the request
+    const senderUser = await User.findByPk(fromUserId);
+    const senderName = senderUser ? senderUser.username : 'Unknown User';
+    const message = `${senderName} accepted your request. Tap to start chatting.`;
+
+    await Notification.create({ userId, senderId: fromUserId, message });
+
+    res.status(200).send('Mood match request accepted!');
+  } catch (error) {
+    console.error('Error accepting mood match request:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // Send a mood match request
 app.post('/api/send-mood-match-request', async (req, res) => {
   const { userId, mood } = req.body;
-  const fromUserId = req.session.userId; // Assuming userId is stored in the session
+  const fromUserId = req.session.userId;
 
   try {
-    // Create a mood match request message for both sender and receiver
+    // Create mood match request notification
+    const senderUser = await User.findByPk(fromUserId);
+    const senderName = senderUser ? senderUser.username : 'Unknown User';
+    const message = `${senderName} sent a mood match request. Tap to accept the request.`;
+
+    await Notification.create({ userId, senderId: fromUserId, message });
+
+    // Create messages for sender and receiver
     await Message.create({
       fromUserId,
       toUserId: userId,
@@ -835,14 +890,12 @@ app.post('/api/send-mood-match-request', async (req, res) => {
       messageType: 'moodMatch'
     });
 
-    console.log(`Mood match request sent from user ${fromUserId} to user ${userId}`);
     res.status(200).send('Mood match request sent!');
   } catch (error) {
     console.error('Error sending mood match request:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
 
 // Routes
 app.get('/api/nearby-users', async (req, res) => {
@@ -1438,48 +1491,6 @@ function updateVoiceChatList() {
   io.emit('updateVoiceChatList', sessions);
 }
 
-// Fetch available users
-app.get('/api/free-to-hangout', async (req, res) => {
-  try {
-    const users = await User.findAll({
-      where: { availableToday: true },
-      attributes: ['id', 'username', 'profilePicture', 'location']
-    });
-    res.json(users);
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-// Send hangout request
-app.post('/api/send-hangout-request', async (req, res) => {
-  const { userId } = req.body;
-  const fromUserId = req.session.userId; // Assuming userId is stored in the session
-
-  try {
-    // Create a hangout request message for both sender and receiver
-    await Message.create({
-      fromUserId,
-      toUserId: userId,
-      content: 'You have sent a hangout request.',
-      messageType: 'hangout'
-    });
-
-    await Message.create({
-      fromUserId: userId,
-      toUserId: fromUserId,
-      content: 'You have received a hangout request.',
-      messageType: 'hangout'
-    });
-
-    console.log(`Hangout request sent from user ${fromUserId} to user ${userId}`);
-    res.status(200).send('Hangout request sent!');
-  } catch (error) {
-    console.error('Error sending hangout request:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
 
 // Send message
 app.post('/api/send-message', requireLogin, async (req, res) => {
