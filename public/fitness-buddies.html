@@ -40,89 +40,72 @@
   </main>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const loggedInUserGender = 'male'; // Replace this with dynamic gender of the logged-in user
+   document.addEventListener('DOMContentLoaded', () => {
+  const loggedInUserGender = 'male'; // Replace this with dynamic gender of the logged-in user
 
-      fetch('/api/match-fitness')
-        .then(response => response.json())
-        .then(matches => {
-          const container = document.getElementById('fitness-goals-matches-container');
-          container.innerHTML = '';
-          matches.forEach(match => {
-            if ((loggedInUserGender === 'male' && match.gender === 'female') ||
-                (loggedInUserGender === 'female' && match.gender === 'male')) {
-              const matchElement = document.createElement('div');
-              matchElement.className = 'match-card';
-              matchElement.innerHTML = `
-                <h3>${match.username}</h3>
-                <p>Goals: ${match.fitnessGoals}</p>
-                <img src="${match.profilePicture}" alt="${match.username}" ondblclick="sendFitnessMatchRequest(${match.id})">
-              `;
-              matchElement.querySelector('img').addEventListener('click', (e) => handleTap(e, match.id));
-              container.appendChild(matchElement);
-            }
-          });
-        })
-        .catch(error => console.error('Error fetching matches:', error));
-    });
-
-    let tapTimeout;
-    let tapCount = 0;
-
-    function handleTap(event, userId) {
-      tapCount++;
-      if (tapTimeout) {
-        clearTimeout(tapTimeout);
-      }
-
-      tapTimeout = setTimeout(() => {
-        if (tapCount === 2) {
-          sendFitnessMatchRequest(userId);
-        } else if (tapCount === 3) {
-          window.location.href = `/messages.html?userId=${userId}`;
+  fetch('/api/match-fitness')
+    .then(response => response.json())
+    .then(matches => {
+      const container = document.getElementById('fitness-goals-matches-container');
+      container.innerHTML = '';
+      matches.forEach(match => {
+        if ((loggedInUserGender === 'male' && match.gender === 'female') ||
+            (loggedInUserGender === 'female' && match.gender === 'male')) {
+          const matchElement = document.createElement('div');
+          matchElement.className = 'match-card';
+          matchElement.innerHTML = `
+            <h3>${match.username}</h3>
+            <p>Goals: ${match.fitnessGoals}</p>
+            <img src="${match.profilePicture}" alt="${match.username}" ondblclick="sendFitnessMatchRequest(${match.id})">
+          `;
+          matchElement.querySelector('img').addEventListener('click', (e) => handleTap(e, match.id));
+          container.appendChild(matchElement);
         }
-        tapCount = 0;
-      }, 300);
-    }
+      });
+    })
+    .catch(error => console.error('Error fetching matches:', error));
+});
 
-    function updateFitnessGoals() {
-      const fitnessGoals = document.getElementById('user-fitness-goals').value;
-      fetch('/api/update-fitness-goals', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ fitnessGoals })
-      }).then(response => {
-        if (response.ok) {
-          alert('Fitness goals updated successfully!');
-        } else {
-          alert('Failed to update fitness goals');
-        }
-      }).catch(error => console.error('Error updating fitness goals:', error));
-    }
 
-    function sendFitnessMatchRequest(userId) {
-      const fitnessGoals = document.getElementById('user-fitness-goals').value;
-      fetch('/api/send-fitness-match-request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId, fitnessGoals })
-      }).then(response => {
-        if (response.ok) {
-          alert('Fitness match request sent!');
-          window.location.href = `/messages.html?userId=${userId}`;
-        } else {
-          alert('Failed to send fitness match request');
-        }
-      }).catch(error => console.error('Error sending fitness match request:', error));
+function updateFitnessGoals() {
+  const fitnessGoals = document.getElementById('user-fitness-goals').value;
+  fetch('/api/update-fitness-goals', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ fitnessGoals })
+  }).then(response => {
+    if (response.ok) {
+      alert('Fitness goals updated successfully!');
+    } else {
+      alert('Failed to update fitness goals');
     }
+  }).catch(error => console.error('Error updating fitness goals:', error));
+}
 
-    function viewProfile(userId) {
-      window.location.href = `/profile?userId=${userId}`;
+function sendFitnessMatchRequest(userId) {
+  const fitnessGoals = document.getElementById('user-fitness-goals').value;
+  fetch('/api/send-fitness-match-request', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ userId, fitnessGoals })
+  }).then(response => {
+    if (response.ok) {
+      alert('Fitness match request sent!');
+      window.location.href = `/notifications.html`; // Redirect to notifications page
+    } else {
+      alert('Failed to send fitness match request');
     }
+  }).catch(error => console.error('Error sending fitness match request:', error));
+}
+
+function viewProfile(userId) {
+  window.location.href = `/profile?userId=${userId}`;
+}
+
   </script>
 </body>
 </html>

@@ -1,318 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat List - Find One by Click</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-        }
-        nav {
-            background-color: #007bff;
-            color: white;
-            padding: 10px;
-            text-align: center;
-        }
-        nav a {
-            color: white;
-            margin: 0 10px;
-            text-decoration: none;
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        .filter-options {
-            text-align: center;
-            margin: 20px auto;
-            max-width: 600px;
-            display: flex;
-            justify-content: space-around;
-        }
-        .filter-options button {
-            padding: 10px 20px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        .filter-options button:hover {
-            background-color: #0056b3;
-        }
-        .chat-list {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 0;
-            list-style: none;
-        }
-        .chat-list-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .chat-list-item.unread {
-            background-color: #e9f7fd;
-        }
-        .chat-list-item:hover {
-            background-color: #e9ecef;
-        }
-        .chat-list-item img {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-        .chat-list-item div {
-            flex-grow: 1;
-        }
-              .container {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            animation: fadeInUp 1.5s ease-in-out;
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        .form-group button {
-            width: 100%;
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .form-group button:hover {
-            background-color: #0056b3;
-        }
-
-        .user-card {
-            background-color: #f9f9f9;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            animation: fadeIn 1.5s ease-in-out;
-        }
-
-        .user-card img {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            margin-right: 20px;
-        }
-
-        .user-card .user-info {
-            flex-grow: 1;
-        }
-
-        .user-card .user-info h4 {
-            margin: 0 0 5px 0;
-        }
-
-        .user-card .user-info p {
-            margin: 0;
-        }
-
-        .unread {
-            background-color: #e9f7ef;
-        }
-
-        .unread-count {
-            background-color: red;
-            color: white;
-            padding: 5px;
-            border-radius: 50%;
-            font-size: 0.8em;
-            margin-left: 5px;
-        }
-
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free to Hangout</title>
+  <style>
+    .profile-container {
+      position: relative;
+      width: 500px;
+      margin: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      scroll-snap-align: start;
+      flex: 0 0 auto;
+    }
+    .profile-picture {
+      width: 100%;
+      height: 500px;
+      object-fit: cover;
+    }
+    .profile-details {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+    .loading {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .swipe-container {
+      display: flex;
+      overflow-x: auto;
+      white-space: nowrap;
+      scroll-snap-type: x mandatory;
+      justify-content: start;
+      padding-left: 10px;
+    }
+    .swipe-container .profile-container {
+      scroll-snap-align: center;
+    }
+    .message-button {
+      background-color: transparent;
+      color: #007bff;
+      border: none;
+      cursor: pointer;
+      font-size: 1.5em;
+      transition: color 0.3s;
+    }
+    .message-button:hover {
+      color: #0056b3;
+    }
+    .user-card-buttons {
+      position: absolute;
+      bottom: 50px;
+      right: 10px;
+      display: flex;
+      gap: 10px;
+    }
+    .user-card-buttons button {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .like-button {
+      background-color: #28a745;
+      color: white;
+    }
+    .dislike-button {
+      background-color: #dc3545;
+      color: white;
+    }
+    .message-button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .message-button:hover {
+      background-color: #0056b3;
+    }
+    /* Media Queries for smaller screens */
+    @media (max-width: 768px) {
+      .profile-container {
+        width: 300px;
+        margin: 10px 5px;
+      }
+      .profile-picture {
+        height: 350px;
+      }
+      .profile-details {
+        font-size: 0.8em;
+        padding: 5px;
+      }
+    }
+    @media (max-width: 480px) {
+      .profile-container {
+        width: 350px;
+      }
+      .profile-picture {
+        height: 500px;
+      }
+      .profile-details {
+        font-size: 0.7em;
+        padding: 3px;
+      }
+    }
+    /* Bottom Navigation Styles */
+    .bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      background-color: hsl(120, 19%, 31%);
+      padding: 10px 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+    .bottom-nav a {
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .bottom-nav a img {
+      display: block;
+      width: 20px;
+      height: 30px;
+      margin: 0 auto;
+    }
+    .bottom-nav a.active {
+      color: rgb(0, 0, 0);
+    }
+  </style>
 </head>
 <body>
-    <nav>
-        <a href="/">Home</a> |
-        <a href="profile">Profile</a> |
-        <a href="messages.html">Messages</a> |
-        <a href="logout">Logout</a>
+  <header>
+    <h1>Free to Hangout</h1>
+  </header>
+
+  <main>
+    <div class="swipe-container" id="users"></div>
+    <div class="loading" id="loading">Loading users...</div>
+
+    <nav class="bottom-nav">
+      <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
+      <a href="profile.html"><img src="icons/profile.png" alt="Profile">Profile</a>
+      <a href="matches.html"><img src="icons/matches.png" alt="Matches">Matches</a>
+      <a href="settings.html"><img src="icons/settings.png" alt="Settings">Settings</a>
+      <a href="login.html"><img src="icons/logout.png" alt="Logout">Logout</a>
     </nav>
-    <hr>
-    <header>
-        <h1>Find Users Near You</h1>
-    </header>
-    <div class="container">
-        <div class="form-group">
-            <label for="distance">Set Distance (in km):</label>
-            <input type="number" id="distance" placeholder="Enter distance in km">
+  </main>
+
+  <script>
+async function fetchUsers() {
+  const userId = sessionStorage.getItem('userId');
+
+  try {
+    const userResponse = await fetch(`/api/user/${userId}`);
+    const userData = await userResponse.json();
+
+    if (!userData || !userData.gender) {
+      document.getElementById('loading').textContent = 'Failed to load users. Please try again later.';
+      return;
+    }
+
+    const oppositeGender = userData.gender.toLowerCase() === 'male' ? 'female' : 'male';
+
+    const response = await fetch(`/api/freetohangout-users?gender=${oppositeGender}`);
+    const data = await response.json();
+
+    document.getElementById('loading').style.display = 'none';
+
+    const usersDiv = document.getElementById('users');
+    usersDiv.innerHTML = '';
+
+    data.forEach(user => {
+      const userDiv = document.createElement('div');
+      userDiv.className = 'profile-container';
+
+      const profilePicture = user.profilePicture || 'default-profile.png';
+      userDiv.innerHTML = `
+        <img src="${profilePicture}" alt="Profile Picture" class="profile-picture">
+        <div class="profile-details">
+          <h2>${user.username}</h2>
+          <p><strong>Age:</strong> ${user.age}</p>
+          <p><strong>Gender:</strong> ${user.gender}</p>
+          <p><strong>Bio:</strong> ${user.bio}</p>
+          <p><strong>Interests:</strong> ${user.interests ? user.interests.split(',').join(', ') : 'Not provided'}</p>
         </div>
-        <div class="form-group">
-            <label for="age-range">Set Age Range:</label>
-            <input type="text" id="age-range" placeholder="e.g., 18-25">
+        <div class="user-card-buttons">
+          <button class="message-button" onclick="messageUser(${user.id}, '${user.username}')">
+            <img src="icons/message.png" alt="Message">
+          </button>
         </div>
-        <div class="form-group">
-            <button onclick="findUsers()">Find Users</button>
-        </div>
-        <div id="users-container">
-            <!-- User cards will be displayed here -->
-        </div>
-    </div>
-    <script>
-        const userId = 'yourUserId'; // Replace this with dynamic userId
+      `;
+      usersDiv.appendChild(userDiv);
+    });
+  } catch (error) {
+    document.getElementById('loading').textContent = 'Failed to load users. Please try again later.';
+  }
+}
 
-        function findUsers() {
-            const distance = document.getElementById('distance').value;
-            const ageRange = document.getElementById('age-range').value;
+function messageUser(userId, username) {
+  window.location.href = `/messages.html?userId=${userId}&username=${encodeURIComponent(username)}`;
+}
 
-            fetch(`/api/find-nearby-users?distance=${distance}&ageRange=${ageRange}`)
-                .then(response => response.json())
-                .then(users => {
-                    const container = document.getElementById('users-container');
-                    container.innerHTML = '';
-                    users.forEach(user => {
-                        const userCard = document.createElement('div');
-                        userCard.className = 'user-card';
-
-                        userCard.innerHTML = `
-                            <img src="${user.profilePicture || 'default-profile.png'}" alt="Profile Image">
-                            <div class="user-info">
-                                <h4>${user.username}</h4>
-                                <p>Age: ${user.age}</p>
-                                <p>Distance: ${user.distance} km</p>
-                            </div>
-                        `;
-                        container.appendChild(userCard);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching nearby users:', error);
-                });
-        }
-
-        function fetchChatList() {
-            document.getElementById('loading').style.display = 'block';
-            fetch(`/api/chat-list?userId=${userId}`)
-                .then(response => response.json())
-                .then(users => {
-                    document.getElementById('loading').style.display = 'none';
-                    renderChatList(users);
-                })
-                .catch(error => {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('chatList').innerHTML = '<p>Error loading chat list. Please try again later.</p>';
-                    console.error('Error fetching chat list:', error);
-                });
-        }
-
-        function renderChatList(users) {
-            const chatList = document.getElementById('chatList');
-            chatList.innerHTML = '';
-            users.forEach(user => {
-                const chatItem = document.createElement('li');
-                chatItem.className = 'chat-list-item';
-
-                const profilePicture = user.profilePicture ? user.profilePicture : 'default-profile.png';
-                const lastMessageTime = user.lastMessageTime ? new Date(user.lastMessageTime).toLocaleTimeString() : 'N/A';
-
-                chatItem.innerHTML = `
-                    <img src="${profilePicture}" alt="${user.username}">
-                    <div>
-                        <strong>${user.username}</strong>
-                        <small>${user.lastMessage || ''}</small>
-                        <div class="message-time">${lastMessageTime}</div>
-                    </div>
-                    <button class="favorite-btn ${user.favorite ? 'active' : ''}" onclick="toggleFavorite(event, ${user.id})">
-                        &#9733;
-                    </button>
-                `;
-                if (user.unreadCount > 0) {
-                    chatItem.classList.add('unread');
-                    chatItem.querySelector('strong').innerHTML += `<span class="unread-count">${user.unreadCount}</span>`;
-                }
-
-                chatItem.addEventListener('click', () => {
-                    window.location.href = `/messages.html?userId=${user.id}&username=${encodeURIComponent(user.username)}`;
-                });
-                chatList.appendChild(chatItem);
-            });
-        }
-
-        function filterChatList(filter) {
-            // Placeholder function: Implement filtering logic based on the filter parameter
-            console.log(`Filter by: ${filter}`);
-            fetch(`/api/chat-list?userId=${userId}&filter=${filter}`)
-                .then(response => response.json())
-                .then(users => {
-                    renderChatList(users);
-                })
-                .catch(error => {
-                    console.error('Error fetching filtered chat list:', error);
-                });
-        }
-
-        function toggleFavorite(event, chatUserId) {
-            event.stopPropagation();
-            const button = event.target;
-            const isFavorite = button.classList.toggle('active');
-
-            fetch(`/api/toggle-favorite`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId, chatUserId, isFavorite })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to toggle favorite');
-                }
-            })
-            .catch(error => {
-                console.error('Error toggling favorite:', error);
-                button.classList.toggle('active'); // Revert the change on error
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', fetchChatList);
-    </script>
+window.onload = fetchUsers;
+  </script>
 </body>
 </html>

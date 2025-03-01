@@ -55,40 +55,11 @@
     });
 
     function handleNotificationClick(senderId, message) {
-      if (message.includes('sent a mood match request') || message.includes('sent you a message')) {
+      if (message.includes('sent a mood match request') || message.includes('sent a relationship goals match request')) {
         window.location.href = `/messages.html?userId=${senderId}`;
       } else if (message.includes('accepted your request')) {
         window.location.href = `/messages.html?userId=${senderId}`;
       }
-    }
-
-    function acceptMoodMatch(userId) {
-      fetch('/api/accept-mood-match', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId })
-      }).then(response => {
-        if (response.ok) {
-          alert('Mood match request accepted!');
-          fetch('/api/notifications') // Fetch new notifications after acceptance
-            .then(response => response.json())
-            .then(notifications => {
-              const notificationList = document.getElementById('notification-list');
-              notificationList.innerHTML = '';
-              notifications.forEach(notification => {
-                const notificationItem = document.createElement('li');
-                notificationItem.textContent = `${notification.sender.username} ${notification.message}`;
-                notificationItem.addEventListener('click', () => handleNotificationClick(notification.senderId, notification.message));
-                notificationList.appendChild(notificationItem);
-              });
-            })
-            .catch(error => console.error('Error fetching notifications:', error));
-        } else {
-          alert('Failed to accept mood match request');
-        }
-      }).catch(error => console.error('Error accepting mood match request:', error));
     }
   </script>
 </body>

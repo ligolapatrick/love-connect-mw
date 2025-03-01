@@ -261,13 +261,13 @@ app.post('/login', async (req, res) => {
     const user = await User.findOne({ where: { username, password } });
     if (user) {
       req.session.userId = user.id; // Save userId in session
-      res.redirect(`/profile?userId=${user.id}`);
+      res.json({ success: true, userId: user.id });
     } else {
-      res.send('Invalid username or password.');
+      res.json({ success: false, message: 'Invalid username or password.' });
     }
   } catch (error) {
     console.error('Error logging in:', error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
 
@@ -1822,28 +1822,20 @@ app.post('/api/send-fitness-match-request', requireLogin, async (req, res) => {
   const fromUserId = req.session.userId;
 
   try {
-    // Create a fitness goals match request message for both sender and receiver
-    await Message.create({
-      fromUserId,
-      toUserId: userId,
-      content: 'You have sent a fitness goals match request.',
-      messageType: 'fitnessMatch'
-    });
+    // Create a fitness goals match request notification
+    const senderUser = await User.findByPk(fromUserId);
+    const senderName = senderUser ? senderUser.username : 'Unknown User';
+    const message = `${senderName} sent a fitness goals match request. Their fitness goals are: ${fitnessGoals}. Tap to accept the request.`;
 
-    await Message.create({
-      fromUserId: userId,
-      toUserId: fromUserId,
-      content: 'You have received a fitness goals match request.',
-      messageType: 'fitnessMatch'
-    });
+    await Notification.create({ userId, senderId: fromUserId, message });
 
-    console.log(`Fitness match request sent from user ${fromUserId} to user ${userId}`);
     res.status(200).send('Fitness match request sent!');
   } catch (error) {
     console.error('Error sending fitness match request:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 app.get('/api/match-goals', requireLogin, async (req, res) => {
   const userId = req.session.userId;
@@ -1891,28 +1883,20 @@ app.post('/api/send-goals-match-request', requireLogin, async (req, res) => {
   const fromUserId = req.session.userId;
 
   try {
-    // Create a relationship goals match request message for both sender and receiver
-    await Message.create({
-      fromUserId,
-      toUserId: userId,
-      content: 'You have sent a relationship goals match request.',
-      messageType: 'goalsMatch'
-    });
+    // Create a relationship goals match request notification
+    const senderUser = await User.findByPk(fromUserId);
+    const senderName = senderUser ? senderUser.username : 'Unknown User';
+    const message = `${senderName} sent a relationship goals match request. Tap to accept the request.`;
 
-    await Message.create({
-      fromUserId: userId,
-      toUserId: fromUserId,
-      content: 'You have received a relationship goals match request.',
-      messageType: 'goalsMatch'
-    });
+    await Notification.create({ userId, senderId: fromUserId, message });
 
-    console.log(`Goals match request sent from user ${fromUserId} to user ${userId}`);
     res.status(200).send('Goals match request sent!');
   } catch (error) {
     console.error('Error sending goals match request:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 app.post('/api/search-users', requireLogin, async (req, res) => {
   const { minAge, maxAge, interests, location } = req.body;
@@ -2514,22 +2498,30 @@ app.get('/api/game-session/:sessionId/guesses', (req, res) => {
     }
 });
 
-// Fetch responses
+// Fetch responses (guesses) for a user
 app.post('/api/fetch-responses', (req, res) => {
-    const { userId, password } = req.body;
-    const session = gameSessions.find(s => s.userId === userId && s.password === password);
-    if (session) {
-        const userResponses = responses.filter(response => response.toUserId === userId || response.fromUserId === userId);
+    const { userId } = req.body;
+    const userResponses = gameSessions.reduce((acc, session) => {
+        const userGuesses = session.guesses.filter(guess => guess.userId === parseInt(userId));
+        if (userGuesses.length > 0) {
+            userGuesses.forEach(guess => acc.push({
+                sessionId: session.sessionId,
+                guess: guess.guess
+            }));
+        }
+        return acc;
+    }, []);
+    if (userResponses.length > 0) {
         res.json({ success: true, responses: userResponses });
     } else {
-        res.status(401).json({ error: 'Invalid user ID or password' });
+        res.json({ success: false, message: 'No responses found for this user ID' });
     }
 });
 
 // Fetch response messages
 app.get('/api/response-messages', (req, res) => {
     const { userId } = req.query;
-    const userResponses = responses.filter(response => response.toUserId === userId || response.fromUserId === userId);
+    const userResponses = responses.filter(response => response.toUserId == userId || response.fromUserId == userId);
     res.json(userResponses);
 });
 
@@ -2540,6 +2532,29 @@ app.post('/api/add-response', (req, res) => {
     res.json({ success: true });
 });
 
+// Example of in-memory storage for users free to hangout
+let freeToHangoutUsers = [];
+
+// API endpoint to get users free to hangout based on gender
+app.get('/api/freetohangout-users', (req, res) => {
+  const { gender } = req.query;
+  const filteredUsers = freeToHangoutUsers.filter(user => user.gender.toLowerCase() === gender.toLowerCase());
+  res.json(filteredUsers);
+});
+
+// Example of endpoint to add a user to free to hangout list
+app.post('/api/freetohangout-users', (req, res) => {
+  const { userId, username, profilePicture, age, gender, bio, interests } = req.body;
+  freeToHangoutUsers.push({ id: userId, username, profilePicture, age, gender, bio, interests });
+  res.json({ success: true });
+});
+
+// Example of endpoint to get user details
+app.get('/api/user/:userId', (req, res) => {
+  const { userId } = req.params;
+  const user = freeToHangoutUsers.find(user => user.id === parseInt(userId));
+  res.json(user);
+});
 
 
 // Define the Post model
