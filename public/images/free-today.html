@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+<<<<<<<< HEAD:public/images/free-today.html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -244,3 +246,256 @@
     </script>
 </body>
 </html>
+========
+=======
+>>>>>>> 2de31ece0949820ad91ac622e066bf758efac226
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Today</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="utilities.js" defer></script>
+    <style>
+        .user-card-container {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            justify-content: start;
+            padding-left: 10px; /* Adjust for padding */
+        }
+        .user-card {
+            position: relative;
+            width: 300px; /* Adjusted width for better visibility */
+            margin: 10px; /* Adjusted margin for better spacing */
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            scroll-snap-align: start;
+            flex: 0 0 auto;
+        }
+        .user-card img {
+            width: 100%;
+            height: 200px; /* Adjusted height for better visibility */
+            object-fit: cover;
+        }
+        .message-input {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .message-input input {
+            flex: 1;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .message-input button {
+            margin-left: 5px;
+            padding: 5px 10px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .message-input button:hover {
+            background-color: #0056b3;
+        }
+        .user-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        /* Bottom Navigation Styles */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: hsl(0, 66%, 64%);
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.bottom-nav a {
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.bottom-nav a i {
+  display: block;
+  font-size: 20px;
+}
+
+.bottom-nav a.active {
+  color: rgb(0, 0, 0);
+}
+  
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Free Today</h1>
+
+    </header>
+    <main>
+        <section class="hangout-section">
+            <h2>Find People to Hangout with Now</h2>
+            <div id="hangout-container" class="user-card-container">
+                <!-- Available users will be dynamically loaded here -->
+            </div>
+        </section>
+    </main>
+        <nav class="bottom-nav">
+          <a href="/">Home</a> |
+         <a href="speed.html">chat call</a> |
+         <a href="secretcrush.html">Secret Crush</a> |
+        <a href="moodmatcher.html">Mood Matcher</a> |
+        <a href="virtualmeetup.html">Virtual Meetup</a> |
+
+        </nav>
+        
+    <script>
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loggedInUserGender = 'male'; // Replace this with dynamic gender of the logged-in user
+
+            fetch('/api/free-to-hangout')
+                .then(response => response.json())
+                .then(users => {
+                    const container = document.getElementById('hangout-container');
+                    container.innerHTML = '';
+                    users.forEach(user => {
+                        if ((loggedInUserGender === 'male' && user.gender === 'female') || 
+                            (loggedInUserGender === 'female' && user.gender === 'male')) {
+                            const userElement = document.createElement('div');
+                            userElement.className = 'user-card';
+                            userElement.innerHTML = `
+                                <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
+                                <h3>${user.username}</h3>
+                                <p>Location: ${user.location}</p>
+                            `;
+                            userElement.querySelector('img').addEventListener('click', (e) => handleTap(e, user.id));
+                            container.appendChild(userElement);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching users:', error));
+
+            const containers = document.querySelectorAll('.user-card-container');
+            containers.forEach(container => {
+                container.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    container.classList.add('active');
+                    startX = e.pageX - container.offsetLeft;
+                    scrollLeft = container.scrollLeft;
+                });
+                container.addEventListener('mouseleave', () => {
+                    isDown = false;
+                    container.classList.remove('active');
+                });
+                container.addEventListener('mouseup', () => {
+                    isDown = false;
+                    container.classList.remove('active');
+                });
+                container.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - container.offsetLeft;
+                    const walk = (x - startX) * 3; //scroll-fast
+                    container.scrollLeft = scrollLeft - walk;
+                });
+            });
+        });
+
+        let tapTimeout;
+        let tapCount = 0;
+        function handleTap(event, userId) {
+            tapCount++;
+            if (tapTimeout) {
+                clearTimeout(tapTimeout);
+            }
+            tapTimeout = setTimeout(() => {
+                if (tapCount === 2) {
+                    sendHangoutRequest(userId);
+                } else if (tapCount === 3) {
+                    window.location.href = `/messages.html?userId=${userId}`;
+                }
+                tapCount = 0;
+            }, 300);
+        }
+
+        function sendHangoutRequest(userId) {
+            fetch('/api/send-hangout-request', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            }).then(response => {
+                if (response.ok) {
+                    alert('Hangout request sent!');
+                    sendNotification('Hangout request sent!');
+                } else {
+                    alert('Failed to send hangout request');
+                }
+            }).catch(error => console.error('Error sending hangout request:', error));
+        }
+
+        function sendNotification(message) {
+            fetch('/api/send-notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            }).then(response => {
+                if (response.ok) {
+                    console.log('Notification sent!');
+                } else {
+                    console.error('Failed to send notification');
+                }
+            }).catch(error => console.error('Error sending notification:', error));
+        }
+
+        fetch('http://localhost:3000/api/users')
+            .then(response => response.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    // Process the data
+                } else {
+                    console.error("Data is not an array");
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching users:", error);
+            });
+    </script>
+</body>
+</html>
+<<<<<<< HEAD
+>>>>>>>> 2de31ece0949820ad91ac622e066bf758efac226:public/free-today.html
+=======
+>>>>>>> 2de31ece0949820ad91ac622e066bf758efac226

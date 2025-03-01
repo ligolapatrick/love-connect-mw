@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -118,3 +119,125 @@
     
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Likes and Dislikes</title>
+    <link rel="stylesheet" href="likes.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px 0;
+            font-size: 24px;
+        }
+        .container {
+            margin: 20px auto;
+            width: 90%;
+            max-width: 600px;
+        }
+        .likes-dislikes {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .likes-dislikes div {
+            flex: 1;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 0 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .likes-dislikes div h2 {
+            margin: 0 0 10px;
+            font-size: 18px;
+            color: #333;
+        }
+        .likes-dislikes div p {
+            font-size: 16px;
+            margin: 0;
+            color: #666;
+        }
+        .notifications {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .notification {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .notification:last-child {
+            border-bottom: none;
+        }
+        .notification p {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Likes and Dislikes</h1>
+    </header>
+    <div class="container">
+        <div class="likes-dislikes">
+            <div>
+                <h2>Total Likes</h2>
+                <p id="total-likes">0</p>
+            </div>
+            <div>
+                <h2>Total Dislikes</h2>
+                <p id="total-dislikes">0</p>
+            </div>
+        </div>
+        <div class="notifications" id="notifications">
+            <!-- Notifications will be dynamically loaded here -->
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/api/likes-dislikes')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-likes').textContent = data.totalLikes;
+                    document.getElementById('total-dislikes').textContent = data.totalDislikes;
+                    
+                    const notificationsContainer = document.getElementById('notifications');
+                    data.notifications.forEach(notification => {
+                        const notificationElement = document.createElement('div');
+                        notificationElement.className = 'notification';
+                        notificationElement.innerHTML = `<p onclick="redirectToChat(${notification.senderId})">${notification.senderUsername} ${notification.message}</p>`;
+                        notificationsContainer.appendChild(notificationElement);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching likes and dislikes:', error);
+                });
+        });
+    
+        function redirectToChat(userId) {
+            window.location.href = `messages.html?userId=${userId}`;
+        }
+        
+    </script>
+    
+</body>
+</html>
+>>>>>>> 2de31ece0949820ad91ac622e066bf758efac226

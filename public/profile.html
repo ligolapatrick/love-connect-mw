@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -264,3 +265,271 @@
 </html>
 
 
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Find One by Click</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <style>
+  /* Media Queries for smaller screens */
+@media only screen and (max-width: 768px) {
+  .user-card {
+      width: 100%;
+      margin: 0.5rem 0;
+  }
+
+  .top-nav {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+  }
+
+  .top-nav a {
+      margin: 0.5rem 0;
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  header {
+      padding: 0.5rem;
+  }
+
+  .user-card {
+      padding: 0.5rem;
+  }
+
+  .user-card-buttons button {
+      padding: 0.25rem 0.5rem;
+      margin: 0.25rem 0;
+  }
+
+  .top-nav a {
+      font-size: 1.2rem;
+  }
+}
+   /* Media Queries for Responsive Design */
+   @media (max-width: 768px) {
+    .user-card {
+      width: 90%; /* Adjusted width for smaller screens */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .user-card {
+      width: 100%; /* Full width for very small screens */
+    }
+    .message-input {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .message-input input {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    .message-input button {
+      width: 100%;
+    }
+  }
+/* Bottom Navigation Styles */
+.bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: hsl(120, 19%, 31%);
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .bottom-nav a {
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .bottom-nav a img {
+            display: block;
+            width: 20px;
+            height: 20px;
+            margin: 0 auto;
+        }
+
+        .bottom-nav a.active {
+            color: rgb(0, 0, 0);
+        }
+        .unread-count {
+  background-color: #ff6347;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.8em;
+  margin-left: 5px;
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="profile-container">
+    <div class="profile-header">
+      <img id="profilePicture" src="" alt="Profile Picture" class="profile-picture">
+      <h2 id="username">Username</h2>
+    </div>
+    <div class="profile-details">
+      <p><strong>Phone Number:</strong> <span id="phone"></span></p>
+      <p><strong>Age:</strong> <span id="age"></span></p>
+      <p><strong>Gender:</strong> <span id="gender"></span></p>
+      <p><strong>Bio:</strong> <span id="bio"></span></p>
+      <p><strong>Interests:</strong> <span id="interests"></span></p>
+      <p><strong>Location:</strong> <span id="location"></span></p>
+    </div>
+    <button id="editProfileButton" onclick="editProfile()">Edit Profile</button>
+  </div>
+  <div id="editProfileForm" class="hidden">
+    <form id="profileForm" action="/profile" method="post" enctype="multipart/form-data">
+      <input type="hidden" id="editUserId" name="userId">
+      <label for="username">Username:</label>
+      <input type="text" id="editUsername" name="username" readonly><br>
+      <label for="phone">Phone Number:</label>
+      <input type="text" id="editPhone" name="phone" readonly><br>
+      <label for="age">Age:</label>
+      <input type="number" id="editAge" name="age"><br>
+      <label for="gender">Gender:</label>
+      <select id="editGender" name="gender">
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="non-binary">Non-binary</option>
+        <option value="prefer not to say">Prefer not to say</option>
+      </select><br>
+      <label for="bio">Bio:</label>
+      <textarea id="editBio" name="bio" rows="4" cols="50"></textarea><br>
+      <label for="interests">Interests:</label>
+      <select id="editInterests" name="interests" multiple>
+        <option value="music">Music</option>
+        <option value="sports">Sports</option>
+        <option value="travel">Travel</option>
+        <option value="reading">Reading</option>
+        <option value="gaming">Gaming</option>
+        <!-- Add more interests as needed -->
+      </select><br>
+      <label for="location">Location:</label>
+      <select id="editLocation" name="location">
+        <option value="Blantyre">Blantyre</option>
+        <option value="Chikwawa">Chikwawa</option>
+        <option value="Chiradzulu">Chiradzulu</option>
+        <option value="Machinga">Machinga</option>
+        <option value="Mangochi">Mangochi</option>
+        <option value="Mulanje">Mulanje</option>
+        <option value="Nsanje">Nsanje</option>
+        <option value="Phalombe">Phalombe</option>
+        <option value="Thyolo">Thyolo</option>
+        <option value="Zomba">Zomba</option>
+        <option value="Balaka">Balaka</option>
+        <option value="Neno">Neno</option>
+        <option value="Mwanza">Mwanza</option>
+        <option value="Lilongwe">Lilongwe</option>
+        <option value="Dedza">Dedza</option>
+        <option value="Dowa">Dowa</option>
+        <option value="Kasungu">Kasungu</option>
+        <option value="Mchinji">Mchinji</option>
+        <option value="Nkhotakota">Nkhotakota</option>
+        <option value="Ntcheu">Ntcheu</option>
+        <option value="Ntchisi">Ntchisi</option>
+        <option value="Salima">Salima</option>
+        <option value="Chitipa">Chitipa</option>
+        <option value="Karonga">Karonga</option>
+        <option value="Likoma">Likoma</option>
+        <option value="Mzimba">Mzimba</option>
+        <option value="Nkhata Bay">Nkhata Bay</option>
+        <option value="Rumphi">Rumphi</option>
+      </select><br>
+      <label for="profilePicture">Profile Picture:</label>
+      <input type="file" id="editProfilePicture" name="profilePicture" accept="image/*"><br>
+      <button type="submit">Update Profile</button>
+    </form>
+  </div>
+<main>
+   
+  <nav class="bottom-nav">
+    <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
+    <a href="/chatlist"><i class="fa fa-comments"></i> Messages <span id="unreadCount" class="unread-count"></span></a>
+    <a href="/anonymous-chat-room"><img src="icons/anonymouse.png" alt="Anonymous"> Anonymous</a>
+    <a href="/chat"><img src="icons/ai.png" alt="AI"> AI</a>
+    <a href="/likes"><img src="icons/likes.png" alt="Likes"> Likes</a>
+    <a href="/login"><img src="icons/logout.png" alt="Logout"> Logout</a>
+  </nav>
+    
+  <script>
+    // Fetch user profile data
+    function fetchUserProfile(userId) {
+      fetch(`/api/profile?userId=${userId}`)
+        .then(response => response.json())
+        .then(user => {
+          document.getElementById('username').textContent = user.username;
+          document.getElementById('phone').textContent = user.fullPhoneNumber;
+          document.getElementById('age').textContent = user.age;
+          document.getElementById('gender').textContent = user.gender;
+          document.getElementById('bio').textContent = user.bio;
+          document.getElementById('interests').textContent = JSON.parse(user.interests).join(', ');
+          document.getElementById('location').textContent = user.location;
+          if (user.profilePicture) {
+            document.getElementById('profilePicture').src = user.profilePicture;
+          }
+          // Check if the profile belongs to the logged-in user
+          if (userId !== 'yourUserId') {
+            document.getElementById('editProfileButton').classList.add('hidden');
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching user profile:', error);
+        });
+    }
+
+    // Handle edit profile button click
+    function editProfile() {
+      document.getElementById('editProfileForm').classList.remove('hidden');
+      document.getElementById('editUserId').value = userId;
+      document.getElementById('editUsername').value = document.getElementById('username').textContent;
+      document.getElementById('editPhone').value = document.getElementById('phone').textContent;
+      document.getElementById('editAge').value = document.getElementById('age').textContent;
+      document.getElementById('editGender').value = document.getElementById('gender').textContent;
+      document.getElementById('editBio').value = document.getElementById('bio').textContent;
+      document.getElementById('editInterests').value = JSON.parse(document.getElementById('interests').textContent).join(', ');
+      document.getElementById('editLocation').value = document.getElementById('location').textContent;
+    }
+
+    // Replace 'yourUserId' with the logged-in user's user ID
+    const userId = new URLSearchParams(window.location.search).get('userId') || 'yourUserId';
+    fetchUserProfile(userId);
+
+    // Ensure the user ID is included in the form data
+    document.getElementById('profileForm').addEventListener('submit', function(event) {
+      document.getElementById('editUserId').value = userId;
+    });
+    function fetchUnreadMessageCount() {
+      fetch('/api/unread-messages?userId=' + userId)
+          .then(response => response.json())
+          .then(data => {
+              const unreadCountElement = document.getElementById('unreadCount');
+              if (data.unreadCount > 0) {
+                  unreadCountElement.textContent = data.unreadCount;
+              } else {
+                  unreadCountElement.textContent = '';
+              }
+          })
+          .catch(error => console.error('Error fetching unread messages:', error));
+  }
+
+  document.addEventListener('DOMContentLoaded', fetchUnreadMessageCount);
+  </script>
+</body>
+</html>
+
+
+>>>>>>> 2de31ece0949820ad91ac622e066bf758efac226

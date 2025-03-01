@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -82,3 +83,79 @@
     </script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responses</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        .response-container {
+            max-width: 500px;
+            margin: auto;
+        }
+        .response-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: left;
+            cursor: pointer;
+        }
+        .response-item:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="response-container">
+        <h1>Responses</h1>
+        <input type="text" id="userId" class="input-field" placeholder="Enter your user ID">
+        <input type="password" id="password" class="input-field" placeholder="Enter your password">
+        <button class="button" onclick="fetchResponses()">View Responses</button>
+        <div id="response-list"></div>
+    </div>
+
+    <script>
+        async function fetchResponses() {
+            const userId = document.getElementById('userId').value;
+            const password = document.getElementById('password').value;
+
+            const response = await fetch('/api/fetch-responses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, password })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                const responseListDiv = document.getElementById('response-list');
+                responseListDiv.innerHTML = '';
+                data.responses.forEach(response => {
+                    const responseItem = document.createElement('div');
+                    responseItem.className = 'response-item';
+                    responseItem.innerHTML = `
+                        <p><strong>From User:</strong> ${response.fromUserId}</p>
+                        <p><strong>To User:</strong> ${response.toUserId}</p>
+                        <p><strong>Message:</strong> ${response.message}</p>
+                    `;
+                    responseItem.onclick = () => {
+                        window.location.href = `/response-messages.html?fromUserId=${response.fromUserId}&toUserId=${response.toUserId}`;
+                    };
+                    responseListDiv.appendChild(responseItem);
+                });
+            } else {
+                alert('Invalid user ID or password');
+            }
+        }
+    </script>
+</body>
+</html>
+>>>>>>> 2de31ece0949820ad91ac622e066bf758efac226

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,3 +65,100 @@
   </script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Notification Styles */
+    .notification-list {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .notification-list li {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin: 5px 0;
+      background-color: #f9f9f9;
+      cursor: pointer;
+    }
+
+    .notification-list li:hover {
+      background-color: #eee;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="notifications-section">
+      <h2>Notifications</h2>
+      <ul id="notification-list" class="notification-list">
+        <!-- Notifications will be dynamically loaded here -->
+      </ul>
+    </section>
+  </main>
+  
+  <script src="utilities.js" defer></script>
+  <script src="scripts.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/notifications')
+        .then(response => response.json())
+        .then(notifications => {
+          const notificationList = document.getElementById('notification-list');
+          notificationList.innerHTML = '';
+          notifications.forEach(notification => {
+            const notificationItem = document.createElement('li');
+            notificationItem.textContent = `${notification.sender.username} ${notification.message}`;
+            notificationItem.addEventListener('click', () => handleNotificationClick(notification.senderId, notification.message));
+            notificationList.appendChild(notificationItem);
+          });
+        })
+        .catch(error => console.error('Error fetching notifications:', error));
+    });
+
+    function handleNotificationClick(senderId, message) {
+      if (message.includes('sent a mood match request') || message.includes('sent you a message')) {
+        window.location.href = `/messages.html?userId=${senderId}`;
+      } else if (message.includes('accepted your request')) {
+        window.location.href = `/messages.html?userId=${senderId}`;
+      }
+    }
+
+    function acceptMoodMatch(userId) {
+      fetch('/api/accept-mood-match', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId })
+      }).then(response => {
+        if (response.ok) {
+          alert('Mood match request accepted!');
+          fetch('/api/notifications') // Fetch new notifications after acceptance
+            .then(response => response.json())
+            .then(notifications => {
+              const notificationList = document.getElementById('notification-list');
+              notificationList.innerHTML = '';
+              notifications.forEach(notification => {
+                const notificationItem = document.createElement('li');
+                notificationItem.textContent = `${notification.sender.username} ${notification.message}`;
+                notificationItem.addEventListener('click', () => handleNotificationClick(notification.senderId, notification.message));
+                notificationList.appendChild(notificationItem);
+              });
+            })
+            .catch(error => console.error('Error fetching notifications:', error));
+        } else {
+          alert('Failed to accept mood match request');
+        }
+      }).catch(error => console.error('Error accepting mood match request:', error));
+    }
+  </script>
+</body>
+</html>
+>>>>>>> 2de31ece0949820ad91ac622e066bf758efac226

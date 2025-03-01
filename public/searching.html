@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -169,3 +170,176 @@
   </script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Location-Based Search - Find One by Click</title>
+  <style>
+    .search-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .search-form {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .search-form select, .search-form button {
+      padding: 10px;
+      margin: 5px;
+    }
+    .search-results {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .user-card {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px;
+      width: 200px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .user-card img {
+      border-radius: 50%;
+      width: 100px;
+      height: 100px;
+    }
+    .user-card h3 {
+      margin: 10px 0 5px 0;
+    }
+    .user-card p {
+      margin: 5px 0;
+    }
+    .loading-indicator {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+      /* Media Queries for Responsive Design */
+   @media (max-width: 768px) {
+    .user-card {
+      width: 90%; /* Adjusted width for smaller screens */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .user-card {
+      width: 100%; /* Full width for very small screens */
+    }
+    .message-input {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .message-input input {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    .message-input button {
+      width: 100%;
+    }
+  }
+  </style>
+
+</head>
+<body>
+  <nav>
+    <a href="/">Home</a> |
+    <a href="/profile">Profile</a> |
+    <a href="/matches">Matches</a> |
+    <a href="/messages">Messages</a> |
+    <a href="/searching">Search</a> |
+    <a href="/login">Logout</a>
+  </nav>
+  <hr>
+  <div class="search-container">
+    <h2>Search Users by Location</h2>
+    <form id="locationSearchForm" class="search-form">
+      <select id="location">
+        <option value="">Select Location</option>
+        <option value="Blantyre">Blantyre</option>
+        <option value="Chikwawa">Chikwawa</option>
+        <option value="Chiradzulu">Chiradzulu</option>
+        <option value="Machinga">Machinga</option>
+        <option value="Mangochi">Mangochi</option>
+        <option value="Mulanje">Mulanje</option>
+        <option value="Nsanje">Nsanje</option>
+        <option value="Phalombe">Phalombe</option>
+        <option value="Thyolo">Thyolo</option>
+        <option value="Zomba">Zomba</option>
+        <option value="Balaka">Balaka</option>
+        <option value="Neno">Neno</option>
+        <option value="Mwanza">Mwanza</option>
+        <option value="Lilongwe">Lilongwe</option>
+        <option value="Dedza">Dedza</option>
+        <option value="Dowa">Dowa</option>
+        <option value="Kasungu">Kasungu</option>
+        <option value="Mchinji">Mchinji</option>
+        <option value="Nkhotakota">Nkhotakota</option>
+        <option value="Ntcheu">Ntcheu</option>
+        <option value="Ntchisi">Ntchisi</option>
+        <option value="Salima">Salima</option>
+        <option value="Chitipa">Chitipa</option>
+        <option value="Karonga">Karonga</option>
+        <option value="Likoma">Likoma</option>
+        <option value="Mzimba">Mzimba</option>
+        <option value="Nkhata Bay">Nkhata Bay</option>
+        <option value="Rumphi">Rumphi</option>
+      </select>
+      <button type="submit">Search</button>
+    </form>
+    <div class="loading-indicator" id="loadingIndicator">
+      <p>Loading...</p>
+    </div>
+    <div class="search-results" id="searchResults">
+      <!-- Search results will be displayed here -->
+    </div>
+  </div>
+  <script>
+    document.getElementById('locationSearchForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      loadingIndicator.style.display = 'block'; // Show loading indicator
+      const searchResults = document.getElementById('searchResults');
+      searchResults.innerHTML = ''; // Clear previous results
+
+      const location = document.getElementById('location').value;
+
+      fetch(`/api/location-matches?location=${location}`)
+        .then(response => response.json())
+        .then(users => {
+          loadingIndicator.style.display = 'none'; // Hide loading indicator
+          console.log('Fetched users:', users); // Add this line to inspect the response
+          users.forEach(user => {
+            const userCard = document.createElement('div');
+            userCard.classList.add('user-card');
+            userCard.innerHTML = `
+              <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
+              <h3>${user.username}</h3>
+              <p>Age: ${user.age}</p>
+              <p>Gender: ${user.gender}</p>
+              <p>Location: ${user.location}</p>
+              <p>Interests: ${user.interests}</p>
+            `;
+            userCard.addEventListener('click', () => {
+              window.location.href = `/messages.html?userId=${user.id}&username=${user.username}`;
+            });
+            searchResults.appendChild(userCard);
+          });
+        })
+        .catch(error => {
+          loadingIndicator.style.display = 'none'; // Hide loading indicator
+          console.error('Error fetching users:', error);
+        });
+    });
+  </script>
+</body>
+</html>
+>>>>>>> 2de31ece0949820ad91ac622e066bf758efac226

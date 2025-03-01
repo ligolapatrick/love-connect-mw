@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -259,3 +260,266 @@
   </script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Users</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #ff4d4d;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    main {
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    .user-card {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .user-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      object-fit: cover;
+      margin-bottom: 10px;
+    }
+    .user-card-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .user-card-buttons button {
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .user-card-buttons button img {
+      width: 24px;
+      height: 24px;
+    }
+    .user-card-buttons button:hover img {
+      filter: brightness(0.8);
+    }
+    .heart-popup {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3em;
+      color: #ff6347;
+      animation: heartPopup 1s ease-in-out;
+      opacity: 0;
+    }
+    @keyframes heartPopup {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.5); opacity: 1; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+    
+
+
+    .user-card-container {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            justify-content: start;
+            padding-left: 10px;
+        }
+        .user-card {
+            position: relative;
+            width: 500px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            scroll-snap-align: start;
+            flex: 0 0 auto;
+        }
+        .user-card img {
+            width: 100%;
+            height: 500px;
+            object-fit: cover;
+        }
+        .user-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        .like-dislike-buttons {
+            position: absolute;
+            bottom: 50px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .like-dislike-buttons button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .like-button {
+            background-color: #28a745;
+            color: white;
+        }
+        .dislike-button {
+            background-color: #dc3545;
+            color: white;
+        }
+        .like-button.liked,
+        .dislike-button.disliked {
+            opacity: 0.5;
+        }
+       
+        .heart-popup {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform: translate(-50%, 50%);
+            font-size: 2em;
+            display: none;
+            animation: popUpAndFade 2s forwards;
+        }
+        @keyframes popUpAndFade {
+            0% { display: block; opacity: 1; }
+            100% { display: none; opacity: 0; }
+        }
+        @media (max-width: 768px) {
+            .user-card {
+                width: 300px;
+                margin: 10px 5px;
+            }
+            .user-card img {
+                height: 350px;
+            }
+            .user-info {
+                font-size: 0.8em;
+                padding: 5px;
+            }
+        }
+        @media (max-width: 480px) {
+            .user-card {
+                width: 350px;
+            }
+            .user-card img {
+                height: 500px;
+            }
+            .user-info {
+                font-size: 0.7em;
+                padding: 3px;
+            }
+        }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Random Users</h1>
+  </header>
+  <main>
+    <div class="user-list" id="userList"></div>
+  </main>
+
+  <script>
+    function fetchRandomUsers() {
+      fetch('/api/get-random-users')
+        .then(response => response.json())
+        .then(users => {
+          const userList = document.getElementById('userList');
+          userList.innerHTML = '';
+          users.forEach(user => {
+            const userDiv = document.createElement('div');
+            userDiv.className = 'user-card';
+            userDiv.innerHTML = `
+              <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
+              <div>
+                <h3>${user.username}</h3>
+                <p>${user.bio || 'No bio available'}</p>
+                <div class="user-card-buttons">
+                  <button onclick="dislikeUser(${user.id})">
+                    <img src="icons/dislike.png" alt="Dislike">
+                  </button>
+                  <button onclick="messageUser(${user.id})">
+                    <img src="icons/message.png" alt="Message">
+                  </button>
+                  <button onclick="likeUser(${user.id})">
+                    <img src="icons/like.png" alt="Like">
+                  </button>
+                </div>
+                <div class="heart-popup" id="heart-popup-${user.id}">❤️</div>
+              </div>
+            `;
+            userList.appendChild(userDiv);
+          });
+        }).catch(error => {
+          console.error('Error fetching random users:', error);
+        });
+    }
+
+    function showHeartPopup(userId) {
+      const heartPopup = document.getElementById(`heart-popup-${userId}`);
+      heartPopup.style.opacity = 1;
+      setTimeout(() => {
+        heartPopup.style.opacity = 0;
+      }, 1000);
+    }
+
+    async function likeUser(userId) {
+      const response = await fetch('/api/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        showHeartPopup(userId);
+      }
+    }
+
+    async function dislikeUser(userId) {
+      await fetch('/api/dislike', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+    }
+
+    function messageUser(userId) {
+      window.location.href = `messages.html?userId=${userId}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchRandomUsers);
+  </script>
+</body>
+</html>
+>>>>>>> 2de31ece0949820ad91ac622e066bf758efac226
