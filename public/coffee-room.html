@@ -23,7 +23,7 @@
         <div class="boards">
           <div class="board" id="stranger-board">
             <h3>Stranger's Board</h3>
-            <textarea id="stranger-chat-input" placeholder="Stranger is typing..." disabled></textarea>
+            <textarea id="stranger-chat-input" placeholder="Strangers messages will be displayed here..." disabled></textarea>
           </div>
           <div class="board" id="user-board">
             <h3>Your Board</h3>
@@ -33,8 +33,7 @@
       </div>
     </section>
   </main>
-
-  <script>
+<script>
     const socket = io();
     let timerInterval;
 
@@ -51,7 +50,7 @@
 
         if (timeLeft < 0) {
           clearInterval(timerInterval);
-          alert('Chat session has ended.');
+          alert('Chat session has ended. Refresh your page for faster searching new stranger');
           socket.emit('endChat');
         }
       }, 1000);
@@ -75,13 +74,14 @@
 
     // Handle end of chat and find a new stranger
     socket.on('endChat', () => {
-      alert('Chat session has ended. Finding a new stranger...');
+      alert('Chat session has ended. Finding a new stranger. Refresh your page for faster searching new stranger...');
       clearInterval(timerInterval);
       userChatInput.value = '';
       document.getElementById('stranger-chat-input').value = '';
       socket.emit('joinCoffeeRoom');
       startTimer();
     });
-  </script>
+</script>
+
 </body>
 </html>

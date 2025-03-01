@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Response Messages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        .message-container {
+            max-width: 500px;
+            margin: auto;
+        }
+        .message-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="message-container">
+        <h1>Response Messages</h1>
+        <div id="message-list"></div>
+        <textarea id="message-input" placeholder="Type your message here..."></textarea>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        let userId = sessionStorage.getItem('userId');
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromUserId = urlParams.get('fromUserId') || userId;
+        const toUserId = urlParams.get('toUserId');
+
+        async function fetchMessages() {
+            const response = await fetch(`/api/response-messages?userId=${fromUserId}`);
+            const messages = await response.json();
+
+            const messageListDiv = document.getElementById('message-list');
+            messageListDiv.innerHTML = '';
+            messages.forEach(message => {
+                const messageItem = document.createElement('div');
+                messageItem.className = 'message-item';
+                messageItem.innerHTML = `<p><strong>${message.fromUserId}:</strong> ${message.message}</p>`;
+                messageListDiv.appendChild(messageItem);
+            });
+        }
+
+        async function sendMessage() {
+            const message = document.getElementById('message-input').value;
+
+            await fetch('/api/add-response', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fromUserId, toUserId, message })
+            });
+
+            fetchMessages();
+            document.getElementById('message-input').value = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchMessages);
+    </script>
+</body>
+</html>

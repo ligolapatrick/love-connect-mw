@@ -3,156 +3,218 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Matches - Find One by Click</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>Mutual Interests Matches</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
       margin: 0;
       padding: 0;
-      background-color: #f4f4f4;
     }
     header {
-      background-color: #ff4d4d;
+      background-color: #007bff;
       color: white;
       text-align: center;
       padding: 20px;
     }
     main {
       padding: 20px;
+      max-width: 800px;
+      margin: auto;
     }
-    .user-card-container {
-      display: flex;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      justify-content: start;
-      padding-left: 10px; 
+    .profile-card {
+  position: relative;
+  width: 100%;
+  max-width: 400px; /* Increase the max width for larger cards */
+  height: 500px; /* Set a fixed height for a prominent size */
+  border-radius: 10px;
+  margin: 20px auto;
+  overflow: hidden;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); /* Enhanced shadow for better depth */
+}
+
+.profile-card img {
+  width: 100%;
+  height: 100%; /* Ensure the image fills the entire card */
+  object-fit: cover; /* Maintain aspect ratio while filling */
+}
+
+.profile-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.6); /* Darker overlay for better contrast */
+  color: white;
+  padding: 15px;
+  font-size: 1em; /* Adjust text size for readability */
+  text-align: left;
+}
+
+.actions {
+  position: absolute;
+  top: 70%; /* Adjust action buttons to sit lower on the image */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 15px; /* Add spacing between buttons */
+}
+
+.actions button img {
+  width: 60px; /* Increase button size */
+  height: 60px; /* For better accessibility */
+}
+    
+    .actions button img {
+      width: 50px;
+      height: 50px;
     }
-    .user-card {
-      position: relative;
-      width: 500px; 
-      margin: 10px; 
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      scroll-snap-align: start;
-      flex: 0 0 auto;
-    }
-    .user-card img {
-      width: 100%;
-      height: 500px; 
-      object-fit: cover;
-    }
-    .message-input {
+    .heart-popup {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3em;
+      color: #ff6347;
+      opacity: 0; /* Initially hidden */
+      animation: popUp 1s ease-in-out forwards;
+    }
+    @keyframes popUp {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.5); opacity: 1; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+    .bottom-nav {
       display: flex;
-      align-items: center;
-      background-color: rgba(255, 255, 255, 0.8);
-      padding: 5px;
-      border-radius: 5px;
-    }
-    .message-input input {
-      flex: 1;
-      padding: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .message-input button {
-      margin-left: 5px;
-      padding: 5px 10px;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .message-input button:hover {
-      background-color: #0056b3;
-    }
-    .user-info {
-      position: absolute;
+      justify-content: space-around;
+      background-color: hsl(0, 66%, 64%);
+      padding: 10px 0;
+      position: fixed;
       bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 10px;
-      text-align: left;
-      font-size: 0.9em;
+      width: 100%;
     }
-    @media (max-width: 768px) {
-      .user-card {
-        width: 80%;
-        height: auto;
-      }
-      .user-card img {
-        height: auto;
-      }
+    .bottom-nav a {
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      font-size: 14px;
     }
-    @media (max-width: 480px) {
-      .user-card {
-        width: 100%;
-        height: auto;
-      }
-      .user-card img {
-        height: auto;
-      }
+    .bottom-nav a img {
+      display: block;
+      width: 15px;
+      height: 15px;
+      margin: 5px auto;
     }
   </style>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a> |
-    <a href="daily-discovery.html">daily-discovery</a> |
-    <a href="fitness-buddies.html">fitness-buddies</a> |
-    <a href="relationship-goals.html">relationship-goals</a> |
-    <a href="quick-matches.html">quick-matches</a> |
-    <a href="settings.html">settings</a> |
-    <a href="login.html">Logout</a>
-  </nav>
-  <hr>
   <header>
-    <h1>Matches</h1>
+    <h1>Mutual Interests</h1>
   </header>
   <main>
-    <div class="user-card-container" id="matchesContainer">
-      <!-- Matches will be displayed here -->
+    <div id="profiles-container">
+      <!-- Mutual interests matches will be dynamically loaded here -->
     </div>
   </main>
+
+  <nav class="bottom-nav">
+    <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
+    <a href="daily-discovery"><img src="icons/daily.png" alt="Day Discovery"> Discover</a>
+    <a href="fitness-buddies"><img src="icons/gym.png" alt="Fitness Buddies"> FitnessBuddies</a>
+    <a href="quick-matches"><img src="icons/quick.png" alt="Quick Match"> QuickMatch</a>
+    <a href="settings"><img src="icons/settings.png" alt="Settings"> Settings</a>
+    <a href="login"><img src="icons/logout.png" alt="Logout"> Logout</a>
+  </nav>
+
   <script>
-    function fetchMatches() {
-      fetch('/api/matches')
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/mutual-interests')
         .then(response => response.json())
         .then(matches => {
-          const matchesContainer = document.getElementById('matchesContainer');
-          matchesContainer.innerHTML = '';
-          matches.forEach(user => {
-            const userCard = document.createElement('div');
-            userCard.className = 'user-card';
-            userCard.innerHTML = `
-              <a href="/messages.html?userId=${user.id}&username=${encodeURIComponent(user.username)}">
-                <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
-                <div class="user-info">
-                  <h2>${user.username}</h2>
-                  <p><strong>Age:</strong> ${user.age || 'Not Provided'}</p>
-                  <p><strong>Interests:</strong> ${user.interests || 'Not Provided'}</p>
-                </div>
-              </a>
+          const container = document.getElementById('profiles-container');
+          container.innerHTML = '';
+
+          // Shuffle profiles
+          const shuffledMatches = matches.sort(() => Math.random() - 0.5);
+
+          shuffledMatches.forEach(match => {
+            const profileCard = document.createElement('div');
+            profileCard.className = 'profile-card';
+
+            const profileImage = match.profilePicture || 'default-profile.png';
+            const mutualInterests = match.mutualInterests.join(', ');
+
+            profileCard.innerHTML = `
+              <img src="${profileImage}" alt="${match.username}'s Profile Picture">
+              <div class="profile-info">
+                <h3>${match.username}</h3>
+                <p><strong>Age:</strong> ${match.age || 'Not Provided'}</p>
+                <p><strong>Mutual Interests:</strong> ${mutualInterests || 'No shared interests'}</p>
+              </div>
+              <div class="actions">
+                <button onclick="likeUser(${match.id})">
+                  <img src="icons/likes.png" alt="Like">
+                </button>
+                <button onclick="messageUser(${match.id}, '${match.username}')">
+                  <img src="icons/message.png" alt="Message">
+                </button>
+                <button onclick="dislikeUser(${match.id})">
+                  <img src="icons/dislike.png" alt="Dislike">
+                </button>
+              </div>
+              <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
             `;
-            matchesContainer.appendChild(userCard);
+            container.appendChild(profileCard);
           });
         })
         .catch(error => {
-          console.error('Error fetching matches:', error);
+          console.error('Error fetching mutual interests:', error);
         });
+    });
+
+    function likeUser(userId) {
+      console.log(`Liked user ${userId}`);
+      showHeartPopup(userId);
+      sendLikeCount(userId, 'like');
     }
 
-    document.addEventListener('DOMContentLoaded', fetchMatches);
+    function dislikeUser(userId) {
+      console.log(`Disliked user ${userId}`);
+      sendLikeCount(userId, 'dislike');
+    }
+
+    function messageUser(userId, username) {
+      window.location.href = `/messages.html?userId=${userId}&username=${encodeURIComponent(username)}`;
+    }
+
+    function showHeartPopup(userId) {
+      const heartPopup = document.createElement('div');
+      heartPopup.className = 'heart-popup';
+      heartPopup.textContent = '❤️';
+      document.body.appendChild(heartPopup);
+
+      setTimeout(() => {
+        heartPopup.remove();
+      }, 1000);
+    }
+
+    function sendLikeCount(userId, type) {
+      // Send likes/dislikes to likes.html or server
+      fetch('/likes.html', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, type }) // Type can be 'like' or 'dislike'
+      })
+        .then(response => {
+          if (response.ok) {
+            console.log(`${type === 'like' ? 'Liked' : 'Disliked'} user ${userId}`);
+          }
+        })
+        .catch(error => {
+          console.error('Error updating like/dislike count:', error);
+        });
+    }
+    
   </script>
 </body>
 </html>

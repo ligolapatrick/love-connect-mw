@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Search Users - Find One by Click</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>Location-Based Search - Find One by Click</title>
   <style>
     .search-container {
       text-align: center;
@@ -16,7 +15,7 @@
       flex-wrap: wrap;
       gap: 10px;
     }
-    .search-form input, .search-form select, .search-form button {
+    .search-form select, .search-form button {
       padding: 10px;
       margin: 5px;
     }
@@ -46,41 +45,52 @@
     .user-card p {
       margin: 5px 0;
     }
+    .loading-indicator {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+      /* Media Queries for Responsive Design */
+   @media (max-width: 768px) {
+    .user-card {
+      width: 90%; /* Adjusted width for smaller screens */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .user-card {
+      width: 100%; /* Full width for very small screens */
+    }
+    .message-input {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .message-input input {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    .message-input button {
+      width: 100%;
+    }
+  }
   </style>
-  <script src="https://unpkg.com/swipejs@2.2.0/dist/swipe.min.js"></script>
+
 </head>
 <body>
   <nav>
     <a href="/">Home</a> |
     <a href="/profile">Profile</a> |
     <a href="/matches">Matches</a> |
-    <a href="/nearby">Nearby Users</a> |
     <a href="/messages">Messages</a> |
+    <a href="/searching">Search</a> |
     <a href="/login">Logout</a>
   </nav>
   <hr>
   <div class="search-container">
-    <h2>Search Users</h2>
-    <form id="searchForm" class="search-form">
-      <input type="number" id="minAge" placeholder="Min Age">
-      <input type="number" id="maxAge" placeholder="Max Age">
-      <select id="gender">
-        <option value="">Gender</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-        <option value="Other">Other</option>
-      </select>
-      <label for="interests">Interests:</label>
-      <select id="interests" name="interests" multiple>
-        <option value="any">Any</option>
-        <option value="music">Music</option>
-        <option value="sports">Sports</option>
-        <option value="travel">Travel</option>
-        <option value="reading">Reading</option>
-        <option value="gaming">Gaming</option>
-      </select>
+    <h2>Search Users by Location</h2>
+    <form id="locationSearchForm" class="search-form">
       <select id="location">
-        <option value="">Location</option>
+        <option value="">Select Location</option>
         <option value="Blantyre">Blantyre</option>
         <option value="Chikwawa">Chikwawa</option>
         <option value="Chiradzulu">Chiradzulu</option>
@@ -112,29 +122,28 @@
       </select>
       <button type="submit">Search</button>
     </form>
+    <div class="loading-indicator" id="loadingIndicator">
+      <p>Loading...</p>
+    </div>
     <div class="search-results" id="searchResults">
       <!-- Search results will be displayed here -->
     </div>
   </div>
   <script>
-    document.getElementById('searchForm').addEventListener('submit', function(event) {
+    document.getElementById('locationSearchForm').addEventListener('submit', function(event) {
       event.preventDefault();
-      const minAge = document.getElementById('minAge').value;
-      const maxAge = document.getElementById('maxAge').value;
-      const gender = document.getElementById('gender').value;
-      const interests = Array.from(document.getElementById('interests').selectedOptions).map(option => option.value).join(',');
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      loadingIndicator.style.display = 'block'; // Show loading indicator
+      const searchResults = document.getElementById('searchResults');
+      searchResults.innerHTML = ''; // Clear previous results
+
       const location = document.getElementById('location').value;
 
-      fetch(`/api/search-users?minAge=${minAge}&maxAge=${maxAge}&gender=${gender}&interests=${interests}&location=${location}`)
+      fetch(`/api/location-matches?location=${location}`)
         .then(response => response.json())
         .then(users => {
+          loadingIndicator.style.display = 'none'; // Hide loading indicator
           console.log('Fetched users:', users); // Add this line to inspect the response
-          const searchResults = document.getElementById('searchResults');
-          searchResults.innerHTML = '';
-          const swipeContainer = document.createElement('div');
-          swipeContainer.classList.add('swipe');
-          const swipeWrap = document.createElement('div');
-          swipeWrap.classList.add('swipe-wrap');
           users.forEach(user => {
             const userCard = document.createElement('div');
             userCard.classList.add('user-card');
@@ -149,13 +158,11 @@
             userCard.addEventListener('click', () => {
               window.location.href = `/messages.html?userId=${user.id}&username=${user.username}`;
             });
-            swipeWrap.appendChild(userCard);
+            searchResults.appendChild(userCard);
           });
-          swipeContainer.appendChild(swipeWrap);
-          searchResults.appendChild(swipeContainer);
-          new Swipe(swipeContainer);
         })
         .catch(error => {
+          loadingIndicator.style.display = 'none'; // Hide loading indicator
           console.error('Error fetching users:', error);
         });
     });

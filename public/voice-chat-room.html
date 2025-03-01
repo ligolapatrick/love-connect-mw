@@ -1,224 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voice Chat Room - Find One by Click</title>
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    .voice-chat-container {
-      text-align: center;
-      margin-top: 50px;
-    }
-    .video-container {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    .video-container .host-video {
-      grid-column: span 3;
-      border: 2px solid #007bff;
-    }
-    video {
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      width: 100%;
-      height: 200px;
-    }
-    .controls {
-      margin-top: 20px;
-    }
-    .mute-button {
-      display: block;
-      margin: 10px auto;
-      padding: 5px 10px;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .mute-button:hover {
-      background-color: #0056b3;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two Truths and a Lie</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        .game-container {
+            max-width: 500px;
+            margin: auto;
+        }
+        .input-field {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .game-list {
+            margin: 20px 0;
+        }
+        .game-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: left;
+            cursor: pointer;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100%;
+            background-color: #111;
+            padding-top: 60px;
+            display: none;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: white;
+            display: block;
+        }
+        .sidebar a:hover {
+            background-color: #575757;
+        }
+        .sidebar .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+        .openbtn {
+            font-size: 20px;
+            cursor: pointer;
+            background-color: #111;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+        }
+        .openbtn:hover {
+            background-color: #444;
+        }
+    </style>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a> |
-    <a href="/profile">Profile</a> |
-    <a href="/matches">Matches</a> |
-    <a href="/nearby">Nearby Users</a> |
-    <a href="/messages">Messages</a> |
-    <a href="/voice-chat-room">Voice Chat Room</a> |
-    <a href="/login">Logout</a>
-  </nav>
-  <hr>
-  <div class="voice-chat-container">
-    <input type="text" id="sessionNameInput" placeholder="Enter session name">
-    <div class="video-container">
-      <video id="hostVideo" class="host-video" autoplay muted></video>
-      <video id="video1" autoplay></video>
-      <video id="video2" autoplay></video>
-      <video id="video3" autoplay></video>
-      <video id="video4" autoplay></video>
-      <video id="video5" autoplay></video>
+    <div class="sidebar" id="mySidebar">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+        <a href="responses.html">Responses</a>
+        <a href="response-messages.html">Response Messages</a>
     </div>
-    <div class="controls">
-      <button id="createButton">Create Session</button>
-      <button id="hangUpButton">Hang Up</button>
-      <button id="muteButton">Mute</button>
-      <button id="unmuteButton">Unmute</button>
+
+    <button class="openbtn" onclick="openNav()">☰</button> 
+
+    <div class="game-container">
+        <h1>Two Truths and a Lie</h1>
+        <div id="create-game">
+            <input type="text" id="truth1" class="input-field" placeholder="Enter first truth">
+            <input type="text" id="truth2" class="input-field" placeholder="Enter second truth">
+            <input type="text" id="lie" class="input-field" placeholder="Enter a lie">
+            <input type="password" id="password" class="input-field" placeholder="Enter password">
+            <button class="button" onclick="createGame()">Create Game</button>
+        </div>
+        <div id="game-list" class="game-list">
+            <h2>Available Games</h2>
+            <!-- Game sessions will be dynamically loaded here -->
+        </div>
+        <div id="game-session" style="display: none;">
+            <h2>Guess the Lie</h2>
+            <div id="truths-and-lie"></div>
+            <button class="button" onclick="submitGuess(0)">Guess 1</button>
+            <button class="button" onclick="submitGuess(1)">Guess 2</button>
+            <button class="button" onclick="submitGuess(2)">Guess 3</button>
+        </div>
+        <div id="guesses" style="display: none;">
+            <h2>Guesses</h2>
+            <div id="guess-list"></div>
+        </div>
     </div>
-  </div>
-  <div class="voice-chat-container">
-    <h2>Available Voice Chats</h2>
-    <div id="voiceChatList">
-      <!-- Available voice chats will be displayed here -->
-    </div>
-  </div>
-  
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const hostVideo = document.getElementById('hostVideo');
-    const videoElements = [
-      document.getElementById('video1'),
-      document.getElementById('video2'),
-      document.getElementById('video3'),
-      document.getElementById('video4'),
-      document.getElementById('video5')
-    ];
-    let localStream;
-    let pcs = [];
-    let listening = true;
-    let isMuted = false;
-    let currentSession = '';
 
-    document.getElementById('createButton').addEventListener('click', async () => {
-      const sessionName = document.getElementById('sessionNameInput').value.trim();
-      if (!sessionName) {
-        alert('Please enter a session name');
-        return;
-      }
-      currentSession = sessionName;
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      hostVideo.srcObject = localStream;
-      socket.emit('createVoiceChat', sessionName);
-    });
+    <script>
+        let userId = sessionStorage.getItem('userId') || 'user_' + Date.now();
+        sessionStorage.setItem('userId', userId);
 
-    document.getElementById('hangUpButton').addEventListener('click', () => {
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
-      }
-      pcs.forEach(pc => pc.close());
-      pcs = [];
-      hostVideo.srcObject = null;
-      videoElements.forEach(video => video.srcObject = null);
-      socket.emit('leaveVoiceChat', currentSession);
-      currentSession = '';
-    });
+        async function createGame() {
+            const truths = [document.getElementById('truth1').value, document.getElementById('truth2').value];
+            const lie = document.getElementById('lie').value;
+            const password = document.getElementById('password').value;
 
-    document.getElementById('muteButton').addEventListener('click', () => {
-      localStream.getAudioTracks().forEach(track => track.enabled = false);
-      isMuted = true;
-    });
-
-    document.getElementById('unmuteButton').addEventListener('click', () => {
-      localStream.getAudioTracks().forEach(track => track.enabled = true);
-      isMuted = false;
-    });
-
-    socket.on('voiceChatCreated', (sessionName) => {
-      listening = false;
-      currentSession = sessionName;
-      startLocalStream();
-    });
-
-    socket.on('voiceChatJoined', (sessionName) => {
-      listening = true;
-      alert(`Joined voice chat room: ${sessionName}`);
-    });
-
-    socket.on('updateVoiceChatList', (sessions) => {
-      const voiceChatList = document.getElementById('voiceChatList');
-      voiceChatList.innerHTML = '';
-      sessions.forEach(session => {
-        const sessionElement = document.createElement('div');
-        sessionElement.className = 'chat-room';
-        sessionElement.innerHTML = `
-          <p>${session}</p>
-          <button onclick="joinVoiceChat('${session}')">Join</button>
-        `;
-        voiceChatList.appendChild(sessionElement);
-      });
-    });
-
-    socket.on('newParticipant', async (socketId) => {
-      if (pcs.length < 5) {
-        const pc = new RTCPeerConnection();
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-        pc.onicecandidate = (event) => {
-          if (event.candidate) {
-            socket.emit('iceCandidate', { to: socketId, candidate: event.candidate });
-          }
-        };
-        pc.ontrack = (event) => {
-          const videoElement = videoElements[pcs.length];
-          videoElement.srcObject = event.streams[0];
-        };
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket.emit('offer', { to: socketId, offer: pc.localDescription });
-        pcs.push(pc);
-      } else {
-        alert('All video slots are occupied. You will be listening only.');
-      }
-    });
-
-    socket.on('offer', async ({ from, offer }) => {
-      const pc = new RTCPeerConnection();
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit('iceCandidate', { to: from, candidate: event.candidate });
+            const response = await fetch('/api/create-game', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, truths, lie, password })
+            });
+            const data = await response.json();
+            loadGameSession(data.sessionId);
+            listGames();
         }
-      };
-      pc.ontrack = (event) => {
-        hostVideo.srcObject = event.streams[0];
-      };
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit('answer', { to: from, answer: pc.localDescription });
-      pcs.push(pc);
-    });
 
-    socket.on('answer', ({ from, answer }) => {
-      const pc = pcs.find(pc => pc.signalingState !== 'stable');
-      if (pc) {
-        pc.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
+        async function listGames() {
+            const response = await fetch('/api/list-games');
+            const games = await response.json();
 
-    socket.on('iceCandidate', ({ from, candidate }) => {
-      const pc = pcs.find(pc => pc.signalingState !== 'stable');
-      if (pc) {
-        pc.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-    });
+            const gameListDiv = document.getElementById('game-list');
+            gameListDiv.innerHTML = '<h2>Available Games</h2>';
+            games.forEach(game => {
+                const gameItem = document.createElement('div');
+                gameItem.className = 'game-item';
+                gameItem.onclick = () => loadGameSession(game.sessionId);
+                gameItem.innerHTML = `
+                    <p><strong>Game ID:</strong> ${game.sessionId}</p>
+                    <p><strong>Creator:</strong> User ${game.userId}</p>
+                `;
+                gameItem.innerHTML = `
+                    <p><strong>Game ID:</strong> ${game.sessionId}</p>
+                    <p><strong>Creator:</strong> User ${game.userId}</p>
+                `;
+                gameListDiv.appendChild(gameItem);
+            });
+        }
 
-    function startLocalStream() {
-      localStream = navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      hostVideo.srcObject = localStream;
-      socket.emit('startVoiceChat');
-    }
+        async function loadGameSession(sessionId) {
+            const response = await fetch(`/api/game-session/${sessionId}`);
+            const session = await response.json();
 
-    function joinVoiceChat(sessionName) {
-      socket.emit('joinVoiceChat', sessionName);
-    }
-  </script>
+            document.getElementById('create-game').style.display = 'none';
+            document.getElementById('game-session').style.display = 'block';
+
+            const truthsAndLie = [...session.truths, session.lie].sort(() => Math.random() - 0.5);
+            const truthsAndLieDiv = document.getElementById('truths-and-lie');
+            truthsAndLieDiv.innerHTML = `
+                <p>1. ${truthsAndLie[0]}</p>
+                <p>2. ${truthsAndLie[1]}</p>
+                <p>3. ${truthsAndLie[2]}</p>
+            `;
+        }
+
+        async function submitGuess(guessIndex) {
+            const sessionId = new URLSearchParams(window.location.search).get('sessionId');
+
+            await fetch('/api/submit-guess', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId, userId, guess: guessIndex })
+            });
+
+            alert('Guess submitted!');
+        }
+
+        async function fetchGuesses(sessionId) {
+            const response = await fetch(`/api/game-session/${sessionId}/guesses`);
+            const guesses = await response.json();
+
+            const guessListDiv = document.getElementById('guess-list');
+            guessListDiv.innerHTML = '';
+            guesses.forEach(guess => {
+                const guessItem = document.createElement('div');
+                guessItem.className = 'guess-item';
+                guessItem.innerHTML = `
+                    <p><strong>User:</strong> ${guess.userId}</p>
+                    <p><strong>Guess:</strong> ${guess.guess}</p>
+                `;
+                guessListDiv.appendChild(guessItem);
+            });
+        }
+
+        function openNav() {
+            document.getElementById("mySidebar").style.display = "block";
+        }
+
+        function closeNav() {
+            document.getElementById("mySidebar").style.display = "none";
+        }
+
+        document.addEventListener('DOMContentLoaded', listGames);
+    </script>
 </body>
 </html>

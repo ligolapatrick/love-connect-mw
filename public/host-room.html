@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Host Room</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    header {
+      background-color: #ff4d4d;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    h1, h2 {
+      color: #333;
+      text-align: center;
+    }
+    #waitingList, #listeners {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .slot {
+      width: 60px;
+      height: 60px;
+      background-color: #f1f1f1;
+      border: 1px solid #ccc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 50%;
+      font-size: 14px;
+      position: relative;
+      cursor: pointer;
+    }
+    .slot img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .nickname {
+      position: absolute;
+      bottom: -15px;
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+    }
+    #hostSlot {
+      background-color: #ffeb3b;
+      font-weight: bold;
+    }
+    .muted {
+      background-color: #ff4c4c;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: block;
+      margin: 0 auto;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="roomName">Room Name</h1>
+    <p>Host: <span id="hostNickname"></span></p>
+    <p id="roomDescription">Description or Topic</p>
+  </header>
+  <main>
+    <h2>Waiting List</h2>
+    <div id="waitingList">
+      <div id="hostSlot" class="slot" data-slot="0">Host</div>
+      <div class="slot" data-slot="1">1</div>
+      <div class="slot" data-slot="2">2</div>
+      <div class="slot" data-slot="3">3</div>
+      <div class="slot" data-slot="4">4</div>
+      <div class="slot" data-slot="5">5</div>
+      <div class="slot" data-slot="6">6</div>
+      <div class="slot" data-slot="7">7</div>
+    </div>
+    <h2>Listeners</h2>
+    <div id="listeners">
+      <!-- Listeners will be displayed here -->
+    </div>
+  </main>
+  <footer>
+    <button id="startChat" onclick="startChat()">Start Chat</button>
+  </footer>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io.connect('http://localhost:3000');
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomName = urlParams.get('roomName');
+    const hostNickname = urlParams.get('nickname');
+    document.getElementById('roomName').textContent = roomName;
+    document.getElementById('hostNickname').textContent = hostNickname;
+
+    // Update host slot with host info
+    const hostSlot = document.getElementById('hostSlot');
+    hostSlot.innerHTML = `<img src="" alt="Host"><span class="nickname">${hostNickname}</span>`;
+
+    function muteOrUnmute(slotNumber) {
+      socket.emit('toggleMute', { roomName, slotNumber });
+    }
+
+    document.querySelectorAll('.slot').forEach(slot => {
+      slot.addEventListener('click', () => {
+        const slotNumber = slot.dataset.slot;
+        console.log('Slot clicked:', slotNumber);
+      });
+      slot.addEventListener('dblclick', () => muteOrUnmute(slot.dataset.slot));
+    });
+
+    socket.on('waitingListUpdated', ({ waitingList }) => {
+      const waitingListContainer = document.getElementById('waitingList');
+      const hostSlot = document.getElementById('hostSlot');
+      waitingListContainer.innerHTML = '';
+      waitingListContainer.appendChild(hostSlot);
+
+      waitingList.forEach((user, i) => {
+        const slotDiv = document.createElement('div');
+        slotDiv.className = 'slot';
+        slotDiv.dataset.slot = i + 1;
+        slotDiv.innerHTML = user ?
+          `<img src="${user.profilePicture}" alt="Profile Picture"><span class="nickname">${user.nickname}</span>` : i + 1;
+        if (user) {
+          slotDiv.addEventListener('dblclick', () => muteOrUnmute(i + 1));
+        } else {
+          slotDiv.addEventListener('click', () => console.log("Empty slot clicked."));
+        }
+        waitingListContainer.appendChild(slotDiv);
+      });
+    });
+
+    socket.on('listenersUpdated', ({ listeners }) => {
+      const listenersContainer = document.getElementById('listeners');
+      listenersContainer.innerHTML = '';
+      listeners.forEach(listener => {
+        const listenerDiv = document.createElement('div');
+        listenerDiv.className = 'slot';
+        listenerDiv.innerHTML = `<img src="${listener.profilePicture}" alt="Profile Picture"><span class="nickname">${listener.nickname}</span>`;
+        listenersContainer.appendChild(listenerDiv);
+      });
+    });
+
+    async function startChat() {
+      try {
+        const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        socket.emit('startChat', { roomName });
+        console.log('Chat started with local microphone.');
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+      }
+    }
+
+    socket.on('offer', async ({ slotNumber, offer }) => {
+      console.log(`Offer received in slot ${slotNumber}`);
+    });
+
+    socket.on('signal', async ({ slotNumber, candidate }) => {
+      console.log(`Signal in slot ${slotNumber}:`, candidate);
+    });
+
+    socket.on('userMuted', ({ slotNumber }) => {
+      document.querySelector(`.slot[data-slot="${slotNumber}"]`).classList.add('muted');
+    });
+
+    socket.on('userUnmuted', ({ slotNumber }) => {
+      document.querySelector(`.slot[data-slot="${slotNumber}"]`).classList.remove('muted');
+    });
+  </script>
+</body>
+</html>

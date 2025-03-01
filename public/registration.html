@@ -14,46 +14,67 @@
             background-image: url('images/background.jpg');
             background-size: cover;
             background-position: center;
+            animation: backgroundAnimation 10s infinite alternate;
         }
+
+        @keyframes backgroundAnimation {
+            0% { filter: brightness(0.8); }
+            100% { filter: brightness(1); }
+        }
+
         .navbar {
             background-color: rgba(0, 0, 0, 0.8);
             color: white;
             display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            animation: slideDown 1s ease-out;
         }
+
         .navbar img {
             height: 50px;
         }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         .nav-logo, .nav-contact, .nav-links {
             display: inline-block;
             vertical-align: middle;
         }
+
         .nav-contact span {
             margin: 0 10px;
             display: inline-block;
             vertical-align: middle;
         }
+
         .nav-links {
             list-style: none;
             padding: 0;
             gap: 40px;
         }
+
         .nav-links li {
             display: inline;
             margin: 0 10px;
         }
+
         .nav-links a {
             color: white;
             text-decoration: none;
         }
+
         .form-section {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
         }
+
         .form-background {
             background-color: rgba(0, 0, 0, 0.8);
             padding: 20px;
@@ -61,26 +82,13 @@
             color: white;
             width: 300px;
             text-align: center;
+            animation: fadeIn 1s ease-in-out;
         }
-        .form-background h2 {
-            margin-bottom: 20px;
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .form-background label {
-            display: block;
-            text-align: left;
-            margin-bottom: 5px;
-        }
-        /* Form Sections */
-.form-section {
-    background-image: url('/images/Matches.jpg'); /* Your path */
-    background-size: cover;
-    background-position: cover;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    
-}
 
         .form-background input, .form-background select, .form-background button {
             width: 100%;
@@ -88,14 +96,26 @@
             margin-bottom: 10px;
             border-radius: 5px;
             border: none;
+            transition: all 0.3s ease;
         }
+
+        .form-background input:focus, .form-background select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 10px rgba(0,123,255,0.5);
+            transform: scale(1.05);
+        }
+
         .form-background button {
             background-color: #007bff;
             color: white;
             cursor: pointer;
+            transition: all 0.3s ease;
         }
+
         .form-background button:hover {
             background-color: #0056b3;
+            box-shadow: 0 0 10px rgba(0,123,255,0.5);
+            transform: scale(1.05);
         }
 
         footer a {
@@ -115,13 +135,7 @@
             <span><img src="images/Limav-Flat-Gradient-Social-Whatsapp.512.png" alt="WhatsApp Icon"> 0888202246</span>
             <span><img src="images/Graphicloads-100-Flat-Email-2.256 (1).png" alt="ligolapatrick61@gmail.com icon">ligolapatrick61@gmail.com</span>
         </div>
-        <ul class="nav-links">
-            <li><a href="login.html">Home</a></li>
-            <li><a href="about-app.html">About</a></li>
-            <li><a href="#contact">Contact</a></li>
-            <li><a href="registration.html">Register</a></li>
-            <li><a href="login.html">Login</a></li>
-        </ul>
+    
     </nav>
     <main>
         <section class="form-section">
@@ -142,27 +156,15 @@
                     </select>
                     <input type="text" id="phone" name="phone" required><br>
                     <button type="submit">Register</button>
-                    <p>Already have an account? <a href="login.html">Login here</a></p>
+                    <p>Already have an account? <a href="login">Login here</a></p>
                 </form>
-                <div class="fb-login-button" 
-                     data-width="" 
-                     data-size="large" 
-                     data-button-type="continue_with" 
-                     data-layout="default" 
-                     data-auto-logout-link="false" 
-                     data-use-continue-as="false"
-                     data-scope="public_profile,email"
-                     data-onlogin="checkLoginState()">
-                </div>
-                <p id="error-message" style="color: red;"></p>
-            </div>
+     
         </section>
         <section class="promo-section">
             <h3>Why Choose LoveConnect?</h3>
             <ul>
                 <li>Connect with like-minded individuals looking for love.</li>
                 <li>Advanced matchmaking algorithms to find your perfect match.</li>
-                <li>Secure and private platform to ensure your safety.</li>
                 <li>Fun and interactive features to make dating enjoyable.</li>
             </ul>
         </section>
@@ -171,52 +173,41 @@
         <p>&copy; 2024 LoveConnect. All rights reserved.</p>
         <p><a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-service.html">Terms of Service</a></p>
     </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/google-libphonenumber/3.2.20/libphonenumber.js"></script>
     <script>
-        // Facebook SDK Initialization
-        window.fbAsyncInit = function() {
-            FB.init({
-                appId      : '3137132503104109',  // Your Facebook App ID
-                cookie     : true,  // Enable cookies to allow the server to access the session.
-                xfbml      : true,  // Parse social plugins on this webpage.
-                version    : 'v10.0' // Use this Graph API version for this call.
-            });
-
-            FB.AppEvents.logPageView();   
-        };
-
-        function checkLoginState() {
-            FB.getLoginStatus(function(response) {
-                statusChangeCallback(response);
-            });
-        }
-
-        function statusChangeCallback(response) {
-            if (response.status === 'connected') {
-                FB.api('/me?fields=id,name,email', function(response) {
-                    saveUserData(response); // Save user data
-                    // Redirect to dashboard.html after successful Facebook login
-                    window.location.href = "dashboard.html";
-                });
-            } else {
-                document.getElementById('error-message').textContent = 'Please log into this app.';
+    document.querySelector('form').addEventListener('submit', function(event) {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const phone = document.getElementById('phone').value;
+        const countryCode = document.getElementById('countryCode').value;
+        
+        if (username.trim() === '') {
+            alert('Username is required.');
+            event.preventDefault();
+        } else if (password.length < 6) {
+            alert('Password must be at least 6 characters long.');
+            event.preventDefault();
+        } else {
+            const phoneUtil = libphonenumber.PhoneNumberUtil.getInstance();
+            try {
+                // Get the country code without the '+' symbol
+                const countryCodeNum = parseInt(countryCode.replace('+', ''), 10);
+                // Get the region code for the country code
+                const regionCode = phoneUtil.getRegionCodeForCountryCode(countryCodeNum);
+                // Parse the phone number with the region code
+                const number = phoneUtil.parse(phone, regionCode);
+                
+                if (!phoneUtil.isValidNumber(number)) {
+                    alert('Invalid phone number for the selected country code.');
+                    event.preventDefault();
+                }
+            } catch (error) {
+                alert('Invalid phone number format.');
+                event.preventDefault();
             }
         }
-
-        function saveUserData(userData) {
-            fetch('/save-facebook-data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to save user data');
-                }
-            }).catch(error => {
-                console.error('Error:', error);
-            });
-        }
+    });
     </script>
+    
 </body>
 </html>

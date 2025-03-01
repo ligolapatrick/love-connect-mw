@@ -3,184 +3,357 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nearby Users - Find One by Click</title>
+  <title>View Posts</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .profile-card {
-      width: 300px;
-      margin: 0 auto;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      padding: 20px;
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #ff4d4d;
+      color: white;
       text-align: center;
+      padding: 20px;
     }
-    .profile-card img {
+    .create-post-button {
+      display: block;
       width: 100%;
-      height: auto;
-      border-radius: 50%;
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 20px;
+      text-decoration: none;
     }
-    .hidden {
-      display: none;
+    .create-post-button:hover {
+      background-color: #e60000;
     }
-    .actions {
-      margin-top: 10px;
+    main {
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
     }
-    .actions button {
-      margin: 5px;
-    }
-    .online-status {
+    .filters {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 10px;
+      justify-content: space-around;
+      margin-bottom: 20px;
     }
-    .online-status span {
-      margin-left: 10px;
+    .filters button {
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
     }
-    .online {
-      color: green;
+    .filters button:hover {
+      background-color: #e60000;
     }
-    .offline {
-      color: red;
+    .posts-list {
+      margin-top: 20px;
     }
+    .post {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .post-images {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .post-images img {
+      width: 48%; /* For two images side-by-side */
+      height: auto;
+      border-radius: 5px;
+    }
+    .post-caption {
+      font-size: 1rem;
+      color: #333;
+      margin: 10px 0;
+    }
+    .post-actions {
+      display: flex;
+      justify-content: space-around;
+      margin: 10px 0;
+    }
+    .post-actions button {
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .post-actions button img {
+      width: 24px;
+      height: 24px;
+    }
+    .post-actions button:hover img {
+      filter: brightness(0.8);
+    }
+    .post-stats {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+      font-size: 0.9em;
+      color: #555;
+    }
+    .comments-section {
+  margin-top: 10px;
+  border-top: 1px solid #ccc;
+  padding-top: 10px;
+}
+.comments-section.hidden {
+  display: none;
+}
+.add-comment {
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  gap: 10px;
+  margin-top: 10px;
+}
+.add-comment textarea {
+  width: 100%;
+  padding: 5px; /* Increase padding for more space */
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  resize: none;
+  font-size: 16px; /* Slightly larger font for readability */
+  min-height: 60px; /* Ensure enough space for typing */
+}
+.add-comment button {
+  align-self: flex-start; /* Align button to the left */
+  padding: 10px 20px; /* Larger button size for better usability */
+  border-radius: 5px;
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+.add-comment button:hover {
+  background-color: #e60000;
+}
+.comments-list {
+  margin-top: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.comment {
+  margin-bottom: 10px;
+}
+
+.comment-author {
+  font-weight: bold;
+  color: #1877f2; /* Facebook-like blue */
+}
+
+.comment-text {
+  margin: 5px 0;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 15px;
+  font-size: 13px;
+  color: #606770; /* Subtle gray for comment actions */
+}
+
+.comment-time {
+  font-size: 12px;
+}
+
   </style>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a> |
-    <a href="/profile">Profile</a> |
-    <a href="/matches">Matches</a> |
-    <a href="/nearby">Nearby Users</a> |
-    <a href="/messages">Messages</a> |
-    <a href="/login">Logout</a> |
-    <a href="/free-today">Free Today</a>
-  </nav>
-  <hr>
-  <h2>Nearby Users</h2>
-  <div id="nearbyList">
-    <!-- Nearby users will be displayed here -->
-  </div>
-  <script>
-    // Replace 'yourUserId' with the logged-in user's user ID
-    const userId = 'yourUserId';
+  <header>
+    <h1>View Posts</h1>
+  </header>
+  <main>
+    <!-- Filter Options -->
+    <div class="filters">
+      <button onclick="fetchPosts('recent')">Recent Posts</button>
+      <button onclick="fetchPosts('old')">Old Posts</button>
+      <button onclick="fetchPosts('popular')">Popular Posts</button>
+    </div>
+    <a href="create.html" class="create-post-button">Create Post</a>
+    <div class="posts-list" id="postsList"></div>
+    
+  </main>
 
-    // Fetch users based on status
-    function fetchUsers(status) {
-      fetch(`/api/users-status?status=${status}`)
+  <script>
+function fetchPosts() {
+  fetch('/api/get-public-posts')
+    .then(response => response.json())
+    .then(posts => {
+      // Shuffle the posts array randomly
+      const shuffledPosts = posts.sort(() => Math.random() - 0.5);
+
+      const postsList = document.getElementById('postsList');
+      postsList.innerHTML = ''; // Clear previous posts
+
+      shuffledPosts.forEach(post => {
+        const postDiv = document.createElement('div');
+        postDiv.className = 'post';
+        postDiv.innerHTML = `
+          <div class="post-images">
+            ${post.image1 ? `<img src="${post.image1}" alt="Post Image 1">` : ''}
+            ${post.image2 ? `<img src="${post.image2}" alt="Post Image 2">` : ''}
+          </div>
+          <p>${post.caption}</p>
+          <div class="post-actions">
+            <button onclick="likePost(${post.id})">
+              <img src="icons/like.png" alt="Like">
+            </button>
+            <button onclick="dislikePost(${post.id})">
+              <img src="icons/dislike.png" alt="Dislike">
+            </button>
+            <button onclick="toggleComments(${post.id})">
+              <img src="icons/comment.png" alt="Comment">
+            </button>
+          </div>
+          <div class="post-stats">
+            <span>${post.likes} Likes</span>
+            <span>${post.dislikes} Dislikes</span>
+            <span>${post.comments.length} Comments</span>
+          </div>
+          <div class="comments-section hidden" id="comments-section-${post.id}">
+            <div class="comments-list" id="comments-list-${post.id}">
+              <!-- Comments will load dynamically -->
+            </div>
+            <div class="add-comment">
+              <textarea id="new-comment-${post.id}" placeholder="Type your comment"></textarea>
+              <button onclick="addComment(${post.id})">Post</button>
+            </div>
+          </div>
+        `;
+        postsList.appendChild(postDiv);
+      });
+    })
+    .catch(error => {
+      console.error('Error fetching posts:', error);
+    });
+}
+
+    function toggleComments(postId) {
+      const commentsSection = document.getElementById(`comments-section-${postId}`);
+      if (commentsSection.classList.contains('hidden')) {
+        commentsSection.classList.remove('hidden');
+        loadComments(postId);
+      } else {
+        commentsSection.classList.add('hidden');
+      }
+    }
+
+    function loadComments(postId) {
+      fetch(`/api/get-comments/${postId}`)
         .then(response => response.json())
-        .then(users => {
-          const nearbyList = document.getElementById('nearbyList');
-          nearbyList.innerHTML = '';
-          users.forEach(user => {
-            const userElement = document.createElement('div');
-            userElement.classList.add('profile-card');
-            userElement.innerHTML = `
-              <img src="${user.profilePicture}" alt="${user.username}'s profile picture">
-              <h3>${user.username}</h3>
-              <p>Age: ${user.age}</p>
-              <p>Gender: ${user.gender}</p>
-              <p>Interests: ${user.interests.join(', ')}</p>
-              <div class="online-status">
-                <span class="${user.online ? 'online' : 'offline'}">${user.online ? 'Online' : 'Offline'}</span>
-              </div>
-              <div class="actions">
-                <button onclick="likeProfile(${user.userId})">Like</button>
-                <button onclick="dislikeProfile(${user.userId})">Dislike</button>
-                <button onclick="startChat(${user.userId})">Message</button>
-              </div>
-            `;
-            userElement.querySelector('img').addEventListener('click', (e) => handleTap(e, user.userId));
-            nearbyList.appendChild(userElement);
-          });
+        .then(comments => {
+          const commentsList = document.getElementById(`comments-list-${postId}`);
+          commentsList.innerHTML = comments.map(comment => `
+            <div class="comment">
+              <strong>${comment.username}:</strong> ${comment.text}
+            </div>
+          `).join('');
         })
         .catch(error => {
-          console.error('Error fetching users by status:', error);
+          console.error('Error loading comments:', error);
         });
     }
 
-    let tapTimeout;
-    let tapCount = 0;
+    function addComment(postId) {
+      const commentInput = document.getElementById(`new-comment-${postId}`);
+      const commentText = commentInput.value.trim();
+      if (commentText === '') return; // Skip empty comments
 
-    function handleTap(event, userId) {
-      tapCount++;
-      if (tapTimeout) {
-        clearTimeout(tapTimeout);
-      }
-
-      tapTimeout = setTimeout(() => {
-        if (tapCount === 2) {
-          sendAdmirerMessage(userId);
-        } else if (tapCount === 3) {
-          window.location.href = `/messages?userId=${userId}`;
-        }
-        tapCount = 0;
-      }, 300);
-    }
-
-    function startChat(userId) {
-      window.location.href = `/messages?to=${userId}`;
-    }
-
-    function likeProfile(userId) {
-      console.log(`Liked profile of user ${userId}`);
-      // Implement your like profile logic here
-    }
-
-    function dislikeProfile(userId) {
-      console.log(`Disliked profile of user ${userId}`);
-      // Implement your dislike profile logic here
-    }
-
-    function sendAdmirerMessage(toUserId) {
-      const messageContent = "You have a secret crush! Accept or Decline.";
-      fetch('/api/send-admirer-message', {
+      fetch(`/api/comment-post/${postId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ fromUserId: userId, toUserId, content: messageContent })
+        body: JSON.stringify({ comment: commentText })
       })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert('Secret admirer message sent successfully!');
+        .then(response => {
+          if (response.ok) {
+            commentInput.value = '';
+            loadComments(postId); // Reload comments to reflect the new one
+          } else {
+            alert('Error posting comment.');
+          }
+        })
+        .catch(error => {
+          console.error('Error posting comment:', error);
+        });
+    }
+
+    function likePost(postId) {
+      fetch(`/api/like-post/${postId}`, {
+        method: 'POST'
+      }).then(response => {
+        if (response.ok) {
+          fetchPosts(); // Reload posts to reflect like changes
         } else {
-          alert('Failed to send secret admirer message.');
+          alert('Error liking post.');
         }
-      })
-      .catch(error => {
-        console.error('Error sending secret admirer message:', error);
+      }).catch(error => {
+        console.error('Error liking post:', error);
       });
     }
 
-    // Fetch nearby users initially
-    fetchUsers('online'); // Fetch online users initially
+    function showReplyInput(commentId) {
+  const replyInput = document.getElementById(`reply-input-${commentId}`);
+  replyInput.classList.toggle('hidden'); // Toggle visibility
+}
 
-    // Add swiping functionality
-    let startX;
-    let currentIndex = 0;
+function addReply(commentId) {
+  const replyInput = document.getElementById(`new-reply-${commentId}`);
+  const replyText = replyInput.value.trim();
 
-    document.addEventListener('touchstart', function (event) {
-      startX = event.touches[0].clientX;
-    });
+  if (!replyText) return; // Skip empty replies
 
-    document.addEventListener('touchend', function (event) {
-      const endX = event.changedTouches[0].clientX;
-      const deltaX = endX - startX;
-
-      if (deltaX > 50) {
-        // Swipe right
-        currentIndex = (currentIndex - 1 + nearbyList.children.length) % nearbyList.children.length;
-      } else if (deltaX < -50) {
-        // Swipe left
-        currentIndex = (currentIndex + 1) % nearbyList.children.length;
+  fetch(`/api/reply-comment/${commentId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ comment: replyText })
+  })
+    .then(response => {
+      if (response.ok) {
+        replyInput.value = ''; // Clear input
+        loadComments(postId); // Reload comments
+      } else {
+        alert('Error posting reply.');
       }
-
-      nearbyList.scrollTo({
-        left: nearbyList.children[currentIndex].offsetLeft,
-        behavior: 'smooth'
-      });
+    })
+    .catch(error => {
+      console.error('Error posting reply:', error);
     });
+}
+
+    function dislikePost(postId) {
+      fetch(`/api/dislike-post/${postId}`, {
+        method: 'POST'
+      }).then(response => {
+        if (response.ok) {
+          fetchPosts(); // Reload posts to reflect dislike changes
+        } else {
+          alert('Error disliking post.');
+        }
+      }).catch(error => {
+        console.error('Error disliking post:', error);
+      });
+    }
+
+    // Trigger fetching posts on page load
+    document.addEventListener('DOMContentLoaded', fetchPosts);
   </script>
 </body>
 </html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Room</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        #waitingList, #listeners {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        #hostSlot, .waitingSlot, .listener {
+            width: 60px;
+            height: 60px;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            font-size: 14px;
+            position: relative;
+            cursor: pointer;
+        }
+        #hostSlot img, .waitingSlot img, .listener img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .nickname {
+            position: absolute;
+            bottom: -15px;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+        }
+        .muted {
+            background-color: #ff4c4c;
+        }
+        #acquireSlotBtn {
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            font-size: 16px;
+        }
+        #acquireSlotBtn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="roomName">Room Name</h1>
+    
+    <div id="waitingList">
+        <div id="hostSlot" data-slot="0">Host</div>
+        <div class="waitingSlot" data-slot="1">1</div>
+        <div class="waitingSlot" data-slot="2">2</div>
+        <div class="waitingSlot" data-slot="3">3</div>
+        <div class="waitingSlot" data-slot="4">4</div>
+        <div class="waitingSlot" data-slot="5">5</div>
+        <div class="waitingSlot" data-slot="6">6</div>
+        <div class="waitingSlot" data-slot="7">7</div>
+    </div>
+    
+    <h2>Listeners</h2>
+    <div id="listeners">
+        <!-- Listeners will be rendered here -->
+    </div>
+    
+    <button id="acquireSlotBtn" onclick="acquireSlot()">Acquire Slot</button>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io.connect('http://localhost:3000');
+        const roomName = new URLSearchParams(window.location.search).get('roomName');
+        document.getElementById('roomName').textContent = roomName;
+        
+        const nickname = prompt('Enter your nickname:') || "Guest";
+        const userProfilePicture = '';
+        
+        let waitingListData = [];
+        
+        socket.emit('joinRoom', { roomName, user: { nickname, profilePicture: userProfilePicture } });
+        
+        function joinWaitingList(slotNumber) {
+            const user = { nickname, profilePicture: userProfilePicture };
+            socket.emit('updateWaitingList', { roomName, slotNumber, user });
+        }
+        
+        function removeFromWaitingList(slotNumber) {
+            socket.emit('removeFromWaitingList', { roomName, slotNumber });
+        }
+        
+        function acquireSlot() {
+            let emptyIndex = waitingListData.findIndex(slot => slot === null);
+            if (emptyIndex === -1) {
+                alert("No empty slot available.");
+            } else {
+                joinWaitingList(emptyIndex + 1);
+            }
+        }
+        
+        socket.on('waitingListUpdated', ({ waitingList }) => {
+            waitingListData = waitingList;
+            const waitingListContainer = document.getElementById('waitingList');
+            
+            const hostSlot = document.getElementById('hostSlot');
+            waitingListContainer.innerHTML = '';
+            waitingListContainer.appendChild(hostSlot);
+            
+            for (let i = 0; i < 7; i++) {
+                let slotDiv = document.createElement('div');
+                slotDiv.className = 'waitingSlot';
+                slotDiv.dataset.slot = i + 1;
+                const user = waitingList[i];
+                if (user) {
+                    slotDiv.innerHTML = `<img src="${user.profilePicture}" alt="Profile Picture"><span class="nickname">${user.nickname}</span>`;
+                    if (user.nickname === nickname) {
+                        slotDiv.addEventListener('dblclick', () => removeFromWaitingList(i + 1));
+                    }
+                } else {
+                    slotDiv.textContent = i + 1;
+                    slotDiv.addEventListener('click', () => joinWaitingList(i + 1));
+                }
+                waitingListContainer.appendChild(slotDiv);
+            }
+        });
+        
+        socket.on('roomCreated', ({ roomName, host }) => {
+            const hostSlot = document.getElementById('hostSlot');
+            hostSlot.innerHTML = `<img src="${host.profilePicture}" alt="Host"><span class="nickname">${host.nickname}</span>`;
+        });
+        
+        socket.on('listenersUpdated', ({ listeners }) => {
+            const listenersContainer = document.getElementById('listeners');
+            listenersContainer.innerHTML = '';
+            listeners.forEach(listener => {
+                const listenerDiv = document.createElement('div');
+                listenerDiv.className = 'listener';
+                listenerDiv.innerHTML = `<img src="${listener.profilePicture}" alt="Profile Picture"><span class="nickname">${listener.nickname}</span>`;
+                listenersContainer.appendChild(listenerDiv);
+            });
+        });
+
+        socket.on('userJoined', ({ user, waitingList }) => {
+            console.log(`${user.nickname} joined room.`);
+        });
+
+        socket.on('chatStarted', () => {
+            startListening();
+        });
+
+        async function startListening() {
+            try {
+                const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const peers = {};
+                
+                document.querySelectorAll('.waitingSlot').forEach(slot => {
+                    const slotNumber = slot.dataset.slot;
+                    const peer = new RTCPeerConnection();
+                    peers[slotNumber] = peer;
+                    
+                    localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+                    
+                    peer.onicecandidate = event => {
+                        if (event.candidate) {
+                            socket.emit('signal', { roomName, slotNumber, candidate: event.candidate });
+                        }
+                    };
+                    
+                    peer.ontrack = event => {
+                        const audio = document.createElement('audio');
+                        audio.srcObject = event.streams[0];
+                        audio.autoplay = true;
+                        document.body.appendChild(audio);
+                    };
+                    
+                    socket.on('offer', async ({ slotNumber, offer }) => {
+                        await peer.setRemoteDescription(new RTCSessionDescription(offer));
+                        const answer = await peer.createAnswer();
+                        await peer.setLocalDescription(answer);
+                        socket.emit('answer', { roomName, slotNumber, answer });
+                    });
+                    
+                    socket.on('signal', async ({ slotNumber, candidate }) => {
+                        await peer.addIceCandidate(new RTCIceCandidate(candidate));
+                    });
+                });
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+            }
+        }
+    </script>
+</body>
+</html>

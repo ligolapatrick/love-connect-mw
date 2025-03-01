@@ -179,3 +179,30 @@ textarea {
     width: 100%;
   }
 }
+
+/* Bottom Navigation Styles */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: hsl(0, 66%, 64%);
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.bottom-nav a {
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.bottom-nav a i {
+  display: block;
+  font-size: 20px;
+}
+
+.bottom-nav a.active {
+  color: rgb(0, 0, 0);
+}
