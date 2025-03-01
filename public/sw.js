@@ -6,7 +6,7 @@ self.addEventListener('install', (event) => {
             .then((cache) => {
                 cache.addAll([
                     '/',
-                    '/welcome.html',
+                    '/login1.html',
                     '/login.html',
                     '/register.html',
                     '/styles.css',
@@ -38,8 +38,8 @@ self.addEventListener('push', function(event) {
   const data = event.data.json();
   const options = {
     body: data.body,
-    icon: 'images/icons/logo192.png',
-    badge: 'images/icons/logo192.png'
+    icon: 'images/icons/logo.png',
+    badge: 'images/icons/logo.png'
   };
 
   event.waitUntil(
