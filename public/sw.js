@@ -1,36 +1,55 @@
 self.addEventListener('install', (event) => {
-    console.log('[Service Worker] Installing Service Worker ...', event);
+    console.log('Service Worker installing.');
+    // Perform install steps
     event.waitUntil(
         caches.open('static')
             .then((cache) => {
                 cache.addAll([
                     '/',
-                    '/login1.html',
+                    '/welcome.html',
                     '/login.html',
                     '/register.html',
                     '/styles.css',
                     '/images/matches.jpg',
                     '/images/logo.png',
                     '/manifest.json'
-                    // You can add more files here or use a dynamic caching strategy
+                    // Add more static resources as needed
                 ]);
             })
     );
 });
 
 self.addEventListener('activate', (event) => {
-    console.log('[Service Worker] Activating Service Worker ....', event);
+    console.log('Service Worker activating.');
+    // Perform activation steps
     return self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                return response || fetch(event.request);
-            })
+        fetch(event.request)
             .catch(() => {
-                return caches.match('/offline.html');
+                return caches.match(event.request);
             })
     );
+});
+
+self.addEventListener('push', function(event) {
+  const data = event.data.json();
+  const options = {
+    body: data.body,
+    icon: 'images/icons/logo192.png',
+    badge: 'images/icons/logo192.png'
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  event.waitUntil(
+    clients.openWindow('/')
+  );
 });
