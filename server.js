@@ -663,14 +663,26 @@ app.get('/api/messages', requireLogin, async (req, res) => {
                     { fromUserId: chatUserId, toUserId: userId }
                 ]
             },
-            order: [['timestamp', 'ASC']]
+            order: [['timestamp', 'ASC']],
+            include: [
+                { model: User, as: 'Sender', attributes: ['username'] }
+            ]
         });
-        res.json(messages);
+
+        // Attach sender's username to each message
+        const messagesWithSenderName = messages.map(message => {
+            const messageData = message.toJSON();
+            messageData.senderName = message.Sender.username;
+            return messageData;
+        });
+
+        res.json(messagesWithSenderName);
     } catch (error) {
         console.error('Error fetching messages:', error);
         res.status(500).send('Internal Server Error');
     }
 });
+
 
 // Fetch the chat list for a user with filters and unread message count
 app.get('/api/chat-list', requireLogin, async (req, res) => {
@@ -735,26 +747,27 @@ app.get('/api/chat-list', requireLogin, async (req, res) => {
 
 // Mark messages as read
 app.post('/api/mark-as-read', requireLogin, async (req, res) => {
-  const { fromUserId } = req.body;
   const userId = req.session.userId;
+  const { chatUserId } = req.body;
 
   try {
     await Message.update(
       { read: true },
       {
         where: {
-          fromUserId,
+          fromUserId: chatUserId,
           toUserId: userId,
           read: false
         }
       }
     );
-    res.send('Messages marked as read');
+    res.sendStatus(200);
   } catch (error) {
     console.error('Error marking messages as read:', error);
     res.status(500).send('Internal Server Error');
   }
 });
+
 
 // Toggle favorite status
 app.post('/api/toggle-favorite', requireLogin, async (req, res) => {
