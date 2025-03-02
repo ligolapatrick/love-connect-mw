@@ -154,10 +154,35 @@
             margin: 0 auto;
         }
 
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.8);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 999;
+}
+.loading-logo {
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 </style>
 
 </head>
 <body>
+    <div class="loading-container" id="loadingIndicator">
+        <img src="images/logo.png" alt="Loading" class="loading-logo">
+    </div>
     
     <h2>Your Chats</h2>
     <div class="filter-options">
@@ -232,7 +257,17 @@
                 chatList.appendChild(chatItem);
             });
         }
-    
+ 
+    // Show the loading indicator when the page starts loading
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('loadingIndicator').style.display = 'flex';
+    });
+
+    // Hide the loading indicator once the page is fully loaded
+    window.addEventListener('load', () => {
+        document.getElementById('loadingIndicator').style.display = 'none';
+    });
+
         function filterChatList(filter) {
             console.log(`Filter by: ${filter}`);
             fetch(`/api/chat-list?userId=${userId}&filter=${filter}`)
