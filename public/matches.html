@@ -23,51 +23,42 @@
       margin: auto;
     }
     .profile-card {
-  position: relative;
-  width: 100%;
-  max-width: 400px; /* Increase the max width for larger cards */
-  height: 500px; /* Set a fixed height for a prominent size */
-  border-radius: 10px;
-  margin: 20px auto;
-  overflow: hidden;
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); /* Enhanced shadow for better depth */
-}
-
-.profile-card img {
-  width: 100%;
-  height: 100%; /* Ensure the image fills the entire card */
-  object-fit: cover; /* Maintain aspect ratio while filling */
-}
-
-.profile-info {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.6); /* Darker overlay for better contrast */
-  color: white;
-  padding: 15px;
-  font-size: 1em; /* Adjust text size for readability */
-  text-align: left;
-}
-
-.actions {
-  position: absolute;
-  top: 70%; /* Adjust action buttons to sit lower on the image */
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  gap: 15px; /* Add spacing between buttons */
-}
-
-.actions button img {
-  width: 60px; /* Increase button size */
-  height: 60px; /* For better accessibility */
-}
-    
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      height: 500px;
+      border-radius: 10px;
+      margin: 20px auto;
+      overflow: hidden;
+      box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+    }
+    .profile-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .profile-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 15px;
+      font-size: 1em;
+      text-align: left;
+    }
+    .actions {
+      position: absolute;
+      top: 70%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      gap: 15px;
+    }
     .actions button img {
-      width: 50px;
-      height: 50px;
+      width: 60px;
+      height: 60px;
     }
     .heart-popup {
       position: absolute;
@@ -76,7 +67,7 @@
       transform: translate(-50%, -50%);
       font-size: 3em;
       color: #ff6347;
-      opacity: 0; /* Initially hidden */
+      opacity: 0;
       animation: popUp 1s ease-in-out forwards;
     }
     @keyframes popUp {
@@ -105,9 +96,34 @@
       height: 15px;
       margin: 5px auto;
     }
+    /* Loading Indicator Styles */
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.8);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 999;
+    }
+    .loading-logo {
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+  <div class="loading-container" id="loadingIndicator">
+    <img src="images/logo.png" alt="Loading" class="loading-logo">
+  </div>
   <header>
     <h1>Mutual Interests</h1>
   </header>
@@ -128,9 +144,14 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      loadingIndicator.style.display = 'block'; // Show loading indicator
+
       fetch('/api/mutual-interests')
         .then(response => response.json())
         .then(matches => {
+          loadingIndicator.style.display = 'none'; // Hide loading indicator
+
           const container = document.getElementById('profiles-container');
           container.innerHTML = '';
 
@@ -168,6 +189,7 @@
           });
         })
         .catch(error => {
+          loadingIndicator.style.display = 'none'; // Hide loading indicator
           console.error('Error fetching mutual interests:', error);
         });
     });
@@ -188,18 +210,14 @@
     }
 
     function showHeartPopup(userId) {
-      const heartPopup = document.createElement('div');
-      heartPopup.className = 'heart-popup';
-      heartPopup.textContent = '❤️';
-      document.body.appendChild(heartPopup);
-
+      const heartPopup = document.getElementById(`heart-popup-${userId}`);
+      heartPopup.style.opacity = 1;
       setTimeout(() => {
-        heartPopup.remove();
+        heartPopup.style.opacity = 0;
       }, 1000);
     }
 
     function sendLikeCount(userId, type) {
-      // Send likes/dislikes to likes.html or server
       fetch('/likes.html', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -214,7 +232,6 @@
           console.error('Error updating like/dislike count:', error);
         });
     }
-    
   </script>
 </body>
 </html>

@@ -158,10 +158,39 @@
               height: 20px;
           }
       }
+
+      /* Loading Indicator Styles */
+      .loading-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          background-color: rgba(255, 255, 255, 0.8);
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          z-index: 999;
+      }
+      .loading-logo {
+          border: 8px solid #f3f3f3;
+          border-top: 8px solid #3498db;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+      }
   </style>
   
 </head>
 <body>
+    <div class="loading-container" id="loadingIndicator">
+        <img src="images/logo.png" alt="Loading" class="loading-logo">
+    </div>
     <div class="container">
         <h1>User Profiles</h1>
         <div id="profiles-container">
@@ -179,9 +208,14 @@
 
     <script>
 document.addEventListener('DOMContentLoaded', () => {
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  loadingIndicator.style.display = 'block'; // Show loading indicator
+
   fetch(`/api/profiles-users`)
     .then(response => response.json())
     .then(users => {
+      loadingIndicator.style.display = 'none'; // Hide loading indicator
+
       const container = document.getElementById('profiles-container');
 
       // Shuffle the users array
@@ -219,6 +253,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     })
     .catch(error => {
+      loadingIndicator.style
+      loadingIndicator.style.display = 'none'; // Hide loading indicator
       console.error('Error fetching user profiles:', error);
     });
 });
@@ -272,8 +308,6 @@ function messageUser(userId, username) {
 }
 
 window.onload = fetchMatches;
-
-
     </script>
 </body>
 </html>

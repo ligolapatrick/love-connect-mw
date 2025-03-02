@@ -106,73 +106,92 @@
       color: #555;
     }
     .comments-section {
-  margin-top: 10px;
-  border-top: 1px solid #ccc;
-  padding-top: 10px;
-}
-.comments-section.hidden {
-  display: none;
-}
-.add-comment {
-  display: flex;
-  flex-direction: column; /* Stack items vertically */
-  gap: 10px;
-  margin-top: 10px;
-}
-.add-comment textarea {
-  width: 100%;
-  padding: 5px; /* Increase padding for more space */
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  resize: none;
-  font-size: 16px; /* Slightly larger font for readability */
-  min-height: 60px; /* Ensure enough space for typing */
-}
-.add-comment button {
-  align-self: flex-start; /* Align button to the left */
-  padding: 10px 20px; /* Larger button size for better usability */
-  border-radius: 5px;
-  background-color: #ff4d4d;
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-}
-.add-comment button:hover {
-  background-color: #e60000;
-}
-.comments-list {
-  margin-top: 20px;
-  font-family: Arial, sans-serif;
-}
-
-.comment {
-  margin-bottom: 10px;
-}
-
-.comment-author {
-  font-weight: bold;
-  color: #1877f2; /* Facebook-like blue */
-}
-
-.comment-text {
-  margin: 5px 0;
-}
-
-.comment-actions {
-  display: flex;
-  gap: 15px;
-  font-size: 13px;
-  color: #606770; /* Subtle gray for comment actions */
-}
-
-.comment-time {
-  font-size: 12px;
-}
-
+      margin-top: 10px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+    }
+    .comments-section.hidden {
+      display: none;
+    }
+    .add-comment {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .add-comment textarea {
+      width: 100%;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      resize: none;
+      font-size: 16px;
+      min-height: 60px;
+    }
+    .add-comment button {
+      align-self: flex-start;
+      padding: 10px 20px;
+      border-radius: 5px;
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .add-comment button:hover {
+      background-color: #e60000;
+    }
+    .comments-list {
+      margin-top: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .comment {
+      margin-bottom: 10px;
+    }
+    .comment-author {
+      font-weight: bold;
+      color: #1877f2;
+    }
+    .comment-text {
+      margin: 5px 0;
+    }
+    .comment-actions {
+      display: flex;
+      gap: 15px;
+      font-size: 13px;
+      color: #606770;
+    }
+    .comment-time {
+      font-size: 12px;
+    }
+    /* Loading Indicator Styles */
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.8);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 999;
+    }
+    .loading-logo {
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+  <div class="loading-container" id="loadingIndicator">
+    <img src="path/to/loading.png" alt="Loading" class="loading-logo">
+  </div>
   <header>
     <h1>View Posts</h1>
   </header>
@@ -185,62 +204,67 @@
     </div>
     <a href="create.html" class="create-post-button">Create Post</a>
     <div class="posts-list" id="postsList"></div>
-    
   </main>
 
   <script>
-function fetchPosts() {
-  fetch('/api/get-public-posts')
-    .then(response => response.json())
-    .then(posts => {
-      // Shuffle the posts array randomly
-      const shuffledPosts = posts.sort(() => Math.random() - 0.5);
+    function fetchPosts() {
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      loadingIndicator.style.display = 'block'; // Show loading indicator
 
-      const postsList = document.getElementById('postsList');
-      postsList.innerHTML = ''; // Clear previous posts
+      fetch('/api/get-public-posts')
+        .then(response => response.json())
+        .then(posts => {
+          loadingIndicator.style.display = 'none'; // Hide loading indicator
 
-      shuffledPosts.forEach(post => {
-        const postDiv = document.createElement('div');
-        postDiv.className = 'post';
-        postDiv.innerHTML = `
-          <div class="post-images">
-            ${post.image1 ? `<img src="${post.image1}" alt="Post Image 1">` : ''}
-            ${post.image2 ? `<img src="${post.image2}" alt="Post Image 2">` : ''}
-          </div>
-          <p>${post.caption}</p>
-          <div class="post-actions">
-            <button onclick="likePost(${post.id})">
-              <img src="icons/like.png" alt="Like">
-            </button>
-            <button onclick="dislikePost(${post.id})">
-              <img src="icons/dislike.png" alt="Dislike">
-            </button>
-            <button onclick="toggleComments(${post.id})">
-              <img src="icons/comment.png" alt="Comment">
-            </button>
-          </div>
-          <div class="post-stats">
-            <span>${post.likes} Likes</span>
-            <span>${post.dislikes} Dislikes</span>
-            <span>${post.comments.length} Comments</span>
-          </div>
-          <div class="comments-section hidden" id="comments-section-${post.id}">
-            <div class="comments-list" id="comments-list-${post.id}">
-              <!-- Comments will load dynamically -->
-            </div>
-            <div class="add-comment">
-              <textarea id="new-comment-${post.id}" placeholder="Type your comment"></textarea>
-              <button onclick="addComment(${post.id})">Post</button>
-            </div>
-          </div>
-        `;
-        postsList.appendChild(postDiv);
-      });
-    })
-    .catch(error => {
-      console.error('Error fetching posts:', error);
-    });
-}
+          // Shuffle the posts array randomly
+          const shuffledPosts = posts.sort(() => Math.random() - 0.5);
+
+          const postsList = document.getElementById('postsList');
+          postsList.innerHTML = ''; // Clear previous posts
+
+          shuffledPosts.forEach(post => {
+            const postDiv = document.createElement('div');
+            postDiv.className = 'post';
+            postDiv.innerHTML = `
+              <div class="post-images">
+                ${post.image1 ? `<img src="${post.image1}" alt="Post Image 1">` : ''}
+                ${post.image2 ? `<img src="${post.image2}" alt="Post Image 2">` : ''}
+              </div>
+              <p>${post.caption}</p>
+              <div class="post-actions">
+                <button onclick="likePost(${post.id})">
+                  <img src="icons/like.png" alt="Like">
+                </button>
+                <button onclick="dislikePost(${post.id})">
+                  <img src="icons/dislike.png" alt="Dislike">
+                </button>
+                <button onclick="toggleComments(${post.id})">
+                  <img src="icons/comment.png" alt="Comment">
+                </button>
+              </div>
+              <div class="post-stats">
+                <span>${post.likes} Likes</span>
+                <span>${post.dislikes} Dislikes</span>
+                <span>${post.comments.length} Comments</span>
+              </div>
+              <div class="comments-section hidden" id="comments-section-${post.id}">
+                <div class="comments-list" id="comments-list-${post.id}">
+                  <!-- Comments will load dynamically -->
+                </div>
+                <div class="add-comment">
+                  <textarea id="new-comment-${post.id}" placeholder="Type your comment"></textarea>
+                  <button onclick="addComment(${post.id})">Post</button>
+                </div>
+              </div>
+            `;
+            postsList.appendChild(postDiv);
+          });
+        })
+        .catch(error => {
+          loadingIndicator.style.display = 'none'; // Hide loading indicator
+          console.error('Error fetching posts:', error);
+        });
+    }
 
     function toggleComments(postId) {
       const commentsSection = document.getElementById(`comments-section-${postId}`);
@@ -259,7 +283,11 @@ function fetchPosts() {
           const commentsList = document.getElementById(`comments-list-${postId}`);
           commentsList.innerHTML = comments.map(comment => `
             <div class="comment">
-              <strong>${comment.username}:</strong> ${comment.text}
+              <strong class="comment-author">${comment.username}</strong>: 
+              <span class="comment-text">${comment.text}</span>
+              <div class="comment-actions">
+                <span class="comment-time">${comment.time}</span>
+              </div>
             </div>
           `).join('');
         })
@@ -308,35 +336,35 @@ function fetchPosts() {
     }
 
     function showReplyInput(commentId) {
-  const replyInput = document.getElementById(`reply-input-${commentId}`);
-  replyInput.classList.toggle('hidden'); // Toggle visibility
-}
+      const replyInput = document.getElementById(`reply-input-${commentId}`);
+      replyInput.classList.toggle('hidden'); // Toggle visibility
+    }
 
-function addReply(commentId) {
-  const replyInput = document.getElementById(`new-reply-${commentId}`);
-  const replyText = replyInput.value.trim();
+    function addReply(commentId) {
+      const replyInput = document.getElementById(`new-reply-${commentId}`);
+      const replyText = replyInput.value.trim();
 
-  if (!replyText) return; // Skip empty replies
+      if (!replyText) return; // Skip empty replies
 
-  fetch(`/api/reply-comment/${commentId}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ comment: replyText })
-  })
-    .then(response => {
-      if (response.ok) {
-        replyInput.value = ''; // Clear input
-        loadComments(postId); // Reload comments
-      } else {
-        alert('Error posting reply.');
-      }
-    })
-    .catch(error => {
-      console.error('Error posting reply:', error);
-    });
-}
+      fetch(`/api/reply-comment/${commentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ comment: replyText })
+      })
+        .then(response => {
+          if (response.ok) {
+            replyInput.value = ''; // Clear input
+            loadComments(commentId); // Reload comments
+          } else {
+            alert('Error posting reply.');
+          }
+        })
+        .catch(error => {
+          console.error('Error posting reply:', error);
+        });
+    }
 
     function dislikePost(postId) {
       fetch(`/api/dislike-post/${postId}`, {

@@ -131,24 +131,7 @@
     .chat-footer button:hover {
       background-color: #066a4d;
     }
-
-    .chat-footer .voice-button {
-      background-color: #007bff;
-      margin-left: 5px;
-    }
-
-    .recording-indicator {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      margin-left: 10px;
-      color: red;
-    }
-
-    .recording-indicator.active {
-      display: inline-flex;
-    }
-</style>
+  </style>
 </head>
 <body>
   <div class="chat-container">
@@ -168,13 +151,10 @@
     <div class="chat-footer">
       <input type="text" id="messageInput" placeholder="Type a message">
       <button id="sendButton">Send</button>
-      <button class="voice-button" onclick="toggleRecording()">🎤</button>
-      <span id="recordingIndicator" class="recording-indicator">Recording...</span>
     </div>
   </div>
-
   <script>
-    const userId = Number('yourUserId'); // Replace with dynamic userId
+    const userId = Number(sessionStorage.getItem('userId')); // Replace with dynamic userId
     const chatUserId = Number(new URLSearchParams(window.location.search).get('userId'));
     const chatUsername = new URLSearchParams(window.location.search).get('username');
 
@@ -186,7 +166,9 @@
         .then(user => {
             if (user && user.profilePicture) {
                 document.getElementById('chatUserProfilePic').src = user.profilePicture;
-                document.getElementById('chatUserProfilePic').alt = user.username; // Set alt text for profile picture
+                document.getElementById('chatUserProfilePic').alt = chatUsername; // Set alt text for profile picture
+            } else {
+                document.getElementById('chatUserProfilePic').src = 'default-profile.png'; // Default profile picture if not available
             }
         })
         .catch(error => console.error('Error fetching profile:', error));
@@ -199,110 +181,45 @@
         const isYou = message.fromUserId === userId;
 
         messageElement.className = `message ${isYou ? 'sent' : 'received'}`;
-        if (message.messageType === 'voice') {
-            messageElement.innerHTML = `<audio controls src="${message.content}"></audio>`;
-        } else {
-            messageElement.innerHTML = `<div class="content"><strong>${isYou ? 'You' : 'Sender'}:</strong> ${message.content}</div>`;
-        }
+        messageElement.innerHTML = `
+            <div class="content"><strong>${isYou ? 'You' : message.senderName}:</strong> ${message.content}</div>
+        `;
 
         messageContainer.appendChild(messageElement);
         messageContainer.scrollTop = messageContainer.scrollHeight; // Scroll to the bottom
     }
 
-    // Fetch messages
-    fetch(`/api/messages?chatUserId=${chatUserId}`)
-        .then(response => response.json())
-        .then(messages => {
+    async function fetchMessages() {
+        try {
+            const response = await fetch(`/api/messages?chatUserId=${chatUserId}`);
+            const messages = await response.json();
+            const messageContainer = document.getElementById('messageContainer');
+            messageContainer.innerHTML = '';
             messages.forEach(appendMessage);
-        })
-        .catch(error => console.error('Error fetching messages:', error));
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+        }
+    }
 
-    // Send message
-    document.getElementById('sendButton').addEventListener('click', () => {
+    document.getElementById('sendButton').addEventListener('click', async () => {
         const content = document.getElementById('messageInput').value;
         if (!content.trim()) {
             return;
         }
-        fetch('/api/send-message', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ toUserId: chatUserId, content })
-        })
-        .then(response => response.json())
-        .then(newMessage => {
+        try {
+            const response = await fetch('/api/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ toUserId: chatUserId, content })
+            });
+            const newMessage = await response.json();
+            newMessage.senderName = 'You'; // Add sender's information to message
             appendMessage(newMessage);
             document.getElementById('messageInput').value = ''; // Clear input
-        })
-                .catch(error => console.error('Error sending message:', error));
-    });
-
-    // Voice note recording logic
-    let mediaRecorder;
-    let audioChunks = [];
-    let isRecording = false;
-
-    async function toggleRecording() {
-        if (isRecording) {
-            stopRecording();
-        } else {
-            startRecording();
-        }
-    }
-
-    async function startRecording() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-
-            // Show recording indicator
-            document.getElementById('recordingIndicator').classList.add('active');
-
-            mediaRecorder.addEventListener('dataavailable', event => {
-                audioChunks.push(event.data);
-            });
-
-            isRecording = true;
         } catch (error) {
-            console.error('Error accessing microphone:', error);
-        }
-    }
-
-    function stopRecording() {
-        mediaRecorder.stop();
-
-        // Hide recording indicator
-        document.getElementById('recordingIndicator').classList.remove('active');
-
-        mediaRecorder.addEventListener('stop', () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-            audioChunks = [];
-
-            const formData = new FormData();
-            formData.append('audio', audioBlob);
-            formData.append('toUserId', chatUserId);
-
-            fetch('/api/send-voice-note', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(newMessage => {
-                appendMessage(newMessage);
-            })
-            .catch(error => console.error('Error sending voice note:', error));
-
-            isRecording = false;
-        });
-    }
-
-    // Receive new messages via Socket.io
-    const socket = io(); // Initialize Socket.io
-    socket.on('newMessage', (message) => {
-        if (message.fromUserId === chatUserId || message.toUserId === chatUserId) {
-            appendMessage(message);
+            console.error('Error sending message:', error);
         }
     });
 
@@ -312,37 +229,8 @@
         menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
     }
 
-    // Block or unblock user
-    document.getElementById('blockUnblockUser').addEventListener('click', () => {
-        const action = isUserBlocked ? 'unblock' : 'block';
-        fetch(`/api/${action}-user`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ userId: chatUserId })
-        })
-        .then(response => {
-            if (response.ok) {
-                isUserBlocked = !isUserBlocked;
-                document.getElementById('blockUnblockUser').textContent = isUserBlocked ? 'Unblock' : 'Block';
-            } else {
-                console.error('Error blocking/unblocking user');
-            }
-        })
-        .catch(error => {
-            console.error('Error blocking/unblocking user:', error);
-        });
-    });
-
     // Initial fetch
-    if (chatUserId) {
-        document.getElementById('chatWith').textContent = `Chat with ${chatUsername}`;
-        fetchMessages(chatUserId);
-    } else {
-        fetchMessageList();
-    }
+    fetchMessages();
 </script>
-
 </body>
 </html>
