@@ -6,27 +6,21 @@ const multer = require('multer');
 const http = require('http');
 const socketIo = require('socket.io');
 const session = require('express-session');
-const fs = require('fs');
-
-// Initialize Sequelize with PostgreSQL
 const { Sequelize, DataTypes, Op } = require('sequelize');
-
-
-const sequelize = new Sequelize('postgresql://patrick:HiXl0CJCOL3uNTvs1zLiuvhcHBcE19Fx@dpg-cv4q4vij1k6c738q7thg-a.oregon-postgres.render.com/loveconnect', {
-    dialect: 'postgres',
-    logging: false,
-    dialectOptions: {
-        ssl: {
-            require: true,
-            rejectUnauthorized: false // Allows self-signed certificates
-        }
-    }
-});
+const router = express.Router();
+const fs = require('fs');
 
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// Initialize Sequelize with SQLite
+const sequelize = new Sequelize(process.env.DATABASE_URL || {
+  dialect: 'sqlite',
+  storage: path.join(__dirname, 'database.sqlite')
+});
+
+// Define the User model
 const User = sequelize.define('User', {
   id: {
     type: DataTypes.INTEGER,
@@ -35,8 +29,7 @@ const User = sequelize.define('User', {
   },
   username: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true // Ensures uniqueness at the database level
+    allowNull: false
   },
   password: {
     type: DataTypes.STRING,
@@ -44,8 +37,7 @@ const User = sequelize.define('User', {
   },
   fullPhoneNumber: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true // Ensures that phone numbers are unique
+    allowNull: false
   },
   profilePicture: {
     type: DataTypes.STRING,
@@ -65,8 +57,7 @@ const User = sequelize.define('User', {
   },
   online: {
     type: DataTypes.BOOLEAN,
-    allowNull: true,
-    defaultValue: false
+    allowNull: true
   },
   bio: {
     type: DataTypes.TEXT,
@@ -77,9 +68,14 @@ const User = sequelize.define('User', {
     allowNull: true
   },
   interests: {
-    type: DataTypes.JSONB, // Use JSONB for structured and efficient data storage
+    type: DataTypes.TEXT,
     allowNull: true,
-    defaultValue: [] // Default to an empty array
+    get() {
+      return this.getDataValue('interests') ? JSON.parse(this.getDataValue('interests')) : [];
+    },
+    set(val) {
+      this.setDataValue('interests', JSON.stringify(val));
+    }
   },
   instantDate: {
     type: DataTypes.BOOLEAN,
@@ -115,7 +111,7 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     defaultValue: 'light'
   },
-  latitude: {
+    latitude: {
     type: DataTypes.FLOAT,
     allowNull: true
   },
@@ -158,15 +154,11 @@ const User = sequelize.define('User', {
   role: {
     type: DataTypes.STRING,
     allowNull: false,
-    defaultValue: 'user'
+    defaultValue: 'user', // Defaults to 'user', admin accounts can manually be set to 'admin'
   }
-}, {
-  indexes: [
-    { fields: ['username'] }, // Improves queries filtering by username
-    { fields: ['fullPhoneNumber'] } // Accelerates lookups for phone numbers
-  ]
 });
 
+// Define the Message model
 const Message = sequelize.define('Message', {
   id: {
     type: DataTypes.INTEGER,
@@ -206,17 +198,14 @@ const Message = sequelize.define('Message', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   }
-}, {
-  indexes: [
-    { fields: ['fromUserId'] }, // Speeds up queries involving sender
-    { fields: ['toUserId'] } // Speeds up queries involving receiver
-  ]
 });
 
+// Define associations
 User.hasMany(Message, { as: 'SentMessages', foreignKey: 'fromUserId' });
 User.hasMany(Message, { as: 'ReceivedMessages', foreignKey: 'toUserId' });
 Message.belongsTo(User, { as: 'Sender', foreignKey: 'fromUserId' });
 Message.belongsTo(User, { as: 'Receiver', foreignKey: 'toUserId' });
+
 
 // Serve static files from the 'public' directory
 app.use(bodyParser.json());
@@ -230,16 +219,6 @@ app.use(session({
   saveUninitialized: true,
   cookie: { secure: false } // Use secure: true in production with HTTPS
 }));
-
-app.use((req, res, next) => {
-    console.log(`${req.method} request for ${req.url}`);
-    next();
-});
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -639,7 +618,6 @@ app.get('/api/online-users', async (req, res) => {
 });
 
 // Fetch messages for a chat
-// Send a message
 app.post('/api/send-message', requireLogin, async (req, res) => {
     const { toUserId, content } = req.body;
     const fromUserId = req.session.userId;
@@ -649,28 +627,20 @@ app.post('/api/send-message', requireLogin, async (req, res) => {
     }
 
     try {
-        // Create a new message
         const newMessage = await Message.create({
             fromUserId,
             toUserId,
             content,
             timestamp: new Date(),
-            messageType: 'text' // Ensure messageType is consistent
+            messageType: 'text'
         });
-
-        // Fetch sender details for notifications
-        const senderUser = await User.findByPk(fromUserId, {
-            attributes: ['username']
-        });
-        const senderName = senderUser ? senderUser.username : 'Unknown User';
 
         // Create a notification for the recipient
+        const senderUser = await User.findByPk(fromUserId);
+        const senderName = senderUser ? senderUser.username : 'Unknown User';
         const notificationMessage = `${senderName} sent you a message.`;
-        await Notification.create({ 
-            userId: toUserId, 
-            senderId: fromUserId, 
-            message: notificationMessage 
-        });
+
+        await Notification.create({ userId: toUserId, senderId: fromUserId, message: notificationMessage });
 
         console.log('Message created:', newMessage);
         res.status(201).json(newMessage);
@@ -680,19 +650,12 @@ app.post('/api/send-message', requireLogin, async (req, res) => {
     }
 });
 
-
 // Send a message
-// Fetch messages for a chat
 app.get('/api/messages', requireLogin, async (req, res) => {
     const userId = req.session.userId;
     const chatUserId = req.query.chatUserId;
 
-    if (!chatUserId) {
-        return res.status(400).json({ error: 'chatUserId is required' });
-    }
-
     try {
-        // Query to fetch messages between two users
         const messages = await Message.findAll({
             where: {
                 [Op.or]: [
@@ -700,22 +663,18 @@ app.get('/api/messages', requireLogin, async (req, res) => {
                     { fromUserId: chatUserId, toUserId: userId }
                 ]
             },
-            order: [['timestamp', 'ASC']], // Sort messages in ascending order of timestamp
+            order: [['timestamp', 'ASC']],
             include: [
-                {
-                    model: User,
-                    as: 'Sender', 
-                    attributes: ['username', 'profilePicture'] // Include sender's username and profile picture
-                }
+                { model: User, as: 'Sender', attributes: ['username'] }
             ]
         });
 
-        // Add sender's username to each message
-        const messagesWithSenderName = messages.map(message => ({
-            ...message.toJSON(),
-            senderName: message.Sender.username,
-            senderProfilePicture: message.Sender.profilePicture // Example of enriched data
-        }));
+        // Attach sender's username to each message
+        const messagesWithSenderName = messages.map(message => {
+            const messageData = message.toJSON();
+            messageData.senderName = message.Sender.username;
+            return messageData;
+        });
 
         res.json(messagesWithSenderName);
     } catch (error) {
@@ -1971,6 +1930,66 @@ app.post('/api/search-users', requireLogin, async (req, res) => {
   }
 });
 
+//paymentMethod
+const Subscription = sequelize.define('Subscription', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  expiresAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
+});
+
+module.exports = { Subscription };
+
+
+router.post('/api/pay', requireLogin, async (req, res) => {
+  const { duration, paymentMethod } = req.body;
+  const userId = req.session.userId;
+  let expiresAt;
+
+  switch (duration) {
+    case 'daily':
+      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+      break;
+    case 'weekly':
+      expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+      break;
+    case 'monthly':
+      expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+      break;
+    default:
+      return res.status(400).send('Invalid duration');
+  }
+
+  // Integrate with TNM or Airtel payment API here
+  // Example: await tnmAirtelPay(userId, paymentMethod);
+
+  // On successful payment
+  await Subscription.create({ userId, expiresAt });
+
+  res.status(200).send('Payment successful');
+});
+
+router.get('/api/check-subscription', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const subscription = await Subscription.findOne({ where: { userId, expiresAt: { [Sequelize.Op.gt]: new Date() } } });
+
+  if (subscription) {
+    res.json({ hasAccess: true });
+  } else {
+    res.json({ hasAccess: false });
+  }
+});
+
+module.exports = router;
 // Endpoint to get user settings
 app.get('/api/settings', async (req, res) => {
   const userId = req.session.userId; // Ensure userId is available in session
@@ -2550,6 +2569,7 @@ app.get('/api/user/:userId', (req, res) => {
   res.json(user);
 });
 
+
 // Define the Post model
 const Post = sequelize.define('Post', {
   id: {
@@ -2589,7 +2609,7 @@ const Comment = sequelize.define('Comment', {
   postId: {
     type: DataTypes.INTEGER,
     references: {
-      model: Post,
+      model: 'Posts', // Avoid circular references by specifying table name
       key: 'id'
     },
     allowNull: false
@@ -2597,7 +2617,7 @@ const Comment = sequelize.define('Comment', {
   userId: {
     type: DataTypes.INTEGER,
     references: {
-      model: User,
+      model: 'Users', // Use table name
       key: 'id'
     },
     allowNull: false
@@ -2611,7 +2631,6 @@ const Comment = sequelize.define('Comment', {
     allowNull: false
   }
 });
-
 
 // Define Comment associations
 Comment.associate = (models) => {
@@ -2666,7 +2685,6 @@ const PostLike = sequelize.define('PostLike', {
   }
 });
 
-
 // Define the PostDislike model
 const PostDislike = sequelize.define('PostDislike', {
   id: {
@@ -2692,27 +2710,25 @@ const PostDislike = sequelize.define('PostDislike', {
   }
 });
 
-// Define associations between models
-User.hasMany(Post, { foreignKey: 'userId', onDelete: 'CASCADE' });
-Post.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+// Initialize associations
+User.hasMany(Post, { foreignKey: 'userId' });
+Post.belongsTo(User, { foreignKey: 'userId' });
 
-Post.hasMany(Comment, { foreignKey: 'postId', onDelete: 'CASCADE' });
-Comment.belongsTo(Post, { foreignKey: 'postId', onDelete: 'CASCADE' });
+Post.hasMany(Comment, { foreignKey: 'postId' });
+Comment.belongsTo(Post, { foreignKey: 'postId' });
 
-Comment.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+Comment.belongsTo(User, { foreignKey: 'userId' });
 
-Comment.hasMany(Comment, { as: 'Replies', foreignKey: 'parentCommentId', onDelete: 'CASCADE' });
-Comment.belongsTo(Comment, { as: 'Parent', foreignKey: 'parentCommentId', onDelete: 'CASCADE' });
+Comment.hasMany(Comment, { as: 'Replies', foreignKey: 'parentCommentId' });
+Comment.belongsTo(Comment, { as: 'Parent', foreignKey: 'parentCommentId' });
 
-Post.hasMany(PostLike, { foreignKey: 'postId', as: 'PostLikes', onDelete: 'CASCADE' });
-PostLike.belongsTo(Post, { foreignKey: 'postId', onDelete: 'CASCADE' });
+Post.hasMany(PostLike, { foreignKey: 'postId' });
+Post.hasMany(PostDislike, { foreignKey: 'postId' });
+PostLike.belongsTo(Post, { foreignKey: 'postId' });
+PostDislike.belongsTo(Post, { foreignKey: 'postId' });
 
-Post.hasMany(PostDislike, { foreignKey: 'postId', as: 'PostDislikes', onDelete: 'CASCADE' });
-PostDislike.belongsTo(Post, { foreignKey: 'postId', onDelete: 'CASCADE' });
-
-PostLike.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
-PostDislike.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
-
+PostLike.belongsTo(User, { foreignKey: 'userId' });
+PostDislike.belongsTo(User, { foreignKey: 'userId' });
 
 // Route to get posts created by the logged-in user
 app.get('/api/get-user-posts', async (req, res) => {
@@ -2722,16 +2738,16 @@ app.get('/api/get-user-posts', async (req, res) => {
       return res.status(401).json({ success: false, error: 'User not authenticated.' });
     }
 
-  const posts = await Post.findAll({
-  where: { userId },
-  include: [
-    { model: User, attributes: ['username'] },
-    { model: Comment, include: [User] },
-    { model: PostLike, as: 'PostLikes' }, // Alias matches the association
-    { model: PostDislike, as: 'PostDislikes' } // Alias matches the association
-  ],
-  order: [['createdAt', 'DESC']]
-});
+    const posts = await Post.findAll({
+      where: { userId }, // Only return posts by the logged-in user
+      include: [
+        { model: User, attributes: ['username'] },
+        { model: Comment, include: [User] },
+        { model: PostLike },
+        { model: PostDislike }
+      ],
+      order: [['createdAt', 'DESC']] // Optional: Order by newest first
+    });
 
     const formattedPosts = posts.map(post => ({
       id: post.id,
@@ -2764,10 +2780,10 @@ app.get('/api/get-public-posts', async (req, res) => {
       include: [
         { model: User, attributes: ['username'] },
         { model: Comment, include: [User] },
-        { model: PostLike, as: 'PostLikes' }, // Include with alias
-        { model: PostDislike, as: 'PostDislikes' } // Include with alias
+        { model: PostLike },
+        { model: PostDislike }
       ],
-      order: [['createdAt', 'DESC']] // Order by newest first
+      order: [['createdAt', 'DESC']] // Optional: Order by newest first
     });
 
     const formattedPosts = posts.map(post => ({
@@ -2792,7 +2808,6 @@ app.get('/api/get-public-posts', async (req, res) => {
     res.status(500).json({ success: false, error: 'Error fetching public posts' });
   }
 });
-
 
 
 // Route to like a post
@@ -3039,70 +3054,58 @@ const BlockedUser = sequelize.define('BlockedUser', {
   }
 });
 
-
 // Sync the model with the database
 BlockedUser.sync();
 
-
   // Define the Like model
-const Like = sequelize.define('Like', {
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  likedUserId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  }
-});
-
-const Dislike = sequelize.define('Dislike', {
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  dislikedUserId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  }
-});
-
+  const Like = sequelize.define('Like', {
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    likedUserId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    }
+  });
+  
+  // Define the Dislike model
+  const Dislike = sequelize.define('Dislike', {
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    dislikedUserId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    }
+  });
   
   // Define the Notification model
-const Notification = sequelize.define('Notification', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  senderId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  message: {
-    type: DataTypes.STRING,
-    allowNull: false
-  }
+  const Notification = sequelize.define('Notification', {
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    senderId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    message: {
+      type: DataTypes.STRING,
+      allowNull: false
+    }
+  });
+  
+  // Define associations
+  User.hasMany(Notification, { foreignKey: 'userId' });
+  Notification.belongsTo(User, { foreignKey: 'userId', as: 'receiver' });
+  User.hasMany(Notification, { foreignKey: 'senderId' });
+  Notification.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
+  
+sequelize.sync({ force: false }).then(() => {
+  console.log('Database & tables created!');
 });
-
-
-// User associations
-User.hasMany(Notification, { foreignKey: 'userId' });
-Notification.belongsTo(User, { foreignKey: 'userId', as: 'receiver' });
-User.hasMany(Notification, { foreignKey: 'senderId' });
-Notification.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
-
-User.hasMany(Like, { foreignKey: 'userId' });
-User.hasMany(Dislike, { foreignKey: 'userId' });
-
-sequelize.sync({ alter: true }).then(() => {
-  console.log('Database & tables updated!');
-});
-
 
 app.get('/api/nearby-users', async (req, res) => {
   try {
@@ -3685,7 +3688,7 @@ app.get('/admin/search-user', requireAdmin, async (req, res) => {
 });
 
 // Start the server
-const port = 4000;
+const port = 3000;
 server.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
