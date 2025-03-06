@@ -26,7 +26,6 @@ const sequelize = new Sequelize('postgresql://patrick:HiXl0CJCOL3uNTvs1zLiuvhcHB
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
 const io = socketIo(server);
-
 const User = sequelize.define('User', {
   id: {
     type: DataTypes.INTEGER,
@@ -159,6 +158,10 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
     defaultValue: 'user'
+  },
+  availableUntil: { // Add this field
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   indexes: [
@@ -3406,6 +3409,77 @@ app.get('/api/get-random-users', async (req, res) => {
   }
 });
 
+// Endpoint for Time-Limited Matches
+app.get('/time-limited-matches', async (req, res) => {
+  try {
+    const { userId } = req.session; // Retrieve logged-in user ID from the session
+    const user = await User.findByPk(userId, { attributes: ['id', 'gender'] });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const oppositeGender = user.gender === 'male' ? 'female' : 'male';
+    const now = new Date();
+
+    // Find users with opposite gender and availability
+    const matches = await User.findAll({
+      where: {
+        id: { [Op.ne]: userId }, // Exclude the logged-in user
+        gender: oppositeGender,
+        availableUntil: { [Op.gt]: now } // Only fetch users available in the future
+      },
+      attributes: ['id', 'username', 'age', 'bio', 'profilePicture', 'availableUntil']
+    });
+
+    // Format matches and calculate time remaining for availability
+    const formattedMatches = matches.map(match => {
+      const timeRemaining = Math.max(0, new Date(match.availableUntil) - now);
+      return {
+        ...match.toJSON(),
+        timeRemaining: Math.floor(timeRemaining / 60000) // Convert milliseconds to minutes
+      };
+    });
+
+    res.json(formattedMatches); // Send the matches to the frontend
+  } catch (error) {
+    console.error('Error fetching time-limited matches:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+
+// Endpoint to set availability (availableUntil)
+app.post('/set-availability', async (req, res) => {
+  try {
+    const { userId } = req.session; // Retrieve logged-in user's ID from the session
+    const { hours } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not logged in' });
+    }
+
+    if (!hours || hours <= 0 || hours > 24) {
+      return res.status(400).json({ success: false, message: 'Invalid hours provided' });
+    }
+
+    // Calculate availability end time
+    const availableUntil = new Date(Date.now() + hours * 60 * 60 * 1000); // Current time + specified hours
+
+    // Update the user's availability in the database
+    await User.update(
+      { availableUntil },
+      { where: { id: userId } }
+    );
+
+    res.json({ success: true, message: 'Availability set successfully' });
+  } catch (error) {
+    console.error('Error setting availability:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+
 app.get('/api/mutual-interests', async (req, res) => {
   try {
     const { userId } = req.session;
@@ -3442,7 +3516,6 @@ app.get('/api/mutual-interests', async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
-
 // Haversine formula function to calculate distance between two geocoordinates
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const toRad = (value) => (value * Math.PI) / 180;
@@ -3468,16 +3541,18 @@ app.get('/api/location-matches', async (req, res) => {
       return res.status(404).json({ success: false, message: 'User location not available' });
     }
 
-    const maxDistanceKm = 10; // Define maximum distance in kilometers
+    const maxDistanceKm = 40; // Define maximum distance in kilometers
+    const oppositeGender = user.gender === 'male' ? 'female' : 'male'; // Find users of opposite gender
 
-    // Fetch all users with latitude and longitude who are not the logged-in user
+    // Fetch all users with latitude and longitude who are not the logged-in user and match gender
     const matches = await User.findAll({
       where: {
         id: { [Op.ne]: userId }, // Exclude the logged-in user
         latitude: { [Op.ne]: null },
         longitude: { [Op.ne]: null },
+        gender: oppositeGender, // Only fetch users of the opposite gender
       },
-      attributes: ['id', 'username', 'age', 'bio', 'profilePicture', 'latitude', 'longitude'],
+      attributes: ['id', 'username', 'age', 'bio', 'profilePicture', 'latitude', 'longitude'], // Include necessary fields
     });
 
     // Filter users based on distance
@@ -3489,6 +3564,8 @@ app.get('/api/location-matches', async (req, res) => {
           match.latitude,
           match.longitude
         );
+
+        // Check if the distance is valid
         if (distance <= maxDistanceKm) {
           return {
             ...match.toJSON(),
@@ -3506,20 +3583,6 @@ app.get('/api/location-matches', async (req, res) => {
   }
 });
 
-// Function to calculate distance using the Haversine formula
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const toRad = (value) => (value * Math.PI) / 180; // Convert degrees to radians
-  const R = 6371; // Radius of the Earth in kilometers
-
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // Distance in kilometers
-}
 
 app.get('/api/search-users', async (req, res) => {
   try {
@@ -3566,6 +3629,75 @@ app.get('/api/search-users', async (req, res) => {
   }
 });
 
+// Utility to calculate distance between two geolocations using Haversine formula
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+}
+
+// Route to fetch location-based matches
+app.get('/api/location-based-matches', async (req, res) => {
+  try {
+    const { userId } = req.session; // Logged-in user ID
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    // Fetch logged-in user
+    const loggedInUser = await User.findByPk(userId);
+    if (!loggedInUser || !loggedInUser.latitude || !loggedInUser.longitude) {
+      return res.status(400).json({ error: 'User location not available' });
+    }
+
+    const oppositeGender = loggedInUser.gender === 'male' ? 'female' : 'male';
+
+    // Fetch all users of the opposite gender
+    const potentialMatches = await User.findAll({
+      where: {
+        gender: oppositeGender,
+        id: { [Op.ne]: userId }, // Exclude logged-in user
+      },
+    });
+
+    // Filter by distance (below 40 km)
+const matches = potentialMatches
+  .map((match) => {
+    if (match.latitude && match.longitude) {
+      const distance = calculateDistance(
+        loggedInUser.latitude,
+        loggedInUser.longitude,
+        match.latitude,
+        match.longitude
+      );
+      return distance <= 40
+        ? {
+            id: match.id,
+            username: match.username,
+            age: match.age,
+            bio: match.bio,
+            profilePicture: match.profilePicture,
+            location: match.location || 'Location not provided', // Use a fallback value
+            distance: distance.toFixed(1), // Round to 1 decimal place
+          }
+        : null;
+    }
+    return null;
+  })
+  .filter(Boolean); // Remove null values
+
+
+    res.json(matches);
+  } catch (error) {
+    console.error('Error fetching location-based matches:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 
 
@@ -3681,6 +3813,35 @@ app.get('/admin/search-user', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error searching user:', error);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+app.get('/admin/api/active-users', requireAdmin, async (req, res) => {
+  try {
+    const activeUsers = await User.findAll({
+      where: { online: true },
+      attributes: ['id', 'username', 'fullPhoneNumber', 'lastSeen', 'age', 'gender'],
+    });
+    res.json(activeUsers);
+  } catch (error) {
+    console.error('Error fetching active users:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+app.get('/admin/api/users-by-gender', requireAdmin, async (req, res) => {
+  try {
+    const maleUsers = await User.findAll({
+      where: { gender: 'male' },
+      attributes: ['id', 'username', 'fullPhoneNumber', 'createdAt'],
+    });
+    const femaleUsers = await User.findAll({
+      where: { gender: 'female' },
+      attributes: ['id', 'username', 'fullPhoneNumber', 'createdAt'],
+    });
+    res.json({ maleUsers, femaleUsers });
+  } catch (error) {
+    console.error('Error fetching users by gender:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
