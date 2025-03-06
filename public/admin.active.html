@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Active Users</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: hsl(0, 15%, 37%);
+    }
+    header {
+      background: linear-gradient(90deg, #4CAF50, #2A9DF4);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+
+    main {
+      padding: 20px;
+      margin: auto;
+      max-width: 1200px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    table th, table td {
+      padding: 15px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+    table th {
+      background-color: #4CAF50;
+      color: white;
+    }
+    table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    table tr:hover {
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Active Users</h1>
+  </header>
+  <main>
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Phone</th>
+        <th>Last Seen</th>
+        <th>Age</th>
+        <th>Gender</th>
+      </tr>
+    </table>
+  </main>
+  <script>
+    function loadActiveUsers() {
+      fetch('/admin/api/active-users')
+        .then(response => response.json())
+        .then(users => {
+          const table = document.querySelector('table');
+          const rows = users.map(user => `
+            <tr>
+              <td>${user.id}</td>
+              <td>${user.username}</td>
+              <td>${user.fullPhoneNumber}</td>
+              <td>${user.lastSeen || 'Online now'}</td>
+              <td>${user.age || 'N/A'}</td>
+              <td>${user.gender || 'N/A'}</td>
+            </tr>
+          `);
+          table.innerHTML += rows.join('');
+        })
+        .catch(error => console.error('Error loading active users:', error));
+    }
+    document.addEventListener('DOMContentLoaded', loadActiveUsers);
+  </script>
+</body>
+</html>

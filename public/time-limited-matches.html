@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time-Limited Matches</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #ff4d4d;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .profile-card-container {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding: 10px;
+    }
+    .profile-card {
+      position: relative;
+      width: 300px;
+      height: 400px;
+      margin: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      flex: 0 0 auto;
+      text-align: center;
+      scroll-snap-align: start;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+    .profile-card:hover {
+      transform: scale(1.05);
+    }
+    .profile-card img {
+      width: 100%;
+      height: 60%;
+      object-fit: cover;
+    }
+    .profile-details {
+      padding: 10px;
+      font-size: 14px;
+      text-align: left;
+    }
+    .profile-details h2 {
+      margin: 5px 0;
+    }
+    .timer {
+      font-size: 14px;
+      color: red;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Time-Limited Matches</h1>
+  </header>
+  <main>
+    <div class="profile-card-container" id="timeLimitedMatchesContainer"></div>
+  </main>
+  <script>
+    async function fetchTimeLimitedMatches() {
+      try {
+        const response = await fetch('/time-limited-matches'); // Call the server endpoint
+        const matches = await response.json();
+
+        const container = document.getElementById('timeLimitedMatchesContainer');
+        container.innerHTML = '';
+
+        matches.forEach(match => {
+          const card = document.createElement('div');
+          card.className = 'profile-card';
+          card.onclick = () => {
+            // Redirect to messages.html with userId and username as query params
+            window.location.href = `messages.html?userId=${match.id}&username=${encodeURIComponent(match.username)}`;
+          };
+
+          card.innerHTML = `
+            <img src="${match.profilePicture || 'default-profile.png'}" alt="${match.username}">
+            <div class="profile-details">
+              <h2>${match.username}</h2>
+              <p><strong>Age:</strong> ${match.age || 'N/A'}</p>
+              <p>${match.bio || 'No bio available.'}</p>
+              <p><strong>Expires In:</strong> ${match.timeRemaining} mins</p>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (error) {
+        console.error('Error fetching time-limited matches:', error);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchTimeLimitedMatches);
+  </script>
+</body>
+</html>

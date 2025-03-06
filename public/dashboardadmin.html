@@ -125,6 +125,22 @@
         font-size: 14px;
       }
     }
+    footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        footer a {
+            color: #ff6600;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
   </style>
 </head>
 <body>
@@ -167,7 +183,15 @@
       </tr>
     </table>
   </main>
-
+  <footer>
+    <p>
+      <a href="/admin.active.html">Active</a> | 
+      <a href="/genderadmin.html">Gender</a>
+    </p>
+    
+    <p>&copy; 2025 LoveConnect. All rights reserved.</p>
+    <p><a href="admin.active.html">active</a> | <a href="genderadmin.html">gender</a> | <a href="genderadmin.html">.</a></p>
+</footer>
   <script>
     // Fetch and display users
     function loadUsers() {
@@ -216,7 +240,28 @@
         })
         .catch(error => console.error('Error loading posts:', error));
     }
-  
+
+  function searchUser() {
+  const phoneNumber = document.getElementById('phoneNumber').value;
+  fetch(`/admin/search-user?phoneNumber=${phoneNumber}`)
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        document.getElementById('searchResults').innerHTML = `
+          <div>
+            <span>Username:</span> ${result.user.username}<br>
+            <span>Phone:</span> ${result.user.fullPhoneNumber}<br>
+            <span>Role:</span> ${result.user.role}<br>
+            <span>Online:</span> ${result.user.online ? 'Yes' : 'No'}
+          </div>
+        `;
+      } else {
+        document.getElementById('searchResults').textContent = result.message;
+      }
+    })
+    .catch(error => console.error('Error searching user:', error));
+}
+
     // Load data on page load
     document.addEventListener('DOMContentLoaded', () => {
       loadUsers();
