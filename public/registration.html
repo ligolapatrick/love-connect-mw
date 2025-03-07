@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - LoveConnect</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/google-libphonenumber/3.2.20/libphonenumber.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -160,6 +161,16 @@
                     <label for="phone">Phone Number:</label>
                     <select id="countryCode" name="countryCode" required>
                         <option value="+265" selected>+265 (Malawi)</option>
+                        <option value="+263">+263 (Zimbabwe)</option>
+                        <option value="+264">+264 (Namibia)</option>
+                        <option value="+267">+267 (Botswana)</option>
+                        <option value="+81">+81 (Japan)</option>
+                        <option value="+260">+260 (Zambia)</option>
+                        <option value="+254">+254 (Kenya)</option>
+                        <option value="+256">+256 (Uganda)</option>
+                        <option value="+1">+1 (USA)</option>
+                        <option value="+44">+44 (UK)</option>
+                        <option value="+27">+27 (South Africa)</option>
                         <!-- Other country codes -->
                     </select>
                     <input type="text" id="phone" name="phone" required>
@@ -229,6 +240,16 @@
     }
 
     try {
+        // Validate the phone number format
+        const phoneUtil = libphonenumber.PhoneNumberUtil.getInstance();
+        const regionCode = phoneUtil.getRegionCodeForNumber(phoneUtil.parse(fullPhoneNumber));
+
+        if (!phoneUtil.isValidNumberForRegion(phoneUtil.parse(fullPhoneNumber), regionCode)) {
+            step1Error.textContent = 'Invalid phone number for the selected country code.';
+            step1Error.style.display = 'block';
+            return;
+        }
+
         // Check if the phone number is already registered
         const response = await fetch('/check-phone', {
             method: 'POST',
@@ -247,11 +268,12 @@
             step2.classList.add('active');
         }
     } catch (error) {
-        console.error('Error checking phone number:', error);
+        console.error('Error validating phone number:', error);
         step1Error.textContent = 'An error occurred. Please try again.';
         step1Error.style.display = 'block';
     }
 });
+
 
         // Step 2: Password Validation and Strength Indicator
         passwordInput.addEventListener('input', () => {
