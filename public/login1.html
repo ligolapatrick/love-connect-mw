@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - find one-LoveConnect</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="manifest" href="/manifest.json"> <!-- Link to the manifest file -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -79,30 +77,44 @@
             transform: scale(1.05);
         }
 
-        .error {
-            color: red;
-            margin-bottom: 10px;
-        }
-
-        .install-btn {
-            margin-top: 20px;
+        .google-btn, .facebook-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
+            margin: 10px 0;
             transition: background-color 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
         }
 
-        .install-btn:hover {
-            background-color: #0056b3;
+        .google-btn {
+            background-color: #4285f4; /* Google Blue */
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .google-btn:hover {
+            background-color: #3079e5;
+        }
+
+        .facebook-btn {
+            background-color: #3b5998; /* Facebook Blue */
+        }
+
+        .facebook-btn:hover {
+            background-color: #2e437a;
+        }
+
+        .google-btn img, .facebook-btn img {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            vertical-align: middle;
         }
 
         .footer {
@@ -112,7 +124,13 @@
             width: 100%;
             color: #fff;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
+    <script src="https://connect.facebook.net/en_US/sdk.js" async defer></script>
 </head>
 <body>
     <div class="hero-image"></div>
@@ -123,15 +141,70 @@
             <input type="password" id="password" name="password" placeholder="Password" required>
             <button type="submit">Login</button>
         </form>
+
+        <!-- Social Login Buttons -->
+        <div id="g_id_onload"
+        data-client_id="946712963279-sq8vmfogp4j6202j2hppm7nh2smgq4jj.apps.googleusercontent.com"
+        data-context="signin"
+        data-ux_mode="popup"
+        data-callback="handleCredentialResponse">
+   </div>
+   <div class="g_id_signin" data-type="standard"></div>
+   <script src="https://accounts.google.com/gsi/client" async defer></script>
+   
+
+        <div>
+            <div class="fb-login-button" 
+                 data-width="" 
+                 data-size="large" 
+                 data-button-type="continue_with" 
+                 data-layout="default" 
+                 data-auto-logout-link="false" 
+                 data-use-continue-as="false"
+                 data-scope="public_profile,email"
+                 data-onlogin="checkLoginState()">
+            </div>
+        </div>
+
         <p class="error" id="errorMessage" style="display:none;"></p>
-        <button class="install-btn" id="installBtn" style="display: none;">Install App</button>
         <p>Don't have an account? <a href="register">Register here</a></p>
     </div>
+    
     <div class="footer">
         <p>&copy; 2025 LoveConnect. All rights reserved.</p>
     </div>
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+        // Facebook SDK Initialization
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId      : '1319941282557597',  // Replace with your Facebook App ID
+                cookie     : true, 
+                xfbml      : true, 
+                version    : 'v10.0' 
+            });
+
+            FB.AppEvents.logPageView();
+        };
+
+        function checkLoginState() {
+            FB.getLoginStatus(function(response) {
+                if (response.status === 'connected') {
+                    FB.api('/me?fields=id,name,email', function(response) {
+                        console.log('Facebook Login Success:', response);
+                        // Redirect or handle login response
+                        window.location.href = '/profile.html'; 
+                    });
+                } else {
+                    document.getElementById('errorMessage').textContent = 'Please log into the app using Facebook.';
+                }
+            });
+        }
+
+        // Google Login Function (Placeholder for OAuth redirect)
+        function googleLogin() {
+            window.location.href = '/auth/google';
+        }
+             document.getElementById('loginForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -149,26 +222,6 @@
             } else {
                 errorMessage.textContent = data.message;
                 errorMessage.style.display = 'block';
-            }
-        });
-
-        let deferredPrompt;
-        const installButton = document.getElementById('installBtn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installButton.style.display = 'block';
-        });
-
-        installButton.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    installButton.style.display = 'none';
-                }
-                deferredPrompt = null;
             }
         });
     </script>

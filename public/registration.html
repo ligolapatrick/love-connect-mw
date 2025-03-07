@@ -3,69 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - find one-LoveConnect</title>
-    <script src="https://connect.facebook.net/en_US/sdk.js" async defer></script>
+    <title>Register - LoveConnect</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-image: url('images/background.jpg');
+            background-image: url('images/Matches.jpg');
             background-size: cover;
             background-position: center;
-            animation: backgroundAnimation 10s infinite alternate;
         }
 
-        @keyframes backgroundAnimation {
-            0% { filter: brightness(0.8); }
-            100% { filter: brightness(1); }
-        }
-
-        .navbar {
+        .navbar, footer {
             background-color: rgba(0, 0, 0, 0.8);
             color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            animation: slideDown 1s ease-out;
-        }
-
-        .navbar img {
-            height: 50px;
-        }
-
-        @keyframes slideDown {
-            from { transform: translateY(-100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .nav-logo, .nav-contact, .nav-links {
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .nav-contact span {
-            margin: 0 10px;
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .nav-links {
-            list-style: none;
-            padding: 0;
-            gap: 40px;
-        }
-
-        .nav-links li {
-            display: inline;
-            margin: 0 10px;
-        }
-
-        .nav-links a {
-            color: white;
-            text-decoration: none;
+            text-align: center;
+            padding: 10px;
         }
 
         .form-section {
@@ -82,12 +36,11 @@
             color: white;
             width: 300px;
             text-align: center;
-            animation: fadeIn 1s ease-in-out;
+            display: none;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .form-background.active {
+            display: block;
         }
 
         .form-background input, .form-background select, .form-background button {
@@ -96,118 +49,244 @@
             margin-bottom: 10px;
             border-radius: 5px;
             border: none;
-            transition: all 0.3s ease;
-        }
-
-        .form-background input:focus, .form-background select:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 10px rgba(0,123,255,0.5);
-            transform: scale(1.05);
         }
 
         .form-background button {
             background-color: #007bff;
             color: white;
             cursor: pointer;
-            transition: all 0.3s ease;
         }
 
-        .form-background button:hover {
-            background-color: #0056b3;
-            box-shadow: 0 0 10px rgba(0,123,255,0.5);
-            transform: scale(1.05);
+        .password-strength {
+            text-align: left;
+            font-size: 0.9em;
         }
 
-        footer a {
-            color: white;
-            text-decoration: none;
-            margin: 0 10px;
+        .password-strength span {
+            display: inline-block;
+            height: 5px;
+            width: 100%;
+            border-radius: 3px;
+            background-color: #ccc;
         }
+
+        .password-strength.weak span {
+            background-color: red;
+        }
+
+        .password-strength.medium span {
+            background-color: orange;
+        }
+
+        .password-strength.strong span {
+            background-color: green;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 0.9em;
+        }
+        @media (max-width: 375px) {
+    body {
+        font-size: 14px; /* Slightly smaller text for smaller screens */
+    }
+
+    .form-background {
+        width: 90%; /* Adjust form width for smaller viewports */
+        padding: 15px;
+    }
+
+    .form-background h2 {
+        font-size: 1.5em; /* Resize headings */
+    }
+
+    .form-background input, 
+    .form-background select, 
+    .form-background button {
+        font-size: 14px; /* Resize input and button text */
+        padding: 8px;
+        margin-bottom: 8px; /* Reduce spacing */
+    }
+
+    button {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .password-strength span {
+        width: 90%; /* Make the strength bar proportional */
+        margin: 0 auto;
+        display: block;
+    }
+
+    .navbar {
+        flex-direction: column;
+        padding: 10px 0;
+        text-align: center;
+    }
+
+    .navbar img {
+        height: 40px; /* Resize logo */
+        margin-bottom: 10px;
+    }
+
+    footer {
+        font-size: 12px;
+        padding: 5px;
+    }
+}
+
     </style>
 </head>
 <body>
-    <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="nav-logo">
             <img src="images/LoveConnect logo.png" alt="LoveConnect Logo">
         </div>
         <div class="nav-contact">
             <span><img src="images/Limav-Flat-Gradient-Social-Whatsapp.512.png" alt="WhatsApp Icon"> 0888202246</span>
-            <span><img src="images/Graphicloads-100-Flat-Email-2.256 (1).png" alt="ligolapatrick61@gmail.com icon">ligolapatrick61@gmail.com</span>
+            <span><img src="images/Graphicloads-100-Flat-Email-2.256 (1).png" alt="ligolapatrick61@gmail.com icon"> ligolapatrick61@gmail.com</span>
         </div>
-    
     </nav>
     <main>
         <section class="form-section">
-            <div class="form-background">
-                <h2>Register</h2>
-                <form action="/register" method="post">
+            <form action="/register" method="post" id="registrationForm">
+                <!-- Step 1: Basic Information -->
+                <div class="form-background step step-1 active">
+                    <h2>Step 1: Basic Information</h2>
                     <label for="username">Username:</label>
-                    <input type="text" id="username" name="username" required><br>
-                    <label for="password">Password (6 characters long):</label>
-                    <input type="password" id="password" name="password" required><br>
+                    <input type="text" id="username" name="username" required>
                     <label for="phone">Phone Number:</label>
                     <select id="countryCode" name="countryCode" required>
-                        <option value="+1">+1 (USA)</option>
-                        <option value="+44">+44 (UK)</option>
-                        <option value="+81">+81 (Japan)</option>
-                        <option value="+265">+265 (Malawi)</option>
-                        <!-- Add more country codes as needed -->
+                        <option value="+265" selected>+265 (Malawi)</option>
+                        <!-- Other country codes -->
                     </select>
-                    <input type="text" id="phone" name="phone" required><br>
-                    <button type="submit">Register</button>
-                    <p>Already have an account? <a href="login">Login here</a></p>
-                </form>
-     
-        </section>
-        <section class="promo-section">
-            <h3>Why Choose LoveConnect?</h3>
-            <ul>
-                <li>Connect with like-minded individuals looking for love.</li>
-                <li>Advanced matchmaking algorithms to find your perfect match.</li>
-                <li>Fun and interactive features to make dating enjoyable.</li>
-            </ul>
+                    <input type="text" id="phone" name="phone" required>
+                    <p class="error-message" id="step1Error" style="display:none;">Please fill in all fields.</p>
+                    <p>Already have an account? <a href="login1">Login here</a></p>
+                    <button type="button" id="toStep2">Next</button>
+                </div>
+
+                <!-- Step 2: Password Setup -->
+                <div class="form-background step step-2">
+                    <h2>Step 2: Password Setup</h2>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                    <div class="password-strength" id="passwordStrength">
+                        <span></span>
+                    </div>
+                    <label for="retypePassword">Retype Password:</label>
+                    <input type="password" id="retypePassword" required>
+                    <p class="error-message" id="passwordError" style="display:none;">Passwords do not match.</p>
+                    <button type="button" id="toStep3">Next</button>
+                </div>
+
+                <!-- Step 3: Confirmation -->
+                <div class="form-background step step-3">
+                    <h2>Step 3: Confirm Details</h2>
+                    <p id="reviewDetails"></p>
+                    <button type="submit" id="register">Register</button>
+                    <button type="button" id="backToStep2">Back</button>
+                </div>
+            </form>
         </section>
     </main>
     <footer>
-        <p>&copy; 2024 LoveConnect. All rights reserved.</p>
-        <p><a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-service.html">Terms of Service</a></p>
+        <p>&copy; 2025 LoveConnect. All rights reserved.</p>
     </footer>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/google-libphonenumber/3.2.20/libphonenumber.js"></script>
     <script>
-    document.querySelector('form').addEventListener('submit', function(event) {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const phone = document.getElementById('phone').value;
-        const countryCode = document.getElementById('countryCode').value;
+        const step1 = document.querySelector('.step-1');
+        const step2 = document.querySelector('.step-2');
+        const step3 = document.querySelector('.step-3');
         
-        if (username.trim() === '') {
-            alert('Username is required.');
-            event.preventDefault();
-        } else if (password.length < 6) {
-            alert('Password must be at least 6 characters long.');
-            event.preventDefault();
+        const toStep2Button = document.getElementById('toStep2');
+        const toStep3Button = document.getElementById('toStep3');
+        const backToStep2Button = document.getElementById('backToStep2');
+
+        const usernameInput = document.getElementById('username');
+        const phoneInput = document.getElementById('phone');
+        const step1Error = document.getElementById('step1Error');
+
+        const passwordInput = document.getElementById('password');
+        const retypePasswordInput = document.getElementById('retypePassword');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordError = document.getElementById('passwordError');
+
+        const reviewDetails = document.getElementById('reviewDetails');
+
+        // Step 1 to Step 2
+        toStep2Button.addEventListener('click', async () => {
+    const username = usernameInput.value.trim();
+    const phone = phoneInput.value.trim();
+    const countryCode = document.getElementById('countryCode').value;
+    const fullPhoneNumber = `${countryCode}${phone}`;
+
+    if (!username || !phone) {
+        step1Error.textContent = 'Please fill in all fields.';
+        step1Error.style.display = 'block';
+        return;
+    }
+
+    try {
+        // Check if the phone number is already registered
+        const response = await fetch('/check-phone', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullPhoneNumber })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            step1Error.textContent = data.message || 'Phone number is already registered.';
+            step1Error.style.display = 'block';
         } else {
-            const phoneUtil = libphonenumber.PhoneNumberUtil.getInstance();
-            try {
-                // Get the country code without the '+' symbol
-                const countryCodeNum = parseInt(countryCode.replace('+', ''), 10);
-                // Get the region code for the country code
-                const regionCode = phoneUtil.getRegionCodeForCountryCode(countryCodeNum);
-                // Parse the phone number with the region code
-                const number = phoneUtil.parse(phone, regionCode);
-                
-                if (!phoneUtil.isValidNumber(number)) {
-                    alert('Invalid phone number for the selected country code.');
-                    event.preventDefault();
-                }
-            } catch (error) {
-                alert('Invalid phone number format.');
-                event.preventDefault();
-            }
+            step1Error.style.display = 'none';
+            step1.classList.remove('active');
+            step2.classList.add('active');
         }
-    });
+    } catch (error) {
+        console.error('Error checking phone number:', error);
+        step1Error.textContent = 'An error occurred. Please try again.';
+        step1Error.style.display = 'block';
+    }
+});
+
+        // Step 2: Password Validation and Strength Indicator
+        passwordInput.addEventListener('input', () => {
+            const value = passwordInput.value;
+            if (value.length >= 8 && /[A-Z]/.test(value) && /[0-9]/.test(value)) {
+                passwordStrength.className = 'password-strength strong';
+            } else if (value.length >= 6) {
+                passwordStrength.className = 'password-strength medium';
+            } else {
+                passwordStrength.className = 'password-strength weak';
+            }
+        });
+
+        // Step 2 to Step 3
+        toStep3Button.addEventListener('click', () => {
+            if (passwordInput.value !== retypePasswordInput.value) {
+                passwordError.style.display = 'block';
+            } else {
+                passwordError.style.display = 'none';
+                step2.classList.remove('active');
+                step3.classList.add('active');
+                
+                // Update review details
+                const username = usernameInput.value;
+                const phone = phoneInput.value;
+                const countryCode = document.getElementById('countryCode').value;
+                reviewDetails.textContent = `Username: ${username}\nPhone: ${countryCode}${phone}`;
+            }
+        });
+
+        // Back to Step 2
+        backToStep2Button.addEventListener('click', () => {
+            step3.classList.remove('active');
+            step2.classList.add('active');
+        });
     </script>
-    
 </body>
 </html>
