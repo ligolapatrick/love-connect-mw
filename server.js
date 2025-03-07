@@ -7,6 +7,103 @@ const http = require('http');
 const socketIo = require('socket.io');
 const session = require('express-session');
 const fs = require('fs');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+
+passport.use(new GoogleStrategy({
+    clientID: '946712963279-sq8vmfogp4j6202j2hppm7nh2smgq4jj.apps.googleusercontent.com', // Replace with your Client ID
+    clientSecret: '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', // Replace with your Client Secret
+    callbackURL: 'https://loveconnect-mw.onrender.com/auth/google/callback' // Ensure this matches the redirect URI in Google Cloud Console
+  },
+  async (accessToken, refreshToken, profile, done) => {
+    try {
+      // Check if user already exists in your database
+      const user = await User.findOne({ where: { socialId: profile.id } });
+
+      if (!user) {
+        // If user doesn't exist, create a new user
+        const newUser = await User.create({
+          username: profile.displayName,
+          email: profile.emails[0].value, // Ensure the email scope is requested
+          socialId: profile.id,
+          provider: 'google'
+        });
+
+        // Pass the newly created user to the next middleware
+        return done(null, newUser);
+      }
+
+      // If user exists, pass the user data to the next middleware
+      return done(null, user);
+    } catch (error) {
+      console.error('Error handling Google profile:', error);
+      return done(error, null);
+    }
+  }
+));
+
+// Route to start Google OAuth login
+app.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] }) // Request profile and email data
+);
+
+// Google OAuth callback route
+app.get('/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login' }), // Redirect to login on failure
+    (req, res) => {
+      // Successful authentication
+      const userId = req.user.id; // Assuming the authenticated user is available as req.user
+      res.redirect(`https://loveconnect-mw.onrender.com/profile?userId=${userId}`); // Redirect to the user's profile page
+    }
+);
+
+// Serialize user to save user information in the session
+passport.serializeUser((user, done) => {
+    done(null, user.id); // Save only the user ID in the session
+});
+
+// Deserialize user to fetch user details from the database
+passport.deserializeUser(async (id, done) => {
+    try {
+      const user = await User.findByPk(id); // Retrieve user by ID
+      done(null, user);
+    } catch (error) {
+      done(error, null);
+    }
+});
+
+const FacebookStrategy = require('passport-facebook').Strategy;
+
+passport.use(new FacebookStrategy({
+    clientID: '1319941282557597', // Your App ID
+    clientSecret: '28496f76860b62278733641bcb23b522',
+    callbackURL: 'https://loveconnect-mw.onrender.com/auth/facebook/callback',
+    profileFields: ['id', 'displayName', 'emails'] // Request specific fields
+}, async (accessToken, refreshToken, profile, done) => {
+    try {
+        const existingUser = await User.findOne({ where: { socialId: profile.id } });
+        if (!existingUser) {
+            const newUser = await User.create({
+                username: profile.displayName,
+                email: profile.emails[0].value,
+                socialId: profile.id,
+                provider: 'facebook'
+            });
+            return done(null, newUser);
+        }
+        return done(null, existingUser);
+    } catch (err) {
+        done(err, null);
+    }
+}));
+
+app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+
+app.get('/auth/facebook/callback',
+    passport.authenticate('facebook', { failureRedirect: '/login' }),
+    (req, res) => {
+        res.redirect(`/profile?userId=${req.user.id}`);
+    });
 
 // Initialize Sequelize with PostgreSQL
 const { Sequelize, DataTypes, Op } = require('sequelize');
@@ -26,6 +123,7 @@ const sequelize = new Sequelize('postgresql://patrick:HiXl0CJCOL3uNTvs1zLiuvhcHB
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
 const io = socketIo(server);
+
 const User = sequelize.define('User', {
   id: {
     type: DataTypes.INTEGER,
@@ -275,6 +373,20 @@ app.post('/register', async (req, res) => {
   } catch (error) {
     console.error('Error registering user:', error);
     res.status(500).send('Internal Server Error');
+  }
+});
+
+app.post('/check-phone', async (req, res) => {
+  const { fullPhoneNumber } = req.body;
+  try {
+    const existingUser = await User.findOne({ where: { fullPhoneNumber } });
+    if (existingUser) {
+      return res.json({ success: false, message: 'Phone number is already registered.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error checking phone number:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
 
