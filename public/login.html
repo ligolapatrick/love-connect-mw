@@ -247,6 +247,42 @@ footer {
     100% { transform: rotate(360deg); }
 }
 
+.social-share a {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between icon and text */
+    font-size: 1em; /* Adjust size as needed */
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    color: white;
+    margin: 5px;
+}
+
+.social-share a:hover {
+    opacity: 0.9; /* Slight fade effect */
+}
+
+.social-share .fa-facebook-f {
+    background-color: #1877f2;
+    color: white;
+    padding: 10px;
+    border-radius: 50%;
+}
+
+.social-share .fa-twitter {
+    background-color: #1da1f2;
+    color: white;
+    padding: 10px;
+    border-radius: 50%;
+}
+
+.social-share .fa-whatsapp {
+    background-color: #25d366;
+    color: white;
+    padding: 10px;
+    border-radius: 50%;
+}
 
     </style>
 </head>
@@ -281,8 +317,19 @@ footer {
             </div>
             <div class="download-links">
                 <button class="btn btn-primary" id="installButton">Add to Home Screen</button>
-            </div>
-        </div>
+                <div class="social-share">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=https://love-connect-mw.onrender.com" target="_blank" class="btn btn-primary">
+                        <i class="fab fa-facebook-f"></i> Share on Facebook
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?url=https://love-connect-mw.onrender.com&text=Check%20out%20LoveConnect!" target="_blank" class="btn btn-primary">
+                        <i class="fab fa-twitter"></i> Share on Twitter
+                    </a>
+                    <a href="https://api.whatsapp.com/send?text=Check%20out%20LoveConnect!%20https://love-connect-mw.onrender.com" target="_blank" class="btn btn-primary">
+                        <i class="fab fa-whatsapp"></i> Share on WhatsApp
+                    </a>
+                </div>
+            </div>            
+            
     </header>
     <footer>
         <p>&copy; 2025 LoveConnect. All rights reserved.</p>
