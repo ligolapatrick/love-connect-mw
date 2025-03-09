@@ -3,259 +3,426 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Random Users</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>Settings</title>
+  <link rel="stylesheet" href="styles/settings.css">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background-color: #ff4d4d;
-      color: white;
-      text-align: center;
-      padding: 20px;
-    }
-    main {
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-    }
-    .user-card {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-    }
-    .user-card img {
-      width: 100%;
-      height: auto;
-      border-radius: 10px;
-      object-fit: cover;
-      margin-bottom: 10px;
-    }
-    .user-card-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .user-card-buttons button {
-      background-color: transparent;
-      border: none;
-      cursor: pointer;
-    }
-    .user-card-buttons button img {
-      width: 24px;
-      height: 24px;
-    }
-    .user-card-buttons button:hover img {
-      filter: brightness(0.8);
-    }
-    .heart-popup {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 3em;
-      color: #ff6347;
-      animation: heartPopup 1s ease-in-out;
-      opacity: 0;
-    }
-    @keyframes heartPopup {
-      0% { transform: scale(0); opacity: 0; }
-      50% { transform: scale(1.5); opacity: 1; }
-      100% { transform: scale(1); opacity: 0; }
-    }
-    
+    /* General Styles */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+  color: #333;
+}
 
+.settings-header {
+  background-color: #007bff;
+  color: white;
+  text-align: center;
+  padding: 15px;
+}
 
-    .user-card-container {
-            display: flex;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            justify-content: start;
-            padding-left: 10px;
-        }
-        .user-card {
-            position: relative;
-            width: 500px;
-            margin: 10px;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            text-align: center;
-            scroll-snap-align: start;
-            flex: 0 0 auto;
-        }
-        .user-card img {
-            width: 100%;
-            height: 500px;
-            object-fit: cover;
-        }
-        .user-info {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            padding: 10px;
-            text-align: left;
-            font-size: 0.9em;
-        }
-        .like-dislike-buttons {
-            position: absolute;
-            bottom: 50px;
-            right: 10px;
-            display: flex;
-            gap: 10px;
-        }
-        .like-dislike-buttons button {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .like-button {
-            background-color: #28a745;
-            color: white;
-        }
-        .dislike-button {
-            background-color: #dc3545;
-            color: white;
-        }
-        .like-button.liked,
-        .dislike-button.disliked {
-            opacity: 0.5;
-        }
-       
-        .heart-popup {
-            position: absolute;
-            bottom: 50%;
-            left: 50%;
-            transform: translate(-50%, 50%);
-            font-size: 2em;
-            display: none;
-            animation: popUpAndFade 2s forwards;
-        }
-        @keyframes popUpAndFade {
-            0% { display: block; opacity: 1; }
-            100% { display: none; opacity: 0; }
-        }
-        @media (max-width: 768px) {
-            .user-card {
-                width: 300px;
-                margin: 10px 5px;
-            }
-            .user-card img {
-                height: 350px;
-            }
-            .user-info {
-                font-size: 0.8em;
-                padding: 5px;
-            }
-        }
-        @media (max-width: 480px) {
-            .user-card {
-                width: 350px;
-            }
-            .user-card img {
-                height: 500px;
-            }
-            .user-info {
-                font-size: 0.7em;
-                padding: 3px;
-            }
-        }
+.settings-container {
+  margin: 20px;
+}
+
+.settings-section {
+  background: white;
+  margin: 10px 0;
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section h2 {
+  margin-top: 0;
+}
+
+button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 5px 0;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+#badges-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#badges .badge {
+  background-color: #ffcc00;
+  color: #333;
+  padding: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  text-align: center;
+  line-height: 30px;
+  font-weight: bold;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .settings-section {
+    padding: 10px;
+  }
+
+  button {
+    width: 100%;
+  }
+}
+/* Modal Styling */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  display: none; /* Hidden by default */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensure it's above all other content */
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Ensure input and button elements inside the modal are styled properly */
+.modal-content label {
+  display: block;
+  margin: 10px 0 5px;
+  font-weight: bold;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.modal-content button {
+  margin: 10px 5px 0;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.modal-content button[type="submit"] {
+  background-color: #007bff;
+  color: white;
+}
+
+.modal-content button[type="button"] {
+  background-color: #dc3545;
+  color: white;
+}
+
+.modal-content button:hover {
+  opacity: 0.9;
+}
+
   </style>
 </head>
 <body>
-  <header>
-    <h1>Random Users</h1>
+  <header class="settings-header">
+    <h1>App Settings</h1>
   </header>
+
   <main>
-    <div class="user-list" id="userList"></div>
+    <!-- Achievements Section -->
+    <section class="settings-section">
+      <h2>Achievements</h2>
+      <p><strong>Total Messages Sent:</strong> <span id="messagesSent">0</span></p>
+      <p><strong>Total Points:</strong> <span id="totalPoints">0</span></p>
+      <h3>Badges:</h3>
+      <ul id="badgeList"></ul>
+    </section>
+  
+    <!-- Blocked Users Section -->
+    <section class="settings-section">
+      <h2>Blocked Users</h2>
+      <button id="viewBlockedListButton">View Blocked Chat List</button>
+      <div id="blockedUsersContainer" style="display: none;">
+        <ul id="blockedUsersList"></ul>
+      </div>
+    </section>
+  
+    <!-- Privacy Settings -->
+    <section class="settings-section">
+      <h2>Privacy Settings</h2>
+      <label>
+        Who can message me:
+        <select id="messagePermissions">
+          <option value="everyone">Everyone</option>
+          <option value="matches-only">Matches Only</option>
+          <option value="friends-only">Friends Only</option>
+        </select>
+      </label>
+    </section>
+  
+    <!-- Notifications -->
+    <section class="settings-section">
+      <h2>Notifications</h2>
+      <label>
+        <input type="checkbox" id="emailNotifications"> Email Notifications
+      </label>
+      <label>
+        <input type="checkbox" id="smsNotifications"> SMS Notifications
+      </label>
+      <label>
+        <input type="checkbox" id="pushNotifications" checked> Push Notifications
+      </label>
+      <label>
+        Daily Reminder Time:
+        <input type="time" id="dailyReminderTime">
+      </label>
+    </section>
+  
+    <!-- App Preferences -->
+    <section class="settings-section">
+      <h2>App Preferences</h2>
+      <label>
+        <input type="checkbox" id="darkModeToggle"> Enable Dark Mode
+      </label>
+      <label>
+        <input type="checkbox" id="notificationsToggle"> Notifications
+      </label>
+    </section>
+  
+<!-- Password Management Section -->
+<section class="settings-section">
+  <h2>Password Management</h2>
+  <button id="updatePasswordButton">Change Password</button>
+</section>
+
+<!-- Change Password Modal (Place Outside Sections for Isolation) -->
+<div id="changePasswordModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <h2>Change Password</h2>
+    <form id="changePasswordForm">
+      <label for="oldPassword">Old Password</label>
+      <input type="password" id="oldPassword" name="oldPassword" required>
+
+      <label for="newPassword">New Password</label>
+      <input type="password" id="newPassword" name="newPassword" required>
+
+      <label for="confirmNewPassword">Confirm New Password</label>
+      <input type="password" id="confirmNewPassword" name="confirmNewPassword" required>
+
+      <button type="submit">Change Password</button>
+      <button type="button" id="cancelChangePassword">Cancel</button>
+    </form>
+  </div>
+</div>
+
+    <!-- Account Management -->
+    <section class="settings-section">
+      <h2>Account Management</h2>
+      <button id="logoutButton">Logout</button>
+      <button id="deleteAccountButton">Delete Account</button>
+    </section>
   </main>
+  
+<script>
+// Show the Change Password Modal
+document.getElementById('updatePasswordButton').addEventListener('click', () => {
+  const modal = document.getElementById('changePasswordModal');
+  modal.style.display = 'flex'; // Make the modal visible
+});
 
-  <script>
-    function fetchRandomUsers() {
-      fetch('/api/get-random-users')
-        .then(response => response.json())
-        .then(users => {
-          const userList = document.getElementById('userList');
-          userList.innerHTML = '';
-          users.forEach(user => {
-            const userDiv = document.createElement('div');
-            userDiv.className = 'user-card';
-            userDiv.innerHTML = `
-              <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
-              <div>
-                <h3>${user.username}</h3>
-                <p>${user.bio || 'No bio available'}</p>
-                <div class="user-card-buttons">
-                  <button onclick="dislikeUser(${user.id})">
-                    <img src="icons/dislike.png" alt="Dislike">
-                  </button>
-                  <button onclick="messageUser(${user.id})">
-                    <img src="icons/message.png" alt="Message">
-                  </button>
-                  <button onclick="likeUser(${user.id})">
-                    <img src="icons/like.png" alt="Like">
-                  </button>
-                </div>
-                <div class="heart-popup" id="heart-popup-${user.id}">❤️</div>
-              </div>
-            `;
-            userList.appendChild(userDiv);
-          });
-        }).catch(error => {
-          console.error('Error fetching random users:', error);
-        });
+// Hide the Change Password Modal
+document.getElementById('cancelChangePassword').addEventListener('click', () => {
+  const modal = document.getElementById('changePasswordModal');
+  modal.style.display = 'none'; // Hide the modal
+});
+
+document.getElementById('changePasswordForm').addEventListener('submit', async (event) => {
+  event.preventDefault(); // Prevent default form submission
+
+  const oldPassword = document.getElementById('oldPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+  // Validate password matching
+  if (newPassword !== confirmNewPassword) {
+    alert('New passwords do not match.');
+    return;
+  }
+
+  // Send request to the server
+  try {
+    const response = await fetch('/api/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      alert('Password changed successfully.');
+      document.getElementById('changePasswordModal').style.display = 'none'; // Hide modal
+    } else {
+      alert(result.message || 'Failed to change password.');
     }
+  } catch (error) {
+    console.error('Error changing password:', error);
+    alert('An error occurred. Please try again.');
+  }
+});
 
-    function showHeartPopup(userId) {
-      const heartPopup = document.getElementById(`heart-popup-${userId}`);
-      heartPopup.style.opacity = 1;
-      setTimeout(() => {
-        heartPopup.style.opacity = 0;
-      }, 1000);
-    }
+// Fetch user stats
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const response = await fetch('/api/user-stats');
+    const data = await response.json();
 
-    async function likeUser(userId) {
-      const response = await fetch('/api/like', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+    document.getElementById('messagesSent').textContent = data.messagesSent;
+    document.getElementById('totalPoints').textContent = data.points;
+
+    const badgeList = document.getElementById('badgeList');
+    badgeList.innerHTML = ''; // Clear the list
+    data.badges.forEach(badge => {
+      const listItem = document.createElement('li');
+      listItem.textContent = badge;
+      badgeList.appendChild(listItem);
+    });
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+  }
+});
+
+// Logout functionality
+document.getElementById('logoutButton').addEventListener('click', () => {
+  fetch('/logout', { method: 'POST' })
+    .then(() => {
+      window.location.href = '/login';
+    })
+    .catch(error => {
+      console.error('Logout failed:', error);
+    });
+});
+
+// Delete account functionality
+document.getElementById('deleteAccountButton').addEventListener('click', () => {
+  if (confirm('Are you sure you want to delete your account? This action is irreversible.')) {
+    fetch('/api/delete-account', { method: 'DELETE' })
+      .then(() => {
+        alert('Account deleted successfully.');
+        window.location.href = '/register';
+      })
+      .catch(error => {
+        console.error('Account deletion failed:', error);
       });
-      const data = await response.json();
-      if (data.success) {
-        showHeartPopup(userId);
+  }
+});
+
+// Fetch the blocked users list and display it
+document.getElementById('viewBlockedListButton').addEventListener('click', async () => {
+  const container = document.getElementById('blockedUsersContainer');
+  container.style.display = container.style.display === 'none' ? 'block' : 'none';
+
+  if (container.style.display === 'block') {
+    try {
+      const response = await fetch('/api/blocked-users');
+      const blockedUsers = await response.json();
+
+      const blockedUsersList = document.getElementById('blockedUsersList');
+      blockedUsersList.innerHTML = ''; // Clear previous content
+
+      if (blockedUsers.length === 0) {
+        blockedUsersList.innerHTML = '<li>No blocked users found.</li>';
+        return;
       }
-    }
 
-    async function dislikeUser(userId) {
-      await fetch('/api/dislike', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+      blockedUsers.forEach(user => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `${user.username} (${user.fullPhoneNumber})`;
+        const unblockButton = document.createElement('button');
+        unblockButton.textContent = 'Unblock';
+        unblockButton.addEventListener('click', () => unblockUser(user.id));
+        listItem.appendChild(unblockButton);
+        blockedUsersList.appendChild(listItem);
       });
+    } catch (error) {
+      console.error('Error fetching blocked users:', error);
     }
+  }
+});
 
-    function messageUser(userId) {
-      window.location.href = `messages.html?userId=${userId}`;
+async function unblockUser(blockedUserId) {
+  try {
+    const response = await fetch('/api/unblock-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blockedUserId }),
+    });
+    const result = await response.json();
+    if (result.success) {
+      alert('User unblocked successfully.');
+      document.getElementById('viewBlockedListButton').click(); // Refresh the list
+    } else {
+      alert(result.message || 'Failed to unblock user.');
     }
+  } catch (error) {
+    console.error('Error unblocking user:', error);
+  }
+}
 
-    document.addEventListener('DOMContentLoaded', fetchRandomUsers);
-  </script>
+
+// Unblock a user
+async function unblockUser(blockedUserId) {
+  try {
+    const response = await fetch('/api/unblock-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blockedUserId }),
+    });
+    const result = await response.json();
+    if (result.success) {
+      alert('User unblocked successfully.');
+      document.getElementById('viewBlockedListButton').click(); // Refresh the list
+    } else {
+      alert(result.message || 'Failed to unblock user.');
+    }
+  } catch (error) {
+    console.error('Error unblocking user:', error);
+  }
+}
+
+</script>
+  <script src="scripts/settings.js"></script>
 </body>
 </html>
