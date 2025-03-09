@@ -196,14 +196,45 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  interests: {
-    type: DataTypes.JSONB, // Use JSONB for structured and efficient data storage
+interests: {
+  type: DataTypes.TEXT, // Store as plain text
+  allowNull: true,
+  get() {
+    return this.getDataValue('interests') ? JSON.parse(this.getDataValue('interests')) : [];
+  },
+  set(val) {
+    this.setDataValue('interests', JSON.stringify(val));
+  },
+},
+
+  badges: {
+    type: DataTypes.JSONB, // Store earned badges as a JSON object or array
     allowNull: true,
-    defaultValue: [] // Default to an empty array
+    defaultValue: [], // Example: ["FirstMatch", "IcebreakerPro"]
+  },
+  points: {
+    type: DataTypes.INTEGER, // Total points earned
+    allowNull: false,
+    defaultValue: 0,
+  },
+  achievementsProgress: {
+    type: DataTypes.JSONB, // Tracks progress toward specific badges or goals
+    allowNull: true,
+    defaultValue: {}, // Example: {"messagesSent": 5, "dailyLogins": 2}
+  },
+  leaderboardStats: {
+    type: DataTypes.JSONB, // Optional, if leaderboards are implemented
+    allowNull: true,
+    defaultValue: {}, // Example: {"rank": 50, "weeklyPoints": 100}
   },
   instantDate: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+    messagesSent: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0, // Start at 0 for all users
   },
   availableToday: {
     type: DataTypes.BOOLEAN,
@@ -3601,7 +3632,6 @@ app.post('/set-availability', async (req, res) => {
   }
 });
 
-
 app.get('/api/mutual-interests', async (req, res) => {
   try {
     const { userId } = req.session;
@@ -3638,6 +3668,7 @@ app.get('/api/mutual-interests', async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
+
 // Haversine formula function to calculate distance between two geocoordinates
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const toRad = (value) => (value * Math.PI) / 180;
@@ -3820,6 +3851,194 @@ const matches = potentialMatches
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+module.exports = {
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.addColumn('Users', 'badges', {
+      type: Sequelize.JSONB,
+      allowNull: true,
+      defaultValue: [],
+    });
+    await queryInterface.addColumn('Users', 'points', {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    });
+    await queryInterface.addColumn('Users', 'achievementsProgress', {
+      type: Sequelize.JSONB,
+      allowNull: true,
+      defaultValue: {},
+    });
+  },
+
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.removeColumn('Users', 'badges');
+    await queryInterface.removeColumn('Users', 'points');
+    await queryInterface.removeColumn('Users', 'achievementsProgress');
+  },
+};
+
+async function awardBadge(userId, badgeName) {
+  const user = await User.findByPk(userId);
+  if (!user.badges.includes(badgeName)) {
+    user.badges.push(badgeName); // Add the badge
+    await user.save();
+    console.log(`Badge awarded: ${badgeName}`);
+  }
+}
+
+async function addPoints(userId, points) {
+  const user = await User.findByPk(userId);
+  user.points += points;
+  await user.save();
+  console.log(`${points} points added to user ${user.username}`);
+}
+async function handleFirstMatch(userId) {
+  const user = await User.findByPk(userId);
+  if (!user.badges.includes("FirstMatch")) {
+    await awardBadge(userId, "FirstMatch");
+    await addPoints(userId, 10); // Award 10 points for first match
+  }
+}
+app.get('/api/user-stats', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.session.userId);
+    res.json({
+      points: user.points,
+      badges: user.badges,
+      achievementsProgress: user.achievementsProgress,
+    });
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+    res.status(500).json({ error: 'Failed to fetch user stats' });
+  }
+});
+
+
+app.post('/api/update-achievement', async (req, res) => {
+  try {
+    const { userId, achievement, increment } = req.body;
+    const user = await User.findByPk(userId);
+
+    // Increment achievement progress
+    user.achievementsProgress[achievement] = 
+      (user.achievementsProgress[achievement] || 0) + increment;
+
+    // Example: Unlock a badge when progress reaches 10
+    if (achievement === 'messagesSent' && user.achievementsProgress[achievement] >= 10) {
+      await awardBadge(userId, "Chat Master");
+      await addPoints(userId, 5); // Extra points for unlocking a badge
+    }
+
+    await user.save();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating achievement:', error);
+    res.status(500).json({ error: 'Failed to update achievement' });
+  }
+});
+
+app.get('/api/user-settings', async (req, res) => {
+    const user = await User.findByPk(req.session.userId);
+    res.json({
+        blockedUsers: user.blockedUsers || [],
+        messagePermissions: user.messagePermissions || 'everyone',
+        showAge: user.showAge !== false, // Default: true
+        showLocation: user.showLocation !== false, // Default: true
+        notifications: user.notifications || { email: true, sms: true, push: true },
+        featureToggles: user.featureToggles || { anonymousChat: true, voiceCall: true, videoCall: true },
+    });
+});
+app.post('/api/update-settings', async (req, res) => {
+    const { userId } = req.session;
+    const updates = req.body;
+
+    const user = await User.findByPk(userId);
+    Object.keys(updates).forEach(key => {
+        user[key] = updates[key];
+    });
+    await user.save();
+
+    res.json({ success: true });
+});
+
+app.get('/api/blocked-users', requireLogin, async (req, res) => {
+  const { userId } = req.session; // Logged-in user ID
+  try {
+    const blockedUsers = await BlockedUser.findAll({
+      where: { userId }, // Get all entries where the current user is the blocker
+      include: [
+        {
+          model: User,
+          as: 'BlockedUserDetails',
+          attributes: ['id', 'username', 'fullPhoneNumber', 'profilePicture'],
+        },
+      ],
+    });
+
+    // Map the blocked users for response
+    const result = blockedUsers.map(entry => ({
+      id: entry.BlockedUserDetails.id,
+      username: entry.BlockedUserDetails.username,
+      fullPhoneNumber: entry.BlockedUserDetails.fullPhoneNumber,
+      profilePicture: entry.BlockedUserDetails.profilePicture,
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching blocked users:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error.' });
+  }
+});
+
+BlockedUser.belongsTo(User, { as: 'BlockedUserDetails', foreignKey: 'blockedUserId' });
+User.hasMany(BlockedUser, { foreignKey: 'userId' });
+
+app.post('/api/unblock-user', async (req, res) => {
+  const { userId } = req.session;
+  const { blockedUserId } = req.body;
+  try {
+    const user = await User.findByPk(userId);
+    user.blockedUsers = user.blockedUsers.filter(id => id !== blockedUserId);
+    await user.save();
+    res.json({ success: true, message: 'User unblocked successfully.' });
+  } catch (error) {
+    console.error('Error unblocking user:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/change-password', requireLogin, async (req, res) => {
+  const { userId } = req.session; // Get logged-in user ID from session
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword || newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: 'Invalid input. Password must be at least 6 characters.' });
+  }
+
+  try {
+    // Fetch the user by ID
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Verify the old password
+    if (user.password !== oldPassword) {
+      return res.status(403).json({ success: false, message: 'Old password is incorrect.' });
+    }
+
+    // Update the user's password
+    user.password = newPassword; // Directly store the new password
+    await user.save();
+
+    res.json({ success: true, message: 'Password updated successfully.' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error.' });
+  }
+});
+
 
 
 
