@@ -9,6 +9,30 @@ const session = require('express-session');
 const fs = require('fs');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+require('dotenv').config();
+
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: 'drool594s', // Your Cloudinary name
+  api_key: '749679254351494', // Your API key
+  api_secret: 'UaNi7GGqMNgTkqc9I3gcy_-_WCk', // Your API secret
+  // Please store API keys in environment variables for better security in production!
+});
+
+// Set up Cloudinary storage with multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'uploads', // Folder name in Cloudinary
+    format: async (req, file) => 'jpg', // File format (optional, defaults to uploaded format)
+    public_id: (req, file) => `${Date.now()}-${file.originalname}`, // Public ID for unique filenames
+  },
+});
+
+const upload = multer({ storage: storage });
 
 passport.use(new GoogleStrategy({
     clientID: '946712963279-sq8vmfogp4j6202j2hppm7nh2smgq4jj.apps.googleusercontent.com', // Replace with your Client ID
@@ -49,61 +73,60 @@ app.get('/auth/google',
 
 // Google OAuth callback route
 app.get('/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }), // Redirect to login on failure
+    passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res) => {
-      // Successful authentication
-      const userId = req.user.id; // Assuming the authenticated user is available as req.user
-      res.redirect(`https://loveconnect-mw.onrender.com/profile?userId=${userId}`); // Redirect to the user's profile page
+        // Ensure user is authenticated
+        console.log('Authenticated user:', req.user);
+        if (req.user) {
+            const userId = req.user.id;
+            const username = req.user.username;
+            res.redirect(`/index.html?userId=${userId}&username=${username}`);
+        } else {
+            console.error('Authentication failed: req.user is not set');
+            res.redirect('/login');
+        }
     }
 );
 
-// Serialize user to save user information in the session
-passport.serializeUser((user, done) => {
-    done(null, user.id); // Save only the user ID in the session
-});
-
-// Deserialize user to fetch user details from the database
-passport.deserializeUser(async (id, done) => {
-    try {
-      const user = await User.findByPk(id); // Retrieve user by ID
-      done(null, user);
-    } catch (error) {
-      done(error, null);
-    }
-});
 
 const FacebookStrategy = require('passport-facebook').Strategy;
 
 passport.use(new FacebookStrategy({
-    clientID: '1319941282557597', // Your App ID
-    clientSecret: '28496f76860b62278733641bcb23b522',
+    clientID: process.env.FACEBOOK_APP_ID || 'default_app_id',
+    clientSecret: process.env.FACEBOOK_APP_SECRET || 'default_app_secret',
     callbackURL: 'https://loveconnect-mw.onrender.com/auth/facebook/callback',
-    profileFields: ['id', 'displayName', 'emails'] // Request specific fields
+    profileFields: ['id', 'displayName', 'emails']
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         const existingUser = await User.findOne({ where: { socialId: profile.id } });
         if (!existingUser) {
             const newUser = await User.create({
                 username: profile.displayName,
-                email: profile.emails[0].value,
+                email: profile.emails && profile.emails[0] ? profile.emails[0].value : null,
                 socialId: profile.id,
                 provider: 'facebook'
             });
             return done(null, newUser);
         }
         return done(null, existingUser);
-    } catch (err) {
-        done(err, null);
+    } catch (error) {
+        console.error('Error handling Facebook login:', error);
+        return done(error, null);
     }
 }));
+
 
 app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
 
 app.get('/auth/facebook/callback',
     passport.authenticate('facebook', { failureRedirect: '/login' }),
     (req, res) => {
-        res.redirect(`/profile?userId=${req.user.id}`);
-    });
+        // On successful login, ensure userId is passed to the next page
+        const userId = req.user.id;
+        const username = req.user.username;
+        res.redirect(`/profile.html?userId=${userId}&username=${username}`);
+    }
+);
 
 // Initialize Sequelize with PostgreSQL
 const { Sequelize, DataTypes, Op } = require('sequelize');
@@ -342,16 +365,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
-const upload = multer({ storage: storage });
 
 // Handle registration form submission
 app.post('/register', async (req, res) => {
@@ -637,21 +650,17 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+
 // Handle profile update form submission
 app.post('/profile', upload.single('profilePicture'), async (req, res) => {
   const { bio, interests, location, age, gender } = req.body;
-  let profilePicture = '';
-
-  if (req.file) {
-    profilePicture = `/uploads/${req.file.filename}`;
-  }
 
   try {
-    const user = await User.findByPk(req.session.userId);
+    const user = await User.findByPk(req.session.userId); // Get user by session userId
     if (user) {
       user.bio = bio;
-      user.interests = JSON.stringify(interests.split(', '));
-      user.profilePicture = profilePicture || user.profilePicture;
+      user.interests = JSON.stringify(interests.split(', ')); // Save interests as JSON
+      user.profilePicture = req.file.path; // Save the Cloudinary URL
       user.location = location;
       user.age = age;
       user.gender = gender;
@@ -665,6 +674,7 @@ app.post('/profile', upload.single('profilePicture'), async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
 
 app.get('/api/currently-online-users', async (req, res) => {
   try {
