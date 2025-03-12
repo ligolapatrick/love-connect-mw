@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile</title>
+    <style>
+  /* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(120deg, #f3f4f6, #eef2f7);
+    color: #333;
+    padding: 20px;
+    line-height: 1.5;
+}
+
+/* Edit Profile Container */
+.edit-profile-container {
+    max-width: 700px;
+    margin: 50px auto;
+    background: #ffffff;
+    border-radius: 15px;
+    padding: 30px 25px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Form Styles */
+form h2 {
+    font-size: 1.8rem;
+    color: #34495e;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: bold;
+}
+
+form label {
+    display: block;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    margin-top: 15px;
+}
+
+form input,
+form select,
+form textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background: #f7f8fa;
+    transition: all 0.3s ease;
+    box-shadow: inset 1px 2px 3px rgba(0, 0, 0, 0.05);
+}
+
+form input:focus,
+form select:focus,
+form textarea:focus {
+    outline: none;
+    border-color: #6495ed;
+    background: #eef5ff;
+    box-shadow: 0 0 5px rgba(100, 149, 237, 0.5);
+}
+
+form textarea {
+    resize: none;
+    height: 100px;
+}
+
+/* File Upload */
+form input[type="file"] {
+    padding: 5px;
+    font-size: 0.9rem;
+}
+
+/* Submit Button */
+form button[type="submit"] {
+    width: 100%;
+    background: linear-gradient(120deg, #5a98f2, #007bff);
+    color: #ffffff;
+    padding: 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+form button[type="submit"]:hover {
+    background: linear-gradient(120deg, #007bff, #0056b3);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .edit-profile-container {
+        padding: 20px 15px;
+    }
+
+    form h2 {
+        font-size: 1.5rem;
+    }
+
+    form input,
+    form select,
+    form textarea {
+        font-size: 0.95rem;
+        padding: 10px;
+    }
+
+    form button[type="submit"] {
+        font-size: 1rem;
+        padding: 10px;
+    }
+}
+
+/* Unique Animations */
+form input:focus,
+form select:focus,
+form textarea:focus {
+    animation: pulse 0.3s ease-out;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 rgba(100, 149, 237, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 10px rgba(100, 149, 237, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(100, 149, 237, 0.5);
+    }
+}
+
+          </style>
+</head>
+<body>
+    <div class="edit-profile-container">
+        <form id="profileForm" action="/profile" method="post" enctype="multipart/form-data">
+            <h2>Edit Your Profile</h2>
+
+            <label for="username">Username:</label>
+            <input type="text" id="editUsername" name="username" readonly><br>
+
+            <label for="phone">Phone Number:</label>
+            <input type="text" id="editPhone" name="phone" readonly><br>
+
+            <label for="age">Age:</label>
+            <input type="number" id="editAge" name="age"><br>
+
+            <label for="gender">Gender:</label>
+            <select id="editGender" name="gender">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="non-binary">Non-binary</option>
+                <option value="prefer not to say">Prefer not to say</option>
+            </select><br>
+
+            <label for="bio">Bio:</label>
+            <textarea id="editBio" name="bio" rows="4" cols="50"></textarea><br>
+
+            <label for="interests">Interests:</label>
+            <select id="editInterests" name="interests">
+                <option value="music">Music</option>
+                <option value="sports">Sports</option>
+                <option value="travel">Travel</option>
+                <option value="reading">Reading</option>
+                <option value="gaming">Gaming</option>
+                <option value="art">Art</option>
+                <option value="tech">Tech</option>
+                <option value="fitness">Fitness</option>
+                <option value="food">Food</option>
+                <option value="movies">Movies</option>
+            </select><br>
+            
+
+            <label for="location">Location:</label>
+            <select id="editLocation" name="location">
+                <option value="Blantyre">Blantyre</option>
+                <option value="Chikwawa">Chikwawa</option>
+                <option value="Chiradzulu">Chiradzulu</option>
+                <option value="Machinga">Machinga</option>
+                <option value="Mangochi">Mangochi</option>
+                <option value="Mulanje">Mulanje</option>
+                <option value="Nsanje">Nsanje</option>
+                <option value="Phalombe">Phalombe</option>
+                <option value="Thyolo">Thyolo</option>
+                <option value="Zomba">Zomba</option>
+                <option value="Balaka">Balaka</option>
+                <option value="Neno">Neno</option>
+                <option value="Mwanza">Mwanza</option>
+                <option value="Lilongwe">Lilongwe</option>
+                <option value="Dedza">Dedza</option>
+                <option value="Dowa">Dowa</option>
+                <option value="Kasungu">Kasungu</option>
+                <option value="Mchinji">Mchinji</option>
+                <option value="Nkhotakota">Nkhotakota</option>
+                <option value="Ntcheu">Ntcheu</option>
+                <option value="Ntchisi">Ntchisi</option>
+                <option value="Salima">Salima</option>
+                <option value="Chitipa">Chitipa</option>
+                <option value="Karonga">Karonga</option>
+                <option value="Likoma">Likoma</option>
+                <option value="Mzimba">Mzimba</option>
+                <option value="Nkhata Bay">Nkhata Bay</option>
+                <option value="Rumphi">Rumphi</option>
+            </select><br>
+
+            <label for="profilePicture">Profile Picture:</label>
+            <input type="file" id="editProfilePicture" name="profilePicture" accept="image/*"><br>
+
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+
+    <script>
+        // Populate the form with existing user data
+        function populateForm() {
+            const params = new URLSearchParams(window.location.search);
+            const userId = params.get('userId'); // Get userId from query string
+    
+            fetch(`/api/profile?userId=${userId}`)
+                .then(response => response.json())
+                .then(user => {
+                    // Fill form fields
+                    document.getElementById('editUsername').value = user.username;
+                    document.getElementById('editPhone').value = user.fullPhoneNumber;
+                    document.getElementById('editAge').value = user.age || '';
+                    document.getElementById('editGender').value = user.gender || 'prefer not to say';
+                    document.getElementById('editBio').value = user.bio || '';
+    
+                    // Populate the single interest
+                    const interestsSelect = document.getElementById('editInterests');
+                    if (user.interests) {
+                        interestsSelect.value = user.interests; // Assuming the server sends a single interest as a string
+                    }
+    
+                    document.getElementById('editLocation').value = user.location || '';
+                })
+                .catch(error => console.error('Error populating form:', error));
+        }
+    
+        // Redirect to profile page after saving changes
+        document.getElementById('profileForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent default form submission
+    
+            const formData = new FormData(this);
+    
+            fetch('/profile', {
+                method: 'POST',
+                body: formData,
+            })
+                .then(response => {
+                    if (response.ok) {
+                        const params = new URLSearchParams(window.location.search);
+                        const userId = params.get('userId');
+                        window.location.href = `/profile.html?userId=${userId}`;
+                    } else {
+                        console.error('Error saving changes:', response.statusText);
+                    }
+                })
+                .catch(error => console.error('Error submitting form:', error));
+        });
+    
+        // Initialize form population
+        populateForm();
+    </script>
+  
+</body>
+</html>
