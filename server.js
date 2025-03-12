@@ -3632,42 +3632,49 @@ app.post('/set-availability', async (req, res) => {
   }
 });
 
-app.get('/api/mutual-interests', async (req, res) => {
-  try {
-    const { userId } = req.session;
-    const user = await User.findByPk(userId);
+app.get('/api/matches-base', async (req, res) => {
+  const userId = req.session.userId;
 
+  try {
+    const user = await User.findByPk(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).send('User not found');
     }
 
-    const userInterests = JSON.parse(user.interests || '[]');
+    const oppositeGender = user.gender === 'male' ? 'female' : 'male'; // Determine opposite gender
 
+    // Fetch users of the opposite gender
     const matches = await User.findAll({
+      attributes: [
+        'id',
+        'username',
+        'profilePicture',
+        'age',
+        'gender',
+        'bio',
+        'interests'
+      ],
       where: {
-        id: { [Op.ne]: userId },
-        interests: { [Op.ne]: null },
+        id: { [Op.ne]: userId }, // Exclude the current user
+        gender: oppositeGender // Match only opposite gender
       },
-      attributes: ['id', 'username', 'age', 'bio', 'profilePicture', 'interests'],
+      order: [['createdAt', 'DESC']] // Sort by newest users first
     });
 
-    const mutualMatches = matches
-      .map(match => {
-        const matchInterests = JSON.parse(match.interests || '[]');
-        const sharedInterests = userInterests.filter(interest => matchInterests.includes(interest));
-        if (sharedInterests.length > 0) {
-          return { ...match.toJSON(), mutualInterests: sharedInterests };
-        }
-        return null;
-      })
-      .filter(match => match !== null);
+    // Parse the interests field for each match
+    const parsedMatches = matches.map(match => {
+      const matchData = match.toJSON();
+      matchData.interests = matchData.interests ? JSON.parse(matchData.interests) : [];
+      return matchData;
+    });
 
-    res.json(mutualMatches);
+    res.json(parsedMatches);
   } catch (error) {
-    console.error('Error fetching mutual interests:', error);
-    res.status(500).json({ success: false, message: 'Internal Server Error' });
+    console.error('Error fetching matches:', error);
+    res.status(500).send('Internal Server Error');
   }
 });
+
 
 // Haversine formula function to calculate distance between two geocoordinates
 function calculateDistance(lat1, lon1, lat2, lon2) {
