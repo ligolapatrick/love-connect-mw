@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reverse Trivia</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: url('images/logo.png') no-repeat center center fixed;
+      background-size: cover;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .visible {
+      display: block;
+    }
+
+    h1 {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+    }
+
+    .player-list ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .player-list li {
+      margin: 5px 0;
+    }
+
+    .input-box input {
+      width: 80%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .input-box button {
+      padding: 10px 20px;
+      margin-left: 10px;
+      border: none;
+      background: #007bff;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .input-box button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <!-- Waiting Screen -->
+  <div id="waiting-screen" class="container visible">
+    <h1>Waiting for Players...</h1>
+    <p>The game will start once 3 players join!</p>
+    <div class="player-list">
+      <h3>Connected Players:</h3>
+      <ul id="player-list">
+        <!-- Dynamically updated -->
+      </ul>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="game-screen" class="container hidden">
+    <h1>Reverse Trivia</h1>
+    <p id="answer-display">The answer will appear here!</p>
+    <div class="input-box">
+      <input id="guess-input" placeholder="Enter your question..." />
+      <button id="submit-btn" onclick="submitGuess()">Submit</button>
+    </div>
+    <p>Time left: <span id="timer">30</span> seconds</p>
+  </div>
+
+  <script>
+// Initialize Socket.IO
+const socket = io();
+
+// Global Variables
+let userId = Math.floor(Math.random() * 1000); // Generate random user ID for the current player
+let players = []; // List of connected players
+let currentAnswer = null; // Stores the current round's answer
+let timerInterval = null; // Stores the timer interval
+
+// Emit to join the session
+socket.emit('joinSession', userId);
+
+// Handle updated player list
+socket.on('updatePlayerList', (playerIds) => {
+  players = playerIds;
+
+  // Update the connected players list in the waiting screen
+  const playerListElement = document.getElementById('player-list');
+  playerListElement.innerHTML = ''; // Clear the list
+  players.forEach((id) => {
+    const li = document.createElement('li');
+    li.textContent = `Player ID: ${id}`;
+    playerListElement.appendChild(li);
+  });
+
+  // If more than 2 players are connected, show the game screen
+  if (players.length > 2) {
+    document.getElementById('waiting-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+  }
+});
+
+// Handle the new answer from the server
+socket.on('newAnswer', (answer) => {
+  currentAnswer = answer; // Store the current round's answer
+  const answerDisplay = document.getElementById('answer-display');
+  answerDisplay.textContent = `Answer: ${answer}`; // Display the current answer on the game screen
+  startTimer(30); // Start a 30-second timer for the round
+});
+
+// Submit a guess (question) to the server
+function submitGuess() {
+  const inputField = document.getElementById('guess-input');
+  const guess = inputField.value.trim();
+
+  if (!guess) {
+    alert('Please enter your question.');
+    return;
+  }
+
+  // Emit the guess to the server
+  socket.emit('submitGuess', { userId, guess });
+
+  // Clear the input field
+  inputField.value = '';
+}
+
+// Handle notifications from the server (e.g., correct/incorrect feedback)
+socket.on('notification', (data) => {
+  showNotification(data.message);
+});
+
+// Timer functionality
+function startTimer(seconds) {
+  clearInterval(timerInterval); // Clear any existing timer
+  const timerDisplay = document.getElementById('timer');
+  let timeLeft = seconds;
+  timerDisplay.textContent = timeLeft;
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timerDisplay.textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      showNotification("Time's up! Moving to the next round...");
+      socket.emit('submitGuess', { userId, guess: '' }); // Auto-submit an empty guess if time runs out
+    }
+  }, 1000);
+}
+
+// Function to show notifications dynamically
+function showNotification(message) {
+  const notificationElement = document.getElementById('notification');
+  notificationElement.textContent = message;
+  notificationElement.style.display = 'block';
+
+  setTimeout(() => {
+    notificationElement.style.display = 'none';
+  }, 3000); // Hide the notification after 3 seconds
+}
+
+  </script>
+</body>
+</html>

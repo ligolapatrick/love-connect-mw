@@ -166,12 +166,57 @@
 
         <p class="error" id="errorMessage" style="display:none;"></p>
         <p>Don't have an account? <a href="register">Register here</a></p>
+        <p>Forgot your password? <a href="/forgot-password.html">Reset it here</a></p>
+
+
     </div>
     
     <div class="footer">
         <p>&copy; 2025 LoveConnect. All rights reserved.</p>
     </div>
     <script>
+    
+    let failedAttempts = 0; // Counter for tracking invalid login attempts
+
+    document.getElementById('loginForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const errorMessage = document.getElementById('errorMessage');
+        const forgotPasswordLink = document.querySelector('p a[href="/forgot-password.html"]');
+
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            window.location.href = `/profile?userId=${data.userId}`;
+        } else {
+            // Increase failed attempts counter
+            failedAttempts++;
+
+            // Display error message
+            errorMessage.textContent = data.message;
+            errorMessage.style.display = 'block';
+
+            // Show "Forgot Password" link after one or two failed attempts
+            if (failedAttempts >= 1) {
+                forgotPasswordLink.style.display = 'inline'; // Ensure it is visible
+            }
+        }
+    });
+
+    // Initially hide the "Forgot Password" link
+    window.addEventListener('DOMContentLoaded', () => {
+        const forgotPasswordLink = document.querySelector('p a[href="/forgot-password.html"]');
+        forgotPasswordLink.style.display = 'none'; // Hide on load
+    });
+
         // Facebook SDK Initialization
         window.fbAsyncInit = function() {
             FB.init({
@@ -222,6 +267,7 @@
                 errorMessage.style.display = 'block';
             }
         });
+
     </script>
 </body>
 </html>

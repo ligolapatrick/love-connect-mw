@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rapid Fire Questions</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    .question-box {
+      margin-bottom: 20px;
+    }
+
+    .question-box p {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .input-box input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn-submit {
+      background: #4caf50;
+    }
+
+    .btn-skip {
+      background: #f44336;
+    }
+
+    .timer {
+      font-size: 18px;
+      font-weight: bold;
+      color: #555;
+      text-align: center;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="question-box">
+      <p id="question">Question will appear here</p>
+      <div class="input-box">
+        <input type="text" id="answer" placeholder="Type your answer here...">
+      </div>
+    </div>
+    <div class="buttons">
+      <button class="btn btn-submit" onclick="submitAnswer()">Submit</button>
+      <button class="btn btn-skip" onclick="skipQuestion()">Skip</button>
+    </div>
+    <div class="timer">
+      Time Left: <span id="timer">30</span> seconds
+    </div>
+  </div>
+
+  <script>
+    // Array of sample questions
+    const questions = [
+      "What's your favorite food?",
+      "If you could visit any country, where would you go?",
+      "What's your childhood nickname?",
+      "Dogs or cats?",
+      "What’s the best gift you've ever received?"
+    ];
+
+    let currentQuestionIndex = 0;
+    let timeLeft = 30;
+    let timer;
+
+    // Display first question
+    function showQuestion() {
+      if (currentQuestionIndex < questions.length) {
+        document.getElementById('question').innerText = questions[currentQuestionIndex];
+      } else {
+        endGame();
+      }
+    }
+
+    // Start countdown timer
+    function startTimer() {
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          skipQuestion(); // Automatically skip when time runs out
+        }
+      }, 1000);
+    }
+
+    // Submit answer
+    function submitAnswer() {
+      const answer = document.getElementById('answer').value.trim();
+      if (answer) {
+        console.log(`Answer submitted: ${answer}`);
+        currentQuestionIndex++;
+        document.getElementById('answer').value = ''; // Clear input
+        showQuestion();
+      } else {
+        alert('Please enter an answer!');
+      }
+    }
+
+    // Skip question
+    function skipQuestion() {
+      currentQuestionIndex++;
+      showQuestion();
+    }
+
+    // End game
+    function endGame() {
+      clearInterval(timer);
+      document.querySelector('.container').innerHTML = `
+        <h2>Game Over!</h2>
+        <p>You answered ${currentQuestionIndex} questions!</p>
+      `;
+    }
+
+    // Initialize game
+    window.onload = () => {
+      showQuestion();
+      startTimer();
+    };
+  </script>
+</body>
+</html>

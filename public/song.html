@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guess the Song</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .hint-box {
+      margin-bottom: 20px;
+    }
+
+    .hint-box p {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .input-box input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn-submit {
+      background: #4caf50;
+    }
+
+    .btn-skip {
+      background: #f44336;
+    }
+
+    .timer {
+      font-size: 18px;
+      font-weight: bold;
+      color: #555;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .game-over {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+      margin-top: 30px;
+    }
+
+    .restart-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .restart-btn:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hint-box">
+      <p id="hint">Hint will appear here</p>
+      <div class="input-box">
+        <input type="text" id="guess" placeholder="Your guess...">
+      </div>
+    </div>
+    <div class="buttons">
+      <button class="btn btn-submit" onclick="submitGuess()">Submit</button>
+      <button class="btn btn-skip" onclick="skipSong()">Skip</button>
+    </div>
+    <div class="timer">
+      Time Left: <span id="timer">20</span> seconds
+    </div>
+    <div id="gameOverMessage" class="game-over"></div>
+  </div>
+
+  <script>
+    // Array of song hints
+    const songHints = [
+      { id: 1, hint: "🎸👩‍🎤 80s Icon (Artist & Decade)", answer: "Purple Rain", additionalHint: "Prince's legendary ballad." },
+      { id: 2, hint: "🧊❄️ Let it go...", answer: "Let It Go", additionalHint: "Frozen's famous anthem." },
+      { id: 3, hint: "👢👗💃 Country vibes", answer: "Jolene", additionalHint: "Dolly Parton's classic hit." },
+      { id: 4, hint: "🔥👑 Single-word title", answer: "Firework", additionalHint: "Katy Perry lights it up!" },
+      { id: 5, hint: "🎶🎸 Stairway...", answer: "Stairway to Heaven", additionalHint: "Legendary rock song by Led Zeppelin." }
+    ];
+
+    let currentSongIndex = 0;
+    let timeLeft = 20;
+    let timer;
+
+    // Display first hint
+    function showHint() {
+      if (currentSongIndex < songHints.length) {
+        document.getElementById('hint').innerText = songHints[currentSongIndex].hint;
+
+        // Reset timer
+        timeLeft = 20;
+        document.getElementById('timer').innerText = timeLeft;
+
+        // Restart timer
+        clearInterval(timer);
+        startTimer();
+      } else {
+        endGame();
+      }
+    }
+
+    // Start countdown timer
+    function startTimer() {
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+
+        // Change color to red when time is running out
+        if (timeLeft <= 5) {
+          document.getElementById('timer').style.color = 'red';
+        } else {
+          document.getElementById('timer').style.color = '#555';
+        }
+
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          skipSong(); // Automatically skip when time runs out
+        }
+      }, 1000);
+    }
+
+    // Submit guess
+    function submitGuess() {
+      const guess = document.getElementById('guess').value.trim();
+      const correctAnswer = songHints[currentSongIndex].answer.toLowerCase();
+      if (!guess) {
+        alert('Please enter a guess!');
+        return;
+      }
+      if (guess.toLowerCase() === correctAnswer) {
+        alert('Correct! 🎉');
+        currentSongIndex++;
+        document.getElementById('guess').value = ''; // Clear input
+        showHint();
+      } else {
+        alert('Incorrect! Try again.');
+      }
+    }
+
+    // Skip song
+    function skipSong() {
+      alert(`Skipped! The answer was: ${songHints[currentSongIndex].answer}`);
+      currentSongIndex++;
+      document.getElementById('guess').value = ''; // Clear input
+      showHint();
+    }
+
+    // End game
+    function endGame() {
+      clearInterval(timer);
+      document.querySelector('.container').innerHTML = `
+        <h2>Game Over!</h2>
+        <p>You guessed ${currentSongIndex} songs correctly!</p>
+        <button class="restart-btn" onclick="restartGame()">Play Again</button>
+      `;
+    }
+
+    // Restart game
+    function restartGame() {
+      currentSongIndex = 0;
+      timeLeft = 20;
+      document.body.innerHTML = ''; // Clear body
+      window.onload(); // Reinitialize game
+    }
+
+    // Initialize game
+    window.onload = () => {
+      showHint();
+      startTimer();
+    };
+  </script>
+</body>
+</html>

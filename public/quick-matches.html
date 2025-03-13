@@ -3,119 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickMatch Video Chat</title>
+    <title>Riddle Game</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f0f0f0;
+            background-color: #f4f4f4;
             margin: 0;
-        }
-        #video-container {
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .timers {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .timer {
+            font-size: 1.2em;
+            color: #007bff;
+        }
+        .riddle {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #444;
+        }
+        .inputs {
+            display: flex;
+            justify-content: space-between;
+        }
+        .input {
+            flex: 1;
+            margin: 0 10px;
+        }
+        input {
             width: 100%;
-            height: 100%;
-            position: relative;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
-        #local-video, #remote-video {
-            width: 80%;
-            max-width: 600px;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            margin: 10px;
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
-        #remote-video {
-            width: 100px;
-            height: 100px;
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            border: 2px solid #333;
-            border-radius: 8px;
+        button:hover {
+            background-color: #218838;
         }
-        #timer {
-            font-size: 24px;
-            font-weight: bold;
+        .feedback {
+            margin-top: 10px;
+            font-size: 1.2em;
+            color: #555;
+        }
+        .scoreboard {
             margin-top: 20px;
+            font-size: 1.2em;
+            display: flex;
+            justify-content: space-between;
         }
+        
+             /* Bottom Navigation Styles */
+             .bottom-nav {
+                  display: flex;
+                  justify-content: space-around;
+                  background-color: hsl(120, 19%, 31%);
+                  padding: 10px 0;
+                  position: fixed;
+                  bottom: 0;
+                  width: 100%;
+              }
+      
+              .bottom-nav a {
+                  color: white;
+                  text-align: center;
+                  text-decoration: none;
+                  font-size: 14px;
+              }
+      
+              .bottom-nav a img {
+                  display: block;
+                  width: 20px;
+                  height: 20px;
+                  margin: 0 auto;
+              }
+      
+              .bottom-nav a.active {
+                  color: rgb(0, 0, 0);
+              }
+              .unread-count {
+        background-color: #ff6347;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 0.8em;
+        margin-left: 5px;
+              }
     </style>
 </head>
 <body>
-    <h1>QuickMatch Video Chat</h1>
-    <div id="video-container">
-        <video id="local-video" autoplay muted></video>
-        <video id="remote-video" autoplay></video>
+    <div class="container">
+        <h1>Riddle Game</h1>
+        <div class="timers">
+            <div class="timer">Riddle Time Left: <span id="riddleTimer">40</span>s</div>
+            <div class="timer">Session Time Left: <span id="sessionTimer">180</span>s</div>
+        </div>
+        <div class="riddle" id="riddleText">Loading riddle...</div>
+        <div class="inputs">
+            <div class="input">
+                <h3>Your Answer</h3>
+                <input type="text" id="userInput" placeholder="Type your answer here">
+            </div>
+            <div class="input">
+                <h3>Opponent's Answer</h3>
+                <input type="text" id="opponentInput" placeholder="Waiting for opponent..." disabled>
+            </div>
+        </div>
+        <button id="submitAnswer">Submit</button>
+        <div class="feedback" id="feedback"></div>
+        <div class="scoreboard">
+            <div>You: <span id="userScore">0</span></div>
+            <div>Opponent: <span id="opponentScore">0</span></div>
+        </div>
     </div>
-    <div id="timer">3:00</div>
+
+    <nav class="bottom-nav">
+      <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
+      <a href="fire.html"><img src="icons/message.png" alt="Settings"> Fire</a>
+      <a href="/song.html"><img src="icons/anonymouse.png" alt="Anonymous"> songs</a>
+      <a href="/trivia.html"><img src="icons/likes.png" alt="Likes"> Trivia</a>
+      <a href="/login"><img src="icons/logout.png" alt="Logout"> Logout</a>
+    </nav>
+    
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io.connect('http://localhost:3000');
-        const localVideo = document.getElementById('local-video');
-        const remoteVideo = document.getElementById('remote-video');
-        const timerElement = document.getElementById('timer');
-        let localStream;
-        let peerConnection;
-        const config = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] };
+       const socket = io();
 
-        socket.emit('joinQuickMatch');
+const riddleText = document.getElementById('riddleText');
+const userInput = document.getElementById('userInput');
+const opponentInput = document.getElementById('opponentInput');
+const submitAnswer = document.getElementById('submitAnswer');
+const feedback = document.getElementById('feedback');
+const userScore = document.getElementById('userScore');
+const opponentScore = document.getElementById('opponentScore');
+const riddleTimer = document.getElementById('riddleTimer');
+const sessionTimer = document.getElementById('sessionTimer');
 
-        socket.on('paired', ({ partnerSocketId }) => {
-            startCall(partnerSocketId);
-        });
+// Notify the server that the user has joined the game
+socket.emit('joinRiddleGame');
 
-        socket.on('callOffer', async ({ callerId }) => {
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('initiateCall', { userId: socket.id, calleeId: callerId });
-        });
+// Display the riddle
+socket.on('newRiddle', (riddle) => {
+    riddleText.textContent = riddle.riddle;
+    feedback.textContent = '';
+    opponentInput.value = ''; // Clear opponent's input
+});
 
-        socket.on('signal', async ({ candidate }) => {
-            console.log('Received ICE candidate:', candidate);
-            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-        });
+// Update opponent's typing in real time
+userInput.addEventListener('input', () => {
+    socket.emit('typing', { input: userInput.value });
+});
 
-        socket.on('timer', ({ timeLeft }) => {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-        });
+socket.on('opponentTyping', ({ input }) => {
+    opponentInput.value = input || '';
+});
 
-        socket.on('timeUp', () => {
-            alert('Time is up! Moving to the next user.');
-            socket.emit('nextUser');
-        });
+// Handle submission of answers
+submitAnswer.addEventListener('click', () => {
+    socket.emit('submitAnswer', { input: userInput.value });
+    userInput.value = ''; // Clear the input after submission
+});
 
-        function startCall(partnerSocketId) {
-            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                .then(stream => {
-                    localStream = stream;
-                    localVideo.srcObject = stream;
+// Handle correct answers
+socket.on('correctAnswer', (data) => {
+    if (data.userId === socket.id) {
+        feedback.textContent = 'Correct! Great job!';
+        feedback.style.color = 'green';
+        userScore.textContent = parseInt(userScore.textContent) + 1;
+    } else {
+        feedback.textContent = 'Your opponent got it correct!';
+        feedback.style.color = 'red';
+        opponentScore.textContent = parseInt(opponentScore.textContent) + 1;
+    }
+});
 
-                    peerConnection = new RTCPeerConnection(config);
-                    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+// Handle incorrect answers
+socket.on('incorrectAnswer', (data) => {
+    feedback.textContent = data.message;
+    feedback.style.color = 'orange';
+});
 
-                    peerConnection.onicecandidate = event => {
-                        if (event.candidate) {
-                            console.log('Sending ICE candidate:', event.candidate);
-                            socket.emit('signal', { partnerSocketId, candidate: event.candidate });
-                        }
-                    };
+// Update the riddle timer
+socket.on('riddleTimerUpdate', ({ riddleTime }) => {
+    riddleTimer.textContent = riddleTime + 's';
+});
 
-                    peerConnection.ontrack = event => {
-                        console.log('Received remote stream:', event.streams[0]);
-                        remoteVideo.srcObject = event.streams[0];
-                    };
+// Update the session timer
+socket.on('sessionTimerUpdate', ({ sessionTime }) => {
+    const minutes = Math.floor(sessionTime / 60);
+    const seconds = sessionTime % 60;
+    sessionTimer.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+});
 
-                    socket.emit('initiateCall', { userId: socket.id, calleeId: partnerSocketId });
-                })
-                .catch(error => console.error('Error accessing media devices:', error));
-        }
+// Handle end of session
+socket.on('sessionEnd', ({ message }) => {
+    alert(message);
+    riddleText.textContent = 'Game Over!';
+    feedback.textContent = 'Session has ended. Waiting for a new match...';
+});
+
     </script>
 </body>
 </html>

@@ -148,7 +148,7 @@ form textarea:focus {
 <body>
     <div class="edit-profile-container">
         <form id="profileForm" action="/profile" method="post" enctype="multipart/form-data">
-            <h2>Edit Your Profile</h2>
+            <h2>Edit Your Profile( all fields are required )</h2>
 
             <label for="username">Username:</label>
             <input type="text" id="editUsername" name="username" readonly><br>
@@ -217,7 +217,7 @@ form textarea:focus {
                 <option value="Rumphi">Rumphi</option>
             </select><br>
 
-            <label for="profilePicture">Profile Picture:</label>
+            <label for="profilePicture">Profile Picture (anytime you have to add):</label>
             <input type="file" id="editProfilePicture" name="profilePicture" accept="image/*"><br>
 
             <button type="submit">Save Changes</button>
