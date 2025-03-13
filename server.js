@@ -11,6 +11,11 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 require('dotenv').config();
 
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
 
@@ -277,7 +282,15 @@ interests: {
   language: {
     type: DataTypes.STRING,
     defaultValue: 'en'
-  },
+   },
+    otp: {
+        type: DataTypes.STRING, // Store the reset code
+        allowNull: true
+   },
+    otpExpiry: {
+        type: DataTypes.DATE, // Store the expiration time
+        allowNull: true
+   },
   subscription: {
     type: DataTypes.STRING,
     defaultValue: 'monthly'
@@ -391,11 +404,6 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
 
 // Handle registration form submission
 app.post('/register', async (req, res) => {
@@ -451,6 +459,76 @@ app.post('/login', async (req, res) => {
   }
 });
 
+
+// Route to handle password reset requests
+app.post('/forgot-password', async (req, res) => {
+    const { fullPhoneNumber } = req.body;
+
+    if (!fullPhoneNumber) {
+        return res.status(400).json({ success: false, message: 'Phone number is required.' });
+    }
+
+    try {
+        // Find the user by phone number
+        const user = await User.findOne({ where: { fullPhoneNumber } });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Phone number not found.' });
+        }
+
+        // Generate a reset code
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
+        user.otp = resetCode;
+        user.otpExpiry = Date.now() + 10 * 60 * 1000; // Code valid for 10 minutes
+        await user.save();
+
+        // Respond with the reset code (for now, display it directly)
+        res.status(200).json({
+            success: true,
+            message: `Your reset code is: ${resetCode}. Please use it to reset your password.`
+        });
+    } catch (error) {
+        console.error('Error in /forgot-password:', error);
+        res.status(500).json({ success: false, message: 'Failed to process request.' });
+    }
+});
+
+// Route to reset the password
+app.post('/reset-password', async (req, res) => {
+    const { resetCode, newPassword, confirmPassword } = req.body;
+
+    if (!resetCode || !newPassword || !confirmPassword) {
+        return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+
+    if (newPassword !== confirmPassword) {
+        return res.status(400).json({ success: false, message: 'Passwords do not match.' });
+    }
+
+    try {
+        // Find user with a valid reset code and expiry time
+        const user = await User.findOne({
+            where: {
+                otp: resetCode,
+                otpExpiry: { [Op.gt]: Date.now() } // OTP must not be expired
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired reset code.' });
+        }
+
+        // Update the user's password and clear the reset code
+        user.password = newPassword; // Ideally, hash passwords for security
+        user.otp = null;
+        user.otpExpiry = null;
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Password reset successfully.' });
+    } catch (error) {
+        console.error('Error in /reset-password:', error);
+        res.status(500).json({ success: false, message: 'Failed to reset password.' });
+    }
+});
 // Middleware to check if the user is logged in
 const requireLogin = (req, res, next) => {
   if (req.session.userId) {
@@ -4045,6 +4123,331 @@ app.post('/api/change-password', requireLogin, async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal Server Error.' });
   }
 });
+
+
+const riddles = [
+  { id: 6, riddle: "What has to be broken before you can use it?", answer: "Egg", hint: "It's fragile and edible." },
+  { id: 7, riddle: "I’m light as a feather, yet the strongest man can’t hold me for more than 5 minutes. What am I?", answer: "Breath", hint: "It's something you can't live without." },
+  { id: 8, riddle: "What has an eye but cannot see?", answer: "Needle", hint: "Think about sewing tools." },
+  { id: 9, riddle: "What goes up but never comes down?", answer: "Age", hint: "It's related to time." },
+  { id: 10, riddle: "I shave every day, but my beard stays the same. What am I?", answer: "Barber", hint: "A profession related to grooming." },
+  { id: 11, riddle: "The more you take away, the bigger I get. What am I?", answer: "Hole", hint: "It's something you dig." },
+  { id: 12, riddle: "I’m always in front of you but can’t be seen. What am I?", answer: "Future", hint: "It has not happened yet." },
+  { id: 13, riddle: "What has hands but can’t clap?", answer: "Clock", hint: "It keeps track of time." },
+  { id: 14, riddle: "What has a head, a tail, is brown, and has no legs?", answer: "Penny", hint: "It's a form of currency." },
+  { id: 15, riddle: "What can you catch but not throw?", answer: "Cold", hint: "It's something related to health." },
+  { id: 16, riddle: "What begins with T, ends with T, and has T in it?", answer: "Teapot", hint: "It’s used to brew a warm beverage." },
+  { id: 17, riddle: "What has a neck but no head?", answer: "Bottle", hint: "Used to hold liquids." },
+  { id: 18, riddle: "I speak without a mouth and hear without ears. I have no body, but I come alive with the wind. What am I?", answer: "Echo", hint: "It repeats sounds." },
+  { id: 19, riddle: "What building has the most stories?", answer: "Library", hint: "It’s full of books." },
+  { id: 20, riddle: "I’m not alive, but I can grow. I don’t have lungs, but I need air. What am I?", answer: "Fire", hint: "It needs fuel to stay alive." },
+  { id: 21, riddle: "What gets wetter the more it dries?", answer: "Towel", hint: "You use it after a shower." },
+  { id: 22, riddle: "I have keys but no locks. I have space but no room. You can enter but not go outside. What am I?", answer: "Keyboard", hint: "It's found on a computer." },
+  { id: 23, riddle: "What has many teeth but cannot bite?", answer: "Comb", hint: "It's used for grooming your hair." },
+  { id: 24, riddle: "The more of me you take, the more you leave behind. What am I?", answer: "Footsteps", hint: "It's something you leave on the ground." },
+  { id: 25, riddle: "I’m tall when I’m young, and I’m short when I’m old. What am I?", answer: "Candle", hint: "It gives light." },
+  { id: 26, riddle: "What has a bottom at the top?", answer: "Legs", hint: "Think of human anatomy." },
+  { id: 27, riddle: "What can travel around the world while staying in the same spot?", answer: "Stamp", hint: "It's used on letters." },
+  { id: 28, riddle: "What runs but never walks, has a bed but never sleeps?", answer: "River", hint: "It flows continuously." },
+  { id: 29, riddle: "What comes once in a minute, twice in a moment, but never in a thousand years?", answer: "The letter M", hint: "It's part of a word." },
+  { id: 30, riddle: "What has cities but no houses, forests but no trees, and rivers but no water?", answer: "Map", hint: "Used for navigation." },
+  { id: 31, riddle: "What can fill a room but takes up no space?", answer: "Light", hint: "You switch it on." },
+  { id: 32, riddle: "The more you have of me, the less you see. What am I?", answer: "Darkness", hint: "It appears when there's no light." },
+  { id: 33, riddle: "What has one eye but can’t see?", answer: "Needle", hint: "Used for sewing." },
+  { id: 34, riddle: "If two’s company, and three’s a crowd, what are four and five?", answer: "Nine", hint: "It's basic math!" },
+  { id: 35, riddle: "I am always hungry, I must always be fed. The finger I touch will soon turn red. What am I?", answer: "Fire", hint: "It consumes everything." },
+  { id: 36, riddle: "What is so fragile that saying its name breaks it?", answer: "Silence", hint: "It's the absence of noise." },
+  { id: 37, riddle: "I fly without wings. I cry without eyes. Wherever I go, darkness flies. What am I?", answer: "Cloud", hint: "You see it in the sky." },
+  { id: 38, riddle: "What can’t be used until it’s broken?", answer: "Egg", hint: "It's something you cook." },
+  { id: 39, riddle: "I’m found in socks, scarves, and mittens; and often in the paws of playful kittens. What am I?", answer: "Yarn", hint: "It's used for knitting." },
+  { id: 40, riddle: "What begins with an ‘e’ and only contains one letter?", answer: "Envelope", hint: "It's used to send letters." },
+  { id: 41, riddle: "What has four wheels and flies?", answer: "Garbage truck", hint: "It's often found in neighborhoods." },
+  { id: 42, riddle: "What has no beginning, middle, or end?", answer: "Circle", hint: "It's a shape." },
+  { id: 43, riddle: "What comes down but never goes up?", answer: "Rain", hint: "It falls from the sky." },
+  { id: 44, riddle: "I am a word, I contain six letters, remove one letter, and twelve remain. What am I?", answer: "Dozens", hint: "Think of groups of twelve." },
+  { id: 45, riddle: "What is full of holes but still holds water?", answer: "Sponge", hint: "You use it to clean." },
+  { id: 46, riddle: "What has one head, one foot, and four legs?", answer: "Bed", hint: "You sleep on it." },
+  { id: 47, riddle: "What kind of coat can only be put on when wet?", answer: "Paint", hint: "Used for walls or art." },
+  { id: 48, riddle: "What has roots as nobody sees, is taller than trees, up, up it goes, and yet it never grows?", answer: "Mountain", hint: "You climb it." },
+  { id: 49, riddle: "If you drop me, I’m sure to crack, but smile at me, and I’ll smile back. What am I?", answer: "Mirror", hint: "Reflects your image." },
+  { id: 50, riddle: "What has a spine but no bones?", answer: "Book", hint: "It's full of stories." }
+];
+
+let waitingPlayer = null; // Store the first waiting player
+let sessions = {}; // Keep track of active sessions
+
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    let currentSession = null;
+
+    // Handle user joining the game
+    socket.on('joinRiddleGame', () => {
+        if (waitingPlayer) {
+            // Pair the current player with the waiting player
+            currentSession = {
+                player1: waitingPlayer,
+                player2: socket.id,
+                riddleIndex: 0,
+                activeRiddle: null,
+                riddleTimer: null,
+                sessionTimer: null,
+                riddles: [...riddles], // Clone riddles array for the session
+            };
+            sessions[socket.id] = currentSession;
+            sessions[waitingPlayer] = currentSession;
+
+            waitingPlayer = null; // Clear waiting user
+
+            io.to(currentSession.player1).emit('matchFound', { opponent: currentSession.player2 });
+            io.to(currentSession.player2).emit('matchFound', { opponent: currentSession.player1 });
+
+            startRiddleSession(currentSession); // Start the game for both players
+        } else {
+            waitingPlayer = socket.id;
+            socket.emit('waiting', { message: "Waiting for an opponent..." });
+        }
+    });
+
+    // Start a riddle session
+    const startRiddleSession = (session) => {
+        const players = [session.player1, session.player2];
+        let sessionTime = 180; // 3 minutes
+
+        const sendNextRiddle = () => {
+            if (session.riddles.length === 0) {
+                io.to(players).emit('sessionEnd', { message: "All riddles completed!" });
+                endSession(players);
+                return;
+            }
+
+            // Select a random riddle
+            const randomIndex = Math.floor(Math.random() * session.riddles.length);
+            const riddle = session.riddles[randomIndex];
+            session.riddles.splice(randomIndex, 1); // Remove the selected riddle
+            session.activeRiddle = riddle; // Track the active riddle
+
+            io.to(players).emit('newRiddle', riddle);
+
+            let timeLeft = 30; // 30 seconds per riddle
+            session.riddleTimer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(session.riddleTimer);
+                    io.to(players).emit('riddleTimeout', { message: "Time's up! Moving to the next riddle." });
+                    sendNextRiddle();
+                } else {
+                    io.to(players).emit('riddleTimerUpdate', { riddleTime: timeLeft });
+                    timeLeft--;
+                }
+            }, 1000);
+        };
+
+        // Session timer
+        session.sessionTimer = setInterval(() => {
+            if (sessionTime <= 0) {
+                clearInterval(session.sessionTimer);
+                clearInterval(session.riddleTimer);
+                io.to(players).emit('sessionEnd', { message: "Session time is over!" });
+                endSession(players);
+            } else {
+                io.to(players).emit('sessionTimerUpdate', { sessionTime });
+                sessionTime--;
+            }
+        }, 1000);
+
+        sendNextRiddle(); // Start the first riddle
+    };
+
+    // Handle answer submission
+    socket.on('submitAnswer', ({ input }) => {
+        const session = sessions[socket.id];
+        if (!session) return;
+
+        const sanitizedInput = input.trim().toLowerCase();
+        const correctAnswer = session.activeRiddle.answer.toLowerCase();
+
+        if (sanitizedInput === correctAnswer) {
+            // Notify both players of the correct answer
+            io.to(session.player1).emit('correctAnswer', { userId: socket.id });
+            io.to(session.player2).emit('correctAnswer', { userId: socket.id });
+            clearInterval(session.riddleTimer); // Stop the current riddle timer
+            startRiddleSession(session); // Start the next riddle
+        } else {
+            // Notify the player who submitted the wrong answer
+            socket.emit('incorrectAnswer', { message: "Wrong answer! Try again." });
+        }
+    });
+
+    // Broadcast typing updates to the opponent
+    socket.on('typing', ({ input }) => {
+        const session = sessions[socket.id];
+        if (!session) return;
+
+        const opponent = session.player1 === socket.id ? session.player2 : session.player1;
+        io.to(opponent).emit('opponentTyping', { input });
+    });
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+        const session = sessions[socket.id];
+        if (session) {
+            const opponent = session.player1 === socket.id ? session.player2 : session.player1;
+            io.to(opponent).emit('endChat', { message: "Your opponent has left the game." });
+            endSession([session.player1, session.player2]);
+        }
+
+        if (waitingPlayer === socket.id) {
+            waitingPlayer = null;
+        }
+    });
+
+    // End a session and clean up
+    const endSession = (players) => {
+        players.forEach(player => {
+            delete sessions[player];
+        });
+    };
+});
+
+// Mock database for Rapid Fire Questions
+const rapidFireQuestions = [
+  { id: 1, question: "What's your favorite food?", hint: "Think comfort food." },
+  { id: 2, question: "If you could visit any country, where would you go?", hint: "Dream destination!" },
+  { id: 3, question: "What's your childhood nickname?", hint: "A playful name!" },
+  { id: 4, question: "Dogs or cats?", hint: "Pet preference." },
+  { id: 5, question: "What’s the best gift you've ever received?", hint: "Think sentimental." },
+  { id: 6, question: "What’s your dream job?", hint: "Think big!" },
+  { id: 7, question: "What’s your favorite hobby?", hint: "Fun pastime." },
+];
+
+// Route: Start Rapid Fire Game
+app.post('/rapid-fire/start', (req, res) => {
+  const { userId, matchId } = req.body;
+
+  if (!userId || !matchId) {
+    return res.status(400).json({ success: false, message: "User IDs are required." });
+  }
+
+  // Select 5 random questions
+  const selectedQuestions = rapidFireQuestions
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 5);
+
+  res.json({
+    success: true,
+    message: "Rapid Fire game started!",
+    questions: selectedQuestions
+  });
+});
+
+// Route: Submit answers and calculate score
+app.post('/rapid-fire/submit', (req, res) => {
+  const { userId, matchId, answers } = req.body;
+
+  if (!userId || !matchId || !answers) {
+    return res.status(400).json({ success: false, message: "Incomplete game data." });
+  }
+
+  // Calculate the score based on the number of answers
+  const score = answers.filter(answer => answer.trim() !== '').length;
+
+  res.json({
+    success: true,
+    message: `Game completed! You answered ${score} questions.`,
+    score
+  });
+});
+
+
+
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Store Connected Players and Current Game State
+let connectedPlayers = []; // Track connected user IDs
+let currentAnswer = null; // Current answer for the ongoing round
+let scores = {}; // Track scores for each user
+
+// Answer Pool
+const answerPool = [
+  { id: 1, answer: "Albert Einstein", correctQuestion: "Who developed the theory of relativity?" },
+  { id: 2, answer: "Eiffel Tower", correctQuestion: "What is the most famous landmark in Paris?" },
+  { id: 3, answer: "Isaac Newton", correctQuestion: "Who discovered the laws of motion?" },
+  { id: 4, answer: "Mount Everest", correctQuestion: "What is the highest mountain in the world?" }
+];
+
+// Handle User Connection
+io.on('connection', (socket) => {
+  console.log(`User connected: ${socket.id}`);
+
+  // Player joins the session
+  socket.on('joinSession', (userId) => {
+    console.log(`User ${userId} joined.`);
+    connectedPlayers.push({ userId, socketId: socket.id }); // Track the user
+    scores[userId] = 0; // Initialize score
+
+    // Notify all clients about the updated player list
+    io.emit('updatePlayerList', connectedPlayers.map(player => player.userId));
+
+    // Start the game if more than 2 players are connected
+    if (connectedPlayers.length > 2) {
+      startGameRound();
+    } else {
+      socket.emit('waiting', { message: 'Waiting for more players...' });
+    }
+  });
+
+  // Handle submission of a guess (question)
+  socket.on('submitGuess', ({ userId, guess }) => {
+    console.log(`User ${userId} submitted: ${guess}`);
+    if (!currentAnswer) {
+      socket.emit('notification', { message: 'No active question to answer!' });
+      return;
+    }
+
+    // Validate the answer
+    const correctAnswer = currentAnswer.correctQuestion.toLowerCase();
+    if (guess.toLowerCase() === correctAnswer) {
+      scores[userId] += 10; // Add points for correct answer
+      io.to(socket.id).emit('notification', { message: 'Correct! Well done.' });
+      io.emit('scoreUpdate', scores); // Broadcast updated scores
+      startGameRound(); // Move to the next round
+    } else {
+      io.to(socket.id).emit('notification', { message: 'Incorrect! Try again.' });
+    }
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log(`User disconnected: ${socket.id}`);
+    connectedPlayers = connectedPlayers.filter(player => player.socketId !== socket.id);
+
+    // Notify clients about the updated player list
+    io.emit('updatePlayerList', connectedPlayers.map(player => player.userId));
+
+    // End the session if fewer than 3 players remain
+    if (connectedPlayers.length < 3) {
+      io.emit('notification', { message: 'Not enough players to continue. Session ended.' });
+      currentAnswer = null; // Reset the game state
+    }
+  });
+});
+
+// Function to Start a Game Round
+function startGameRound() {
+  if (connectedPlayers.length < 3) {
+    console.log('Not enough players to start a round.');
+    return;
+  }
+
+  // Select a random answer from the pool
+  const randomIndex = Math.floor(Math.random() * answerPool.length);
+  currentAnswer = answerPool[randomIndex];
+
+  // Broadcast the new answer to all players
+  console.log(`New round started. Answer: ${currentAnswer.answer}`);
+  io.emit('newAnswer', currentAnswer.answer);
+}
 
 
 
