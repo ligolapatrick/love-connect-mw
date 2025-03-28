@@ -99,7 +99,7 @@ const FacebookStrategy = require('passport-facebook').Strategy;
 passport.use(new FacebookStrategy({
     clientID: process.env.FACEBOOK_APP_ID || 'default_app_id',
     clientSecret: process.env.FACEBOOK_APP_SECRET || 'default_app_secret',
-    callbackURL: 'https://loveconnect-mw.onrender.com/auth/facebook/callback',
+    callbackURL: 'https://loveconnect.site/auth/facebook/callback',
     profileFields: ['id', 'displayName', 'emails']
 }, async (accessToken, refreshToken, profile, done) => {
     try {
@@ -324,6 +324,21 @@ interests: {
     allowNull: false,
     defaultValue: 'user'
   },
+  casualDatingMode: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+	    hangoutMode: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false // Default to false
+    },
+    hookupMode: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false // Default to false
+    },
   availableUntil: { // Add this field
     type: DataTypes.DATE,
     allowNull: true
@@ -359,7 +374,10 @@ const Message = sequelize.define('Message', {
   },
   content: {
     type: DataTypes.TEXT,
-    allowNull: false
+    allowNull: false,
+    validate: {
+      len: [1, 500] // Limit content length to avoid overly long messages
+    }
   },
   timestamp: {
     type: DataTypes.DATE,
@@ -373,11 +391,17 @@ const Message = sequelize.define('Message', {
   favorite: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  deletedAt: {
+    type: DataTypes.DATE, // Allows soft deletion
+    allowNull: true
   }
 }, {
+  paranoid: true, // Enables Sequelize's soft delete functionality
   indexes: [
     { fields: ['fromUserId'] }, // Speeds up queries involving sender
-    { fields: ['toUserId'] } // Speeds up queries involving receiver
+    { fields: ['toUserId'] }, // Speeds up queries involving receiver
+    { fields: ['fromUserId', 'toUserId'] } // Composite index for chat conversations
   ]
 });
 
@@ -872,8 +896,25 @@ app.get('/api/online-users', async (req, res) => {
   res.json(onlineUsers);
 });
 
-// Fetch messages for a chat
-// Send a message
+// Route to get total unread messages count for the logged-in user
+app.get('/api/unread-count', requireLogin, async (req, res) => {
+    const userId = req.session.userId;
+
+    try {
+        const unreadCount = await Message.count({
+            where: {
+                toUserId: userId,
+                read: false
+            }
+        });
+
+        res.json({ unreadCount });
+    } catch (error) {
+        console.error('Error fetching unread count:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 app.post('/api/send-message', requireLogin, async (req, res) => {
     const { toUserId, content } = req.body;
     const fromUserId = req.session.userId;
@@ -883,30 +924,24 @@ app.post('/api/send-message', requireLogin, async (req, res) => {
     }
 
     try {
-        // Create a new message
         const newMessage = await Message.create({
             fromUserId,
             toUserId,
             content,
-            timestamp: new Date(),
-            messageType: 'text' // Ensure messageType is consistent
+            timestamp: new Date()
         });
 
-        // Fetch sender details for notifications
         const senderUser = await User.findByPk(fromUserId, {
             attributes: ['username']
         });
         const senderName = senderUser ? senderUser.username : 'Unknown User';
 
-        // Create a notification for the recipient
-        const notificationMessage = `${senderName} sent you a message.`;
-        await Notification.create({ 
-            userId: toUserId, 
-            senderId: fromUserId, 
-            message: notificationMessage 
+        await Notification.create({
+            userId: toUserId,
+            senderId: fromUserId,
+            message: `${senderName} sent you a message.`
         });
 
-        console.log('Message created:', newMessage);
         res.status(201).json(newMessage);
     } catch (error) {
         console.error('Error sending message:', error);
@@ -916,7 +951,6 @@ app.post('/api/send-message', requireLogin, async (req, res) => {
 
 
 // Send a message
-// Fetch messages for a chat
 app.get('/api/messages', requireLogin, async (req, res) => {
     const userId = req.session.userId;
     const chatUserId = req.query.chatUserId;
@@ -926,7 +960,6 @@ app.get('/api/messages', requireLogin, async (req, res) => {
     }
 
     try {
-        // Query to fetch messages between two users
         const messages = await Message.findAll({
             where: {
                 [Op.or]: [
@@ -934,24 +967,23 @@ app.get('/api/messages', requireLogin, async (req, res) => {
                     { fromUserId: chatUserId, toUserId: userId }
                 ]
             },
-            order: [['timestamp', 'ASC']], // Sort messages in ascending order of timestamp
+            order: [['timestamp', 'ASC']],
             include: [
                 {
                     model: User,
-                    as: 'Sender', 
-                    attributes: ['username', 'profilePicture'] // Include sender's username and profile picture
+                    as: 'Sender',
+                    attributes: ['username', 'profilePicture']
                 }
             ]
         });
 
-        // Add sender's username to each message
-        const messagesWithSenderName = messages.map(message => ({
+        const enrichedMessages = messages.map(message => ({
             ...message.toJSON(),
             senderName: message.Sender.username,
-            senderProfilePicture: message.Sender.profilePicture // Example of enriched data
+            senderProfilePicture: message.Sender.profilePicture
         }));
 
-        res.json(messagesWithSenderName);
+        res.json(enrichedMessages);
     } catch (error) {
         console.error('Error fetching messages:', error);
         res.status(500).send('Internal Server Error');
@@ -961,63 +993,101 @@ app.get('/api/messages', requireLogin, async (req, res) => {
 
 // Fetch the chat list for a user with filters and unread message count
 app.get('/api/chat-list', requireLogin, async (req, res) => {
-  const userId = req.session.userId;
-  const { filter } = req.query;
+    const userId = req.session.userId;
+    const { filter } = req.query;
 
-  try {
-    let whereClause = {
-      [Op.or]: [
-        { fromUserId: userId },
-        { toUserId: userId }
-      ]
-    };
+    try {
+        let whereClause = {
+            [Op.or]: [
+                { fromUserId: userId },
+                { toUserId: userId }
+            ]
+        };
 
-    if (filter === 'unread') {
-      whereClause = {
-        ...whereClause,
-        read: false
-      };
-    } else if (filter === 'favorites') {
-      whereClause = {
-        ...whereClause,
-        favorite: true
-      };
+        if (filter === 'unread') {
+            whereClause.read = false;
+        } else if (filter === 'favorites') {
+            whereClause.favorite = true;
+        }
+
+        const messages = await Message.findAll({
+            where: whereClause,
+            attributes: ['fromUserId', 'toUserId', 'content', 'createdAt', 'read']
+        });
+
+        const chatUserIds = new Set();
+        const unreadCounts = {};
+        const lastMessageTimes = {};
+
+        messages.forEach(msg => {
+            const otherUserId = msg.fromUserId === userId ? msg.toUserId : msg.fromUserId;
+            chatUserIds.add(otherUserId);
+            if (!msg.read && msg.toUserId === userId) {
+                unreadCounts[otherUserId] = (unreadCounts[otherUserId] || 0) + 1;
+            }
+            lastMessageTimes[otherUserId] = lastMessageTimes[otherUserId]
+                ? new Date(Math.max(new Date(lastMessageTimes[otherUserId]), new Date(msg.createdAt)))
+                : msg.createdAt;
+        });
+
+        const chatUsers = await User.findAll({
+            where: { id: Array.from(chatUserIds) },
+            attributes: ['id', 'username', 'profilePicture']
+        });
+
+        res.json(chatUsers.map(user => ({
+            ...user.toJSON(),
+            unreadCount: unreadCounts[user.id] || 0,
+            lastMessageTime: lastMessageTimes[user.id] || null
+        })));
+    } catch (error) {
+        console.error('Error fetching chat list:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+app.delete('/api/delete-chat', requireLogin, async (req, res) => {
+    const userId = req.session.userId;
+    const { chatUserId } = req.body;
+
+    if (!chatUserId) {
+        return res.status(400).json({ error: 'chatUserId is required' });
     }
 
-    const messages = await Message.findAll({
-      where: whereClause,
-      attributes: ['fromUserId', 'toUserId', 'content', 'createdAt', 'read']
-    });
+    try {
+        // Delete all messages between the two users
+        await Message.destroy({
+            where: {
+                [Op.or]: [
+                    { fromUserId: userId, toUserId: chatUserId },
+                    { fromUserId: chatUserId, toUserId: userId }
+                ]
+            }
+        });
 
-    const chatUserIds = new Set();
-    const unreadCounts = {};
-    const lastMessageTimes = {};
+        res.sendStatus(200); // Success
+    } catch (error) {
+        console.error('Error deleting chat:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
-    messages.forEach(msg => {
-      const otherUserId = msg.fromUserId === userId ? msg.toUserId : msg.fromUserId;
-      chatUserIds.add(otherUserId);
-      if (!msg.read && msg.toUserId === userId) {
-        unreadCounts[otherUserId] = (unreadCounts[otherUserId] || 0) + 1;
-      }
-      lastMessageTimes[otherUserId] = lastMessageTimes[otherUserId]
-        ? new Date(Math.max(new Date(lastMessageTimes[otherUserId]), new Date(msg.createdAt)))
-        : msg.createdAt;
-    });
+app.get('/api/unread-count', requireLogin, async (req, res) => {
+    const userId = req.session.userId;
 
-    const chatUsers = await User.findAll({
-      where: { id: Array.from(chatUserIds) },
-      attributes: ['id', 'username', 'profilePicture']
-    });
+    try {
+        const unreadCount = await Message.count({
+            where: {
+                toUserId: userId,
+                read: false
+            }
+        });
 
-    res.json(chatUsers.map(user => ({
-      ...user.toJSON(),
-      unreadCount: unreadCounts[user.id] || 0,
-      lastMessageTime: lastMessageTimes[user.id] || null
-    })));
-  } catch (error) {
-    console.error('Error fetching chat list:', error);
-    res.status(500).send('Internal Server Error');
-  }
+        res.json({ unreadCount });
+    } catch (error) {
+        console.error('Error fetching unread messages count:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 // Mark messages as read
@@ -1094,6 +1164,89 @@ app.get('/api/match-mood', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
+app.post('/api/update-hangout-mode', requireLogin, async (req, res) => {
+    const userId = req.session.userId; // Assuming session contains the logged-in user ID
+    const { hangoutMode } = req.body;
+
+    if (typeof hangoutMode !== 'boolean') {
+        return res.status(400).json({ error: 'Invalid parameter' });
+    }
+
+    try {
+        await User.update({ hangoutMode }, { where: { id: userId } });
+        res.status(200).json({ message: `Hangout mode ${hangoutMode ? 'enabled' : 'disabled'}` });
+    } catch (error) {
+        console.error('Error updating hangout mode:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.post('/api/update-hookup-mode', requireLogin, async (req, res) => {
+    const userId = req.session.userId;
+    const { hookupMode } = req.body;
+
+    if (typeof hookupMode !== 'boolean') {
+        return res.status(400).json({ error: 'Invalid parameter' });
+    }
+
+    try {
+        await User.update({ hookupMode }, { where: { id: userId } });
+        res.status(200).json({ message: `Hookup mode ${hookupMode ? 'enabled' : 'disabled'}` });
+    } catch (error) {
+        console.error('Error updating hookup mode:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.get('/api/hangout-profiles', requireLogin, async (req, res) => {
+    const userId = req.session.userId;
+
+    try {
+        const currentUser = await User.findByPk(userId, { attributes: ['gender'] });
+
+        if (!currentUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const hangoutUsers = await User.findAll({
+            where: {
+                hangoutMode: true,
+                gender: { [Op.ne]: currentUser.gender } // Filters by opposite gender
+            },
+            attributes: ['id', 'username', 'age', 'gender', 'bio', 'interests', 'location', 'profilePicture']
+        });
+
+        res.json(hangoutUsers);
+    } catch (error) {
+        console.error('Error fetching hangout profiles:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.get('/api/hookup-profiles', requireLogin, async (req, res) => {
+    const userId = req.session.userId;
+
+    try {
+        const currentUser = await User.findByPk(userId, { attributes: ['gender'] });
+
+        if (!currentUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const hookupUsers = await User.findAll({
+            where: {
+                hookupMode: true,
+                gender: { [Op.ne]: currentUser.gender } // Filters by opposite gender
+            },
+            attributes: ['id', 'username', 'age', 'gender', 'bio', 'interests', 'location', 'profilePicture']
+        });
+
+        res.json(hookupUsers);
+    } catch (error) {
+        console.error('Error fetching hookup profiles:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 
 // API to update mood
 app.post('/api/update-mood', async (req, res) => {
@@ -4093,6 +4246,50 @@ app.post('/api/unblock-user', async (req, res) => {
   }
 });
 
+app.get('/api/get-users', async (req, res) => {
+    try {
+        const users = await User.findAll({
+            where: { casualDatingMode: true },
+            attributes: ['id', 'username', 'profilePicture', 'bio']
+        });
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.get('/api/casual-dating-profiles', requireLogin, async (req, res) => {
+    try {
+        const casualDatingUsers = await User.findAll({
+            where: { casualDatingMode: true },
+            attributes: ['id', 'username', 'bio', 'profilePicture']
+        });
+
+        res.json(casualDatingUsers);
+    } catch (error) {
+        console.error('Error fetching casual dating profiles:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.post('/api/update-casual-mode', requireLogin, async (req, res) => {
+    const userId = req.session.userId;
+    const { casualMode } = req.body;
+
+    if (typeof casualMode !== 'boolean') {
+        return res.status(400).json({ error: 'Invalid parameter' });
+    }
+
+    try {
+        await User.update({ casualDatingMode: casualMode }, { where: { id: userId } });
+        res.sendStatus(200); // Success
+    } catch (error) {
+        console.error('Error updating casual mode:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 app.post('/api/change-password', requireLogin, async (req, res) => {
   const { userId } = req.session; // Get logged-in user ID from session
   const { oldPassword, newPassword } = req.body;
@@ -4310,145 +4507,7 @@ io.on('connection', (socket) => {
     };
 });
 
-// Mock database for Rapid Fire Questions
-const rapidFireQuestions = [
-  { id: 1, question: "What's your favorite food?", hint: "Think comfort food." },
-  { id: 2, question: "If you could visit any country, where would you go?", hint: "Dream destination!" },
-  { id: 3, question: "What's your childhood nickname?", hint: "A playful name!" },
-  { id: 4, question: "Dogs or cats?", hint: "Pet preference." },
-  { id: 5, question: "What’s the best gift you've ever received?", hint: "Think sentimental." },
-  { id: 6, question: "What’s your dream job?", hint: "Think big!" },
-  { id: 7, question: "What’s your favorite hobby?", hint: "Fun pastime." },
-];
-
-// Route: Start Rapid Fire Game
-app.post('/rapid-fire/start', (req, res) => {
-  const { userId, matchId } = req.body;
-
-  if (!userId || !matchId) {
-    return res.status(400).json({ success: false, message: "User IDs are required." });
-  }
-
-  // Select 5 random questions
-  const selectedQuestions = rapidFireQuestions
-    .sort(() => 0.5 - Math.random())
-    .slice(0, 5);
-
-  res.json({
-    success: true,
-    message: "Rapid Fire game started!",
-    questions: selectedQuestions
-  });
-});
-
-// Route: Submit answers and calculate score
-app.post('/rapid-fire/submit', (req, res) => {
-  const { userId, matchId, answers } = req.body;
-
-  if (!userId || !matchId || !answers) {
-    return res.status(400).json({ success: false, message: "Incomplete game data." });
-  }
-
-  // Calculate the score based on the number of answers
-  const score = answers.filter(answer => answer.trim() !== '').length;
-
-  res.json({
-    success: true,
-    message: `Game completed! You answered ${score} questions.`,
-    score
-  });
-});
-
-
-
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// Store Connected Players and Current Game State
-let connectedPlayers = []; // Track connected user IDs
-let currentAnswer = null; // Current answer for the ongoing round
-let scores = {}; // Track scores for each user
-
-// Answer Pool
-const answerPool = [
-  { id: 1, answer: "Albert Einstein", correctQuestion: "Who developed the theory of relativity?" },
-  { id: 2, answer: "Eiffel Tower", correctQuestion: "What is the most famous landmark in Paris?" },
-  { id: 3, answer: "Isaac Newton", correctQuestion: "Who discovered the laws of motion?" },
-  { id: 4, answer: "Mount Everest", correctQuestion: "What is the highest mountain in the world?" }
-];
-
-// Handle User Connection
-io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
-
-  // Player joins the session
-  socket.on('joinSession', (userId) => {
-    console.log(`User ${userId} joined.`);
-    connectedPlayers.push({ userId, socketId: socket.id }); // Track the user
-    scores[userId] = 0; // Initialize score
-
-    // Notify all clients about the updated player list
-    io.emit('updatePlayerList', connectedPlayers.map(player => player.userId));
-
-    // Start the game if more than 2 players are connected
-    if (connectedPlayers.length > 2) {
-      startGameRound();
-    } else {
-      socket.emit('waiting', { message: 'Waiting for more players...' });
-    }
-  });
-
-  // Handle submission of a guess (question)
-  socket.on('submitGuess', ({ userId, guess }) => {
-    console.log(`User ${userId} submitted: ${guess}`);
-    if (!currentAnswer) {
-      socket.emit('notification', { message: 'No active question to answer!' });
-      return;
-    }
-
-    // Validate the answer
-    const correctAnswer = currentAnswer.correctQuestion.toLowerCase();
-    if (guess.toLowerCase() === correctAnswer) {
-      scores[userId] += 10; // Add points for correct answer
-      io.to(socket.id).emit('notification', { message: 'Correct! Well done.' });
-      io.emit('scoreUpdate', scores); // Broadcast updated scores
-      startGameRound(); // Move to the next round
-    } else {
-      io.to(socket.id).emit('notification', { message: 'Incorrect! Try again.' });
-    }
-  });
-
-  // Handle disconnection
-  socket.on('disconnect', () => {
-    console.log(`User disconnected: ${socket.id}`);
-    connectedPlayers = connectedPlayers.filter(player => player.socketId !== socket.id);
-
-    // Notify clients about the updated player list
-    io.emit('updatePlayerList', connectedPlayers.map(player => player.userId));
-
-    // End the session if fewer than 3 players remain
-    if (connectedPlayers.length < 3) {
-      io.emit('notification', { message: 'Not enough players to continue. Session ended.' });
-      currentAnswer = null; // Reset the game state
-    }
-  });
-});
-
-// Function to Start a Game Round
-function startGameRound() {
-  if (connectedPlayers.length < 3) {
-    console.log('Not enough players to start a round.');
-    return;
-  }
-
-  // Select a random answer from the pool
-  const randomIndex = Math.floor(Math.random() * answerPool.length);
-  currentAnswer = answerPool[randomIndex];
-
-  // Broadcast the new answer to all players
-  console.log(`New round started. Answer: ${currentAnswer.answer}`);
-  io.emit('newAnswer', currentAnswer.answer);
-}
-
 
 
 
@@ -4597,7 +4656,7 @@ app.get('/admin/api/users-by-gender', requireAdmin, async (req, res) => {
 });
 
 // Start the server
-const port = 4000;
+const port = 5000;
 server.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
