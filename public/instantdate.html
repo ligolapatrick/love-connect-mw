@@ -184,6 +184,21 @@
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
       }
+      .unread-count {
+    display: inline-block;
+    background-color: #1c0a4d;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    line-height: 20px;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
   </style>
   
 </head>
@@ -202,7 +217,9 @@
          <a href="/profile"><img src="icons/profile.png" alt="Profile"> Profile</a> 
          <a href="/matches"><img src="icons/matches.png" alt="Matches"> Matches</a> 
          <a href="/nearby"><img src="icons/nearby.png" alt="NearbyUsers"> NearbyUsers</a> 
-         <a href="/chatlist"><img src="icons/message.png" alt="Messages"> Messages</a> 
+         <a href="/chatlist"><img src="icons/message.png" alt="Messages"> Messages 
+          <span id="unreadCount" class="unread-count"></span>
+      </a>
          <a href="/login"><img src="icons/logout.png" alt="Logout"> Logout</a>
     </nav>
 
@@ -257,6 +274,30 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingIndicator.style.display = 'none'; // Hide loading indicator
       console.error('Error fetching user profiles:', error);
     });
+});
+
+    // Function to fetch and update the unread message count
+    function fetchUnreadMessagesCount() {
+    fetch('/api/unread-count') // Update with the correct endpoint for unread message count
+        .then(response => response.json())
+        .then(data => {
+            const unreadCountElement = document.getElementById('unreadCount');
+            if (data.unreadCount > 0) {
+                unreadCountElement.textContent = data.unreadCount;
+                unreadCountElement.style.display = 'inline-block';
+            } else {
+                unreadCountElement.style.display = 'none';
+            }
+        })
+        .catch(error => console.error('Error fetching unread messages count:', error));
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    fetchUnreadMessagesCount(); // Fetch unread count on page load
+
+    // Optionally, refresh the count periodically (e.g., every 30 seconds)
+    setInterval(fetchUnreadMessagesCount, 30000); // 30 seconds
 });
 
 function likeProfile(userId, button) {

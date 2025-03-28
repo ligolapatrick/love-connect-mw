@@ -154,6 +154,12 @@ button:hover {
   opacity: 0.9;
 }
 
+
+#casualModeToggle {
+    cursor: pointer;
+    transform: scale(1.2);
+    margin-left: 10px;
+}
   </style>
 </head>
 <body>
@@ -171,6 +177,23 @@ button:hover {
       <ul id="badgeList"></ul>
     </section>
   
+    <section class="settings-section">
+      <h2>Casual Dating Mode</h2>
+      <label>
+          <input type="checkbox" id="casualModeToggle"> Enable Casual Dating Mode
+      </label>
+  </section>
+  
+  <section class="settings-section">
+    <h2>Dating Preferences</h2>
+    <label>
+        <input type="checkbox" id="hangoutModeToggle"> Enable Hangout Mode
+    </label>
+    <label>
+        <input type="checkbox" id="hookupModeToggle"> Enable Hookup Mode
+    </label>
+</section>
+
     <!-- Blocked Users Section -->
     <section class="settings-section">
       <h2>Blocked Users</h2>
@@ -303,6 +326,28 @@ document.getElementById('changePasswordForm').addEventListener('submit', async (
   }
 });
 
+document.getElementById('casualModeToggle').addEventListener('change', async function() {
+    const isEnabled = this.checked;
+
+    try {
+        const response = await fetch('/api/update-casual-mode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ casualMode: isEnabled })
+        });
+
+        if (response.ok) {
+            alert(`Casual Dating Mode ${isEnabled ? 'enabled' : 'disabled'}.`);
+        } else {
+            console.error('Error updating casual mode.');
+            this.checked = !isEnabled; // Revert the toggle on error
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        this.checked = !isEnabled; // Revert the toggle on error
+    }
+});
+
 // Fetch user stats
 document.addEventListener('DOMContentLoaded', async () => {
   try {
@@ -322,6 +367,50 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     console.error('Error fetching user stats:', error);
   }
+});
+
+document.getElementById('hangoutModeToggle').addEventListener('change', async function() {
+    const isEnabled = this.checked;
+
+    try {
+        const response = await fetch('/api/update-hangout-mode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hangoutMode: isEnabled })
+        });
+
+        if (response.ok) {
+            alert(`Hangout Mode ${isEnabled ? 'enabled' : 'disabled'}.`);
+        } else {
+            console.error('Error updating Hangout Mode.');
+            this.checked = !isEnabled; // Revert the toggle on error
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        this.checked = !isEnabled; // Revert the toggle on error
+    }
+});
+
+document.getElementById('hookupModeToggle').addEventListener('change', async function() {
+    const isEnabled = this.checked;
+
+    try {
+        const response = await fetch('/api/update-hookup-mode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hookupMode: isEnabled })
+        });
+
+        if (response.ok) {
+            alert(`Hookup Mode ${isEnabled ? 'enabled' : 'disabled'}.`);
+        } else {
+            console.error('Error updating Hookup Mode.');
+            this.checked = !isEnabled; // Revert the toggle on error
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        this.checked = !isEnabled; // Revert the toggle on error
+    }
 });
 
 // Logout functionality

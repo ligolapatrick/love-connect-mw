@@ -134,6 +134,21 @@ header .dropdown-menu {
 .bottom-nav a.active {
   color: rgb(0, 0, 0);
 }
+.unread-count {
+    display: inline-block;
+    background-color: #7c4dff;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    line-height: 20px;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
 footer {
     background-color: #f7f7f7;
     padding: 20px;

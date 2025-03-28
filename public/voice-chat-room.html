@@ -1,221 +1,309 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Two Truths and a Lie</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-            text-align: center;
-        }
-        .game-container {
-            max-width: 500px;
-            margin: auto;
-        }
-        .input-field {
-            margin: 10px 0;
-            padding: 10px;
-            width: 100%;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            font-size: 16px;
-        }
-        .button:hover {
-            background-color: #0056b3;
-        }
-        .game-list {
-            margin: 20px 0;
-        }
-        .game-item {
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin: 10px 0;
-            text-align: left;
-            cursor: pointer;
-        }
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 250px;
-            height: 100%;
-            background-color: #111;
-            padding-top: 60px;
-            display: none;
-        }
-        .sidebar a {
-            padding: 10px 15px;
-            text-decoration: none;
-            font-size: 18px;
-            color: white;
-            display: block;
-        }
-        .sidebar a:hover {
-            background-color: #575757;
-        }
-        .sidebar .closebtn {
-            position: absolute;
-            top: 0;
-            right: 25px;
-            font-size: 36px;
-            margin-left: 50px;
-        }
-        .openbtn {
-            font-size: 20px;
-            cursor: pointer;
-            background-color: #111;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-        }
-        .openbtn:hover {
-            background-color: #444;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hangout Mode</title>
+  <style>
+    /* Main profile container styling */
+    .profile-container {
+      position: relative;
+      width: 500px;
+      margin: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      scroll-snap-align: start;
+      flex: 0 0 auto;
+    }
+
+    /* Profile picture */
+    .profile-picture {
+      width: 100%;
+      height: 500px;
+      object-fit: cover;
+    }
+
+    /* Profile details overlay */
+    .profile-details {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+
+    /* Swipe container */
+    .swipe-container {
+      display: flex;
+      overflow-x: auto;
+      white-space: nowrap;
+      scroll-snap-type: x mandatory;
+      justify-content: start;
+      padding-left: 10px;
+    }
+
+    .swipe-container .profile-container {
+      scroll-snap-align: center;
+    }
+
+    /* Message button */
+    .message-button {
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .message-button img {
+      width: 24px;
+      height: 24px;
+    }
+
+    .message-button:hover img {
+      filter: brightness(0.8);
+    }
+
+    /* Heart popup animation */
+    .heart-popup {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3em;
+      color: #ff6347;
+      opacity: 0;
+      transition: opacity 0.5s, transform 0.5s;
+    }
+
+    @keyframes heartPopup {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.5); opacity: 1; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+
+    /* User card buttons */
+    .user-card-buttons {
+      position: absolute;
+      bottom: 50px;
+      right: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .user-card-buttons button {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .like-button {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .dislike-button {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .message-button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .message-button:hover {
+      background-color: #0056b3;
+    }
+
+    /* Media Queries for smaller screens */
+    @media (max-width: 768px) {
+      .profile-container {
+        width: 300px;
+        margin: 10px 5px;
+      }
+
+      .profile-picture {
+        height: 350px;
+      }
+
+      .profile-details {
+        font-size: 0.8em;
+        padding: 5px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .profile-container {
+        width: 250px;
+      }
+
+      .profile-picture {
+        height: 300px;
+      }
+
+      .profile-details {
+        font-size: 0.7em;
+        padding: 3px;
+      }
+    }
+
+    /* Loading Indicator */
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.8);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 999;
+    }
+
+    .loading-logo {
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-    <div class="sidebar" id="mySidebar">
-        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
-        <a href="responses.html">Responses</a>
-        <a href="response-messages.html">Response Messages</a>
-    </div>
+  <div class="loading-container" id="loadingIndicator">
+    <img src="images/logo.png" alt="Loading" class="loading-logo">
+  </div>
 
-    <button class="openbtn" onclick="openNav()">☰</button> 
+  <header>
+    <h1>Available To Hangout </h1>
+  </header>
 
-    <div class="game-container">
-        <h1>Two Truths and a Lie</h1>
-        <div id="create-game">
-            <input type="text" id="truth1" class="input-field" placeholder="Enter first truth">
-            <input type="text" id="truth2" class="input-field" placeholder="Enter second truth">
-            <input type="text" id="lie" class="input-field" placeholder="Enter a lie">
-            <input type="password" id="password" class="input-field" placeholder="Enter password">
-            <button class="button" onclick="createGame()">Create Game</button>
-        </div>
-        <div id="game-list" class="game-list">
-            <h2>Available Games</h2>
-            <!-- Game sessions will be dynamically loaded here -->
-        </div>
-        <div id="game-session" style="display: none;">
-            <h2>Guess the Lie</h2>
-            <div id="truths-and-lie"></div>
-            <button class="button" onclick="submitGuess(0)">Guess 1</button>
-            <button class="button" onclick="submitGuess(1)">Guess 2</button>
-            <button class="button" onclick="submitGuess(2)">Guess 3</button>
-        </div>
-        <div id="guesses" style="display: none;">
-            <h2>Guesses</h2>
-            <div id="guess-list"></div>
-        </div>
-    </div>
+  <main>
+    <div class="swipe-container" id="matches"></div>
+    <div class="loading" id="loading">Loading matches...</div>
+  </main>
 
-    <script>
-        let userId = sessionStorage.getItem('userId') || 'user_' + Date.now();
-        sessionStorage.setItem('userId', userId);
+  <script>
+    async function fetchHangoutProfiles() {
+      const userId = sessionStorage.getItem('userId'); // Replace with proper user session handling
+      
+      try {
+        const response = await fetch(`/api/hangout-profiles?userId=${userId}`);
+        const data = await response.json();
 
-        async function createGame() {
-            const truths = [document.getElementById('truth1').value, document.getElementById('truth2').value];
-            const lie = document.getElementById('lie').value;
-            const password = document.getElementById('password').value;
+        document.getElementById('loading').style.display = 'none';
 
-            const response = await fetch('/api/create-game', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, truths, lie, password })
-            });
-            const data = await response.json();
-            loadGameSession(data.sessionId);
-            listGames();
-        }
+        const matchesDiv = document.getElementById('matches');
+        matchesDiv.innerHTML = '';
 
-        async function listGames() {
-            const response = await fetch('/api/list-games');
-            const games = await response.json();
+        // Shuffle the fetched data for randomized display
+        const shuffledData = data.sort(() => Math.random() - 0.5);
 
-            const gameListDiv = document.getElementById('game-list');
-            gameListDiv.innerHTML = '<h2>Available Games</h2>';
-            games.forEach(game => {
-                const gameItem = document.createElement('div');
-                gameItem.className = 'game-item';
-                gameItem.onclick = () => loadGameSession(game.sessionId);
-                gameItem.innerHTML = `
-                    <p><strong>Game ID:</strong> ${game.sessionId}</p>
-                    <p><strong>Creator:</strong> User ${game.userId}</p>
-                `;
-                gameItem.innerHTML = `
-                    <p><strong>Game ID:</strong> ${game.sessionId}</p>
-                    <p><strong>Creator:</strong> User ${game.userId}</p>
-                `;
-                gameListDiv.appendChild(gameItem);
-            });
-        }
+        shuffledData.forEach(match => {
+          const matchDiv = document.createElement('div');
+          matchDiv.className = 'profile-container';
 
-        async function loadGameSession(sessionId) {
-            const response = await fetch(`/api/game-session/${sessionId}`);
-            const session = await response.json();
+          const profilePicture = match.profilePicture || 'default-profile.png';
+          matchDiv.innerHTML = `
+            <img src="${profilePicture}" alt="Profile Picture" class="profile-picture">
+            <div class="profile-details">
+              <h2>${match.username}</h2>
+              <p><strong>Age:</strong> ${match.age}</p>
+              <p><strong>Gender:</strong> ${match.gender}</p>
+              <p><strong>Bio:</strong> ${match.bio}</p>
+              <p><strong>Interests:</strong> ${match.interests ? match.interests.split(',').join(', ') : 'Not provided'}</p>
+              <p><strong>Location:</strong> ${match.location}</p>
+            </div>
+            <div class="user-card-buttons">
+              <button class="message-button" onclick="messageUser(${match.id}, '${match.username}')">
+                <img src="icons/message.png" alt="Message">
+              </button>
+              <button class="like-button" onclick="likeUser(${match.id})">
+                <img src="icons/like.png" alt="Like">
+              </button>
+              <button class="dislike-button" onclick="dislikeUser(${match.id})">
+                <img src="icons/dislike.png" alt="Dislike">
+              </button>
+            </div>
+            <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
+          `;
+          matchesDiv.appendChild(matchDiv);
+        });
+      } catch (error) {
+        document.getElementById('loading').textContent = 'Failed to load matches. Please try again later.';
+        console.error('Error fetching hangout profiles:', error);
+      }
+    }
 
-            document.getElementById('create-game').style.display = 'none';
-            document.getElementById('game-session').style.display = 'block';
+    function showHeartPopup(userId) {
+      const heartPopup = document.getElementById(`heart-popup-${userId}`);
+      heartPopup.style.opacity = 1;
+      heartPopup.style.transform = 'scale(1.5)';
+      setTimeout(() => {
+        heartPopup.style.opacity = 0;
+        heartPopup.style.transform = 'scale(1)';
+      }, 1000);
+    }
 
-            const truthsAndLie = [...session.truths, session.lie].sort(() => Math.random() - 0.5);
-            const truthsAndLieDiv = document.getElementById('truths-and-lie');
-            truthsAndLieDiv.innerHTML = `
-                <p>1. ${truthsAndLie[0]}</p>
-                <p>2. ${truthsAndLie[1]}</p>
-                <p>3. ${truthsAndLie[2]}</p>
-            `;
-        }
+    function messageUser(userId, username) {
+      window.location.href = `/messages.html?userId=${userId}&username=${encodeURIComponent(username)}`;
+    }
 
-        async function submitGuess(guessIndex) {
-            const sessionId = new URLSearchParams(window.location.search).get('sessionId');
+    async function likeUser(userId) {
+      showHeartPopup(userId);
+      const response = await fetch('/api/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      if (response.ok) {
+        console.log('User liked:', userId);
+      } else {
+        console.error('Error liking user:', userId);
+      }
+    }
 
-            await fetch('/api/submit-guess', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId, userId, guess: guessIndex })
-            });
+    async function dislikeUser(userId) {
+      const response = await fetch('/api/dislike', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      if (response.ok) {
+        console.log('User disliked:', userId);
+      } else {
+        console.error('Error disliking user:', userId);
+      }
+    }
 
-            alert('Guess submitted!');
-        }
+      // Show loading indicator when page starts
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('loadingIndicator').style.display = 'flex';
+    });
 
-        async function fetchGuesses(sessionId) {
-            const response = await fetch(`/api/game-session/${sessionId}/guesses`);
-            const guesses = await response.json();
+    // Hide the loading indicator once the page is fully loaded
+    window.addEventListener('load', () => {
+        document.getElementById('loadingIndicator').style.display = 'none';
+    });
 
-            const guessListDiv = document.getElementById('guess-list');
-            guessListDiv.innerHTML = '';
-            guesses.forEach(guess => {
-                const guessItem = document.createElement('div');
-                guessItem.className = 'guess-item';
-                guessItem.innerHTML = `
-                    <p><strong>User:</strong> ${guess.userId}</p>
-                    <p><strong>Guess:</strong> ${guess.guess}</p>
-                `;
-                guessListDiv.appendChild(guessItem);
-            });
-        }
-
-        function openNav() {
-            document.getElementById("mySidebar").style.display = "block";
-        }
-
-        function closeNav() {
-            document.getElementById("mySidebar").style.display = "none";
-        }
-
-        document.addEventListener('DOMContentLoaded', listGames);
-    </script>
+    // Fetch hangout profiles when the page is loaded
+    window.onload = fetchHangoutProfiles;
+  </script>
 </body>
 </html>

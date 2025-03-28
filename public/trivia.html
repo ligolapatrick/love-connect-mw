@@ -3,191 +3,307 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reverse Trivia</title>
-  <script src="/socket.io/socket.io.js"></script>
+  <title>Hookup Mode</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: url('images/logo.png') no-repeat center center fixed;
-      background-size: cover;
-      color: #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .container {
-      background: rgba(255, 255, 255, 0.9);
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-      text-align: center;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .visible {
-      display: block;
-    }
-
-    h1 {
-      font-size: 1.5em;
-      margin-bottom: 20px;
-    }
-
-    .player-list ul {
-      list-style-type: none;
-      padding: 0;
-    }
-
-    .player-list li {
-      margin: 5px 0;
-    }
-
-    .input-box input {
-      width: 80%;
-      padding: 10px;
+    /* Main profile container styling */
+    .profile-container {
+      position: relative;
+      width: 500px;
+      margin: 10px;
       border: 1px solid #ccc;
-      border-radius: 5px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      scroll-snap-align: start;
+      flex: 0 0 auto;
     }
 
-    .input-box button {
-      padding: 10px 20px;
-      margin-left: 10px;
+    /* Profile picture */
+    .profile-picture {
+      width: 100%;
+      height: 500px;
+      object-fit: cover;
+    }
+
+    /* Profile details overlay */
+    .profile-details {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+
+    /* Swipe container */
+    .swipe-container {
+      display: flex;
+      overflow-x: auto;
+      white-space: nowrap;
+      scroll-snap-type: x mandatory;
+      justify-content: start;
+      padding-left: 10px;
+    }
+
+    .swipe-container .profile-container {
+      scroll-snap-align: center;
+    }
+
+    /* Message button */
+    .message-button {
+      background-color: transparent;
       border: none;
-      background: #007bff;
-      color: #fff;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .message-button img {
+      width: 24px;
+      height: 24px;
+    }
+
+    .message-button:hover img {
+      filter: brightness(0.8);
+    }
+
+    /* Heart popup animation */
+    .heart-popup {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3em;
+      color: #ff6347;
+      opacity: 0;
+      transition: opacity 0.5s, transform 0.5s;
+    }
+
+    @keyframes heartPopup {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.5); opacity: 1; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+
+    /* User card buttons */
+    .user-card-buttons {
+      position: absolute;
+      bottom: 50px;
+      right: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .user-card-buttons button {
+      padding: 5px 10px;
+      border: none;
       border-radius: 5px;
       cursor: pointer;
     }
 
-    .input-box button:hover {
-      background: #0056b3;
+    .like-button {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .dislike-button {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .message-button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .message-button:hover {
+      background-color: #0056b3;
+    }
+
+    /* Media Queries for smaller screens */
+    @media (max-width: 768px) {
+      .profile-container {
+        width: 300px;
+        margin: 10px 5px;
+      }
+
+      .profile-picture {
+        height: 350px;
+      }
+
+      .profile-details {
+        font-size: 0.8em;
+        padding: 5px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .profile-container {
+        width: 250px;
+      }
+
+      .profile-picture {
+        height: 300px;
+      }
+
+      .profile-details {
+        font-size: 0.7em;
+        padding: 3px;
+      }
+    }
+
+    /* Loading Indicator */
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.8);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 999;
+    }
+
+    .loading-logo {
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <!-- Waiting Screen -->
-  <div id="waiting-screen" class="container visible">
-    <h1>Waiting for Players...</h1>
-    <p>The game will start once 3 players join!</p>
-    <div class="player-list">
-      <h3>Connected Players:</h3>
-      <ul id="player-list">
-        <!-- Dynamically updated -->
-      </ul>
-    </div>
+  <div class="loading-container" id="loadingIndicator">
+    <img src="images/logo.png" alt="Loading" class="loading-logo">
   </div>
 
-  <!-- Game Screen -->
-  <div id="game-screen" class="container hidden">
-    <h1>Reverse Trivia</h1>
-    <p id="answer-display">The answer will appear here!</p>
-    <div class="input-box">
-      <input id="guess-input" placeholder="Enter your question..." />
-      <button id="submit-btn" onclick="submitGuess()">Submit</button>
-    </div>
-    <p>Time left: <span id="timer">30</span> seconds</p>
-  </div>
+  <header>
+    <h1>Available For Hookups</h1>
+  </header>
+
+  <main>
+    <div class="swipe-container" id="matches"></div>
+    <div class="loading" id="loading">Loading matches...</div>
+  </main>
 
   <script>
-// Initialize Socket.IO
-const socket = io();
+    async function fetchHookupProfiles() {
+      const userId = sessionStorage.getItem('userId'); // Replace with proper user session handling
+      
+      try {
+        const response = await fetch(`/api/hookup-profiles?userId=${userId}`);
+        const data = await response.json();
 
-// Global Variables
-let userId = Math.floor(Math.random() * 1000); // Generate random user ID for the current player
-let players = []; // List of connected players
-let currentAnswer = null; // Stores the current round's answer
-let timerInterval = null; // Stores the timer interval
+        document.getElementById('loading').style.display = 'none';
 
-// Emit to join the session
-socket.emit('joinSession', userId);
+        const matchesDiv = document.getElementById('matches');
+        matchesDiv.innerHTML = '';
 
-// Handle updated player list
-socket.on('updatePlayerList', (playerIds) => {
-  players = playerIds;
+        // Shuffle the fetched data for randomized display
+        const shuffledData = data.sort(() => Math.random() - 0.5);
 
-  // Update the connected players list in the waiting screen
-  const playerListElement = document.getElementById('player-list');
-  playerListElement.innerHTML = ''; // Clear the list
-  players.forEach((id) => {
-    const li = document.createElement('li');
-    li.textContent = `Player ID: ${id}`;
-    playerListElement.appendChild(li);
-  });
+        shuffledData.forEach(match => {
+          const matchDiv = document.createElement('div');
+          matchDiv.className = 'profile-container';
 
-  // If more than 2 players are connected, show the game screen
-  if (players.length > 2) {
-    document.getElementById('waiting-screen').classList.add('hidden');
-    document.getElementById('game-screen').classList.remove('hidden');
-  }
-});
-
-// Handle the new answer from the server
-socket.on('newAnswer', (answer) => {
-  currentAnswer = answer; // Store the current round's answer
-  const answerDisplay = document.getElementById('answer-display');
-  answerDisplay.textContent = `Answer: ${answer}`; // Display the current answer on the game screen
-  startTimer(30); // Start a 30-second timer for the round
-});
-
-// Submit a guess (question) to the server
-function submitGuess() {
-  const inputField = document.getElementById('guess-input');
-  const guess = inputField.value.trim();
-
-  if (!guess) {
-    alert('Please enter your question.');
-    return;
-  }
-
-  // Emit the guess to the server
-  socket.emit('submitGuess', { userId, guess });
-
-  // Clear the input field
-  inputField.value = '';
-}
-
-// Handle notifications from the server (e.g., correct/incorrect feedback)
-socket.on('notification', (data) => {
-  showNotification(data.message);
-});
-
-// Timer functionality
-function startTimer(seconds) {
-  clearInterval(timerInterval); // Clear any existing timer
-  const timerDisplay = document.getElementById('timer');
-  let timeLeft = seconds;
-  timerDisplay.textContent = timeLeft;
-
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    timerDisplay.textContent = timeLeft;
-
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      showNotification("Time's up! Moving to the next round...");
-      socket.emit('submitGuess', { userId, guess: '' }); // Auto-submit an empty guess if time runs out
+          const profilePicture = match.profilePicture || 'default-profile.png';
+          matchDiv.innerHTML = `
+            <img src="${profilePicture}" alt="Profile Picture" class="profile-picture">
+            <div class="profile-details">
+              <h2>${match.username}</h2>
+              <p><strong>Age:</strong> ${match.age}</p>
+              <p><strong>Gender:</strong> ${match.gender}</p>
+              <p><strong>Bio:</strong> ${match.bio}</p>
+              <p><strong>Interests:</strong> ${match.interests ? match.interests.split(',').join(', ') : 'Not provided'}</p>
+              <p><strong>Location:</strong> ${match.location}</p>
+            </div>
+            <div class="user-card-buttons">
+              <button class="message-button" onclick="messageUser(${match.id}, '${match.username}')">
+                <img src="icons/message.png" alt="Message">
+              </button>
+              <button class="like-button" onclick="likeUser(${match.id})">
+                <img src="icons/like.png" alt="Like">
+              </button>
+              <button class="dislike-button" onclick="dislikeUser(${match.id})">
+                <img src="icons/dislike.png" alt="Dislike">
+              </button>
+            </div>
+            <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
+          `;
+          matchesDiv.appendChild(matchDiv);
+        });
+      } catch (error) {
+        document.getElementById('loading').textContent = 'Failed to load matches. Please try again later.';
+        console.error('Error fetching hookup profiles:', error);
+      }
     }
-  }, 1000);
-}
 
-// Function to show notifications dynamically
-function showNotification(message) {
-  const notificationElement = document.getElementById('notification');
-  notificationElement.textContent = message;
-  notificationElement.style.display = 'block';
+    function showHeartPopup(userId) {
+      const heartPopup = document.getElementById(`heart-popup-${userId}`);
+      heartPopup.style.opacity = 1;
+      heartPopup.style.transform = 'scale(1.5)';
+      setTimeout(() => {
+        heartPopup.style.opacity = 0;
+        heartPopup.style.transform = 'scale(1)';
+      }, 1000);
+    }
 
-  setTimeout(() => {
-    notificationElement.style.display = 'none';
-  }, 3000); // Hide the notification after 3 seconds
-}
+    function messageUser(userId, username) {
+      window.location.href = `/messages.html?userId=${userId}&username=${encodeURIComponent(username)}`;
+    }
 
+    async function likeUser(userId) {
+      showHeartPopup(userId);
+      const response = await fetch('/api/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      if (response.ok) {
+        console.log('User liked:', userId);
+      } else {
+        console.error('Error liking user:', userId);
+      }
+    }
+
+    async function dislikeUser(userId) {
+      const response = await fetch('/api/dislike', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      if (response.ok) {
+        console.log('User disliked:', userId);
+      } else {
+        console.error('Error disliking user:', userId);
+      }
+    }
+
+    // Show loading indicator when page starts
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('loadingIndicator').style.display = 'flex';
+    });
+
+    // Hide the loading indicator once the page is fully loaded
+    window.addEventListener('load', () => {
+        document.getElementById('loadingIndicator').style.display = 'none';
+    });
+
+    // Fetch hookup profiles when the page is loaded
+    window.onload = fetchHookupProfiles;
   </script>
 </body>
 </html>

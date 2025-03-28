@@ -183,6 +183,7 @@
         messageElement.className = `message ${isYou ? 'sent' : 'received'}`;
         messageElement.innerHTML = `
             <div class="content"><strong>${isYou ? 'You' : message.senderName}:</strong> ${message.content}</div>
+            <div class="timestamp">${new Date(message.timestamp).toLocaleString()}</div>
         `;
 
         messageContainer.appendChild(messageElement);
@@ -226,11 +227,47 @@
     // Toggle settings menu
     function toggleSettingsMenu() {
         const menu = document.getElementById('settingsMenu');
-        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        menu.style.display = menu.style.display === 'none' || menu.style.display === '' ? 'block' : 'none';
     }
 
-    // Initial fetch
+    // Real-time updates (polling for new messages)
+    function startMessagePolling() {
+        setInterval(async () => {
+            try {
+                await fetchMessages();
+            } catch (error) {
+                console.error('Error polling messages:', error);
+            }
+        }, 5000); // Poll every 5 seconds
+    }
+
+    // Block/Unblock functionality
+    document.getElementById('blockUnblockUser').addEventListener('click', async () => {
+        const blockButton = document.getElementById('blockUnblockUser');
+        const isBlocked = blockButton.textContent.trim() === 'Block';
+        try {
+            const response = await fetch(`/api/block-user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ chatUserId, block: isBlocked })
+            });
+            if (response.ok) {
+                blockButton.textContent = isBlocked ? 'Unblock' : 'Block'; // Toggle button text
+                console.log(`${isBlocked ? 'Blocked' : 'Unblocked'} user ${chatUserId}`);
+            } else {
+                console.error('Error blocking/unblocking user:', await response.text());
+            }
+        } catch (error) {
+            console.error('Error handling block/unblock:', error);
+        }
+    });
+
+    // Fetch messages on load
     fetchMessages();
+    startMessagePolling(); // Start polling for new messages
 </script>
+
 </body>
 </html>
