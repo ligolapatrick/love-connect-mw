@@ -137,7 +137,7 @@ app.get('/auth/facebook/callback',
 const { Sequelize, DataTypes, Op } = require('sequelize');
 
 
-const destinationDb = new Sequelize('postgresql://trecks:qbswIv5TafgR2bws3guwShCbRfFfHV1o@dpg-cvjagvidbo4c738rjbfg-a.oregon-postgres.render.com/find_one_by_click', {
+const sequelize = new Sequelize('postgresql://trecks:qbswIv5TafgR2bws3guwShCbRfFfHV1o@dpg-cvjagvidbo4c738rjbfg-a.oregon-postgres.render.com/find_one_by_click', {
     dialect: 'postgres',
     logging: false,
     dialectOptions: {
@@ -246,6 +246,15 @@ interests: {
     allowNull: false,
     defaultValue: false
   },
+    travelMode: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false // Default value for travel mode
+    },
+    travelLocation: {
+        type: DataTypes.STRING,
+        allowNull: true // Optional column for temporary location
+    },
   searchingForRelationship: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
@@ -896,6 +905,25 @@ app.get('/api/online-users', async (req, res) => {
   res.json(onlineUsers);
 });
 
+const Block = sequelize.define('Block', {
+    blockerId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    blockedUserId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    }
+}, {
+    timestamps: true
+});
+
+// Define associations
+Block.belongsTo(User, { as: 'BlockedUser', foreignKey: 'blockedUserId' });
+Block.belongsTo(User, { as: 'Blocker', foreignKey: 'blockerId' });
+
+module.exports = Block;
+
 // Route to get total unread messages count for the logged-in user
 app.get('/api/unread-count', requireLogin, async (req, res) => {
     const userId = req.session.userId;
@@ -924,6 +952,21 @@ app.post('/api/send-message', requireLogin, async (req, res) => {
     }
 
     try {
+        // Check if the sender or recipient is blocked
+        const isBlocked = await Block.findOne({
+            where: {
+                [Op.or]: [
+                    { blockerId: fromUserId, blockedUserId: toUserId },
+                    { blockerId: toUserId, blockedUserId: fromUserId }
+                ]
+            }
+        });
+
+        if (isBlocked) {
+            return res.status(403).json({ error: 'Message not allowed. One of the users is blocked.' });
+        }
+
+        // Create the message if not blocked
         const newMessage = await Message.create({
             fromUserId,
             toUserId,
@@ -936,6 +979,7 @@ app.post('/api/send-message', requireLogin, async (req, res) => {
         });
         const senderName = senderUser ? senderUser.username : 'Unknown User';
 
+        // Notify the recipient
         await Notification.create({
             userId: toUserId,
             senderId: fromUserId,
@@ -960,6 +1004,20 @@ app.get('/api/messages', requireLogin, async (req, res) => {
     }
 
     try {
+        // Check if the users are blocked
+        const isBlocked = await Block.findOne({
+            where: {
+                [Op.or]: [
+                    { blockerId: userId, blockedUserId: chatUserId },
+                    { blockerId: chatUserId, blockedUserId: userId }
+                ]
+            }
+        });
+
+        if (isBlocked) {
+            return res.status(403).json({ error: 'Access denied. One of the users is blocked.' });
+        }
+
         const messages = await Message.findAll({
             where: {
                 [Op.or]: [
@@ -997,6 +1055,13 @@ app.get('/api/chat-list', requireLogin, async (req, res) => {
     const { filter } = req.query;
 
     try {
+        // Fetch blocked user IDs
+        const blockedUsers = await Block.findAll({
+            where: { blockerId: userId },
+            attributes: ['blockedUserId']
+        });
+        const blockedUserIds = blockedUsers.map(block => block.blockedUserId);
+
         let whereClause = {
             [Op.or]: [
                 { fromUserId: userId },
@@ -1021,6 +1086,10 @@ app.get('/api/chat-list', requireLogin, async (req, res) => {
 
         messages.forEach(msg => {
             const otherUserId = msg.fromUserId === userId ? msg.toUserId : msg.fromUserId;
+
+            // Skip adding blocked users to the chat list
+            if (blockedUserIds.includes(otherUserId)) return;
+
             chatUserIds.add(otherUserId);
             if (!msg.read && msg.toUserId === userId) {
                 unreadCounts[otherUserId] = (unreadCounts[otherUserId] || 0) + 1;
@@ -1091,26 +1160,27 @@ app.get('/api/unread-count', requireLogin, async (req, res) => {
 });
 
 // Mark messages as read
-app.post('/api/mark-as-read', requireLogin, async (req, res) => {
-  const userId = req.session.userId;
-  const { chatUserId } = req.body;
+app.post('/api/mark-as-read', async (req, res) => {
+    const { userId, chatUserId } = req.body;
 
-  try {
-    await Message.update(
-      { read: true },
-      {
-        where: {
-          fromUserId: chatUserId,
-          toUserId: userId,
-          read: false
-        }
-      }
-    );
-    res.sendStatus(200);
-  } catch (error) {
-    console.error('Error marking messages as read:', error);
-    res.status(500).send('Internal Server Error');
-  }
+    try {
+        // Update all unread messages for the user in the chat as read
+        await Message.update(
+            { read: true },
+            {
+                where: {
+                    fromUserId: chatUserId,
+                    toUserId: userId,
+                    read: false // Only update unread messages
+                }
+            }
+        );
+
+        res.status(200).send({ success: true, message: 'Messages marked as read.' });
+    } catch (error) {
+        console.error('Error marking messages as read:', error);
+        res.status(500).send({ success: false, error: 'Failed to mark messages as read.' });
+    }
 });
 
 
@@ -1244,6 +1314,71 @@ app.get('/api/hookup-profiles', requireLogin, async (req, res) => {
     } catch (error) {
         console.error('Error fetching hookup profiles:', error);
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.get('/api/travel-matches', requireLogin, async (req, res) => {
+    const userId = req.session.userId;
+
+    try {
+        const currentUser = await User.findByPk(userId, {
+            attributes: ['travelMode', 'travelLocation', 'location']
+        });
+
+        if (!currentUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const location = currentUser.travelMode ? currentUser.travelLocation : currentUser.location;
+
+        const travelMatches = await User.findAll({
+            where: {
+                location,
+                id: { [Op.ne]: userId }
+            },
+            attributes: ['id', 'username', 'age', 'bio', 'profilePicture']
+        });
+
+        res.json(travelMatches);
+    } catch (error) {
+        console.error('Error fetching travel matches:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.get('/api/blocked-users', async (req, res) => {
+    try {
+        console.log('User ID:', req.userId); // Debugging log
+        if (!req.userId) {
+            return res.status(400).json({ error: 'User ID is missing in request' });
+        }
+
+        const blockedUsers = await Block.findAll({
+            where: { blockerId: req.userId },
+            include: {
+                model: User,
+                as: 'BlockedUser',
+                attributes: ['id', 'username', 'profilePicture']
+            }
+        });
+
+        res.json(blockedUsers.map(block => block.BlockedUser));
+    } catch (error) {
+        console.error('Error fetching blocked users:', error);
+        res.status(500).send({ error: 'Failed to fetch blocked users.' });
+    }
+});
+
+app.post('/api/unblock-user', async (req, res) => {
+    try {
+        const { blockedUserId } = req.body;
+        await Block.destroy({
+            where: { blockerId: req.userId, blockedUserId }
+        });
+
+        res.status(200).send({ message: 'User unblocked successfully.' });
+    } catch (error) {
+        console.error('Error unblocking user:', error);
+        res.status(500).send({ error: 'Failed to unblock user.' });
     }
 });
 
