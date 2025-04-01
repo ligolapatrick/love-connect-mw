@@ -148,18 +148,6 @@ const sequelize = new Sequelize('postgresql://trecks:qbswIv5TafgR2bws3guwShCbRfF
     }
 });
 
-app.get('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error('Error destroying session:', err);
-      return res.status(500).send('Internal Server Error');
-    }
-
-    // Clear cookies explicitly to ensure session data is completely cleared
-    res.clearCookie('connect.sid'); // Default name for the session cookie
-    res.redirect('/login'); // Redirect to login page after logout
-  });
-});
 
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
@@ -804,6 +792,21 @@ const uploadsDir = path.join(__dirname, 'public/uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+app.get('/logout', (req, res) => {
+    if (!req.session) {
+        console.error('Session not found!');
+        return res.redirect('/login'); // Redirect if no session exists
+    }
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Error during session destruction:', err);
+            return res.status(500).send('Internal Server Error');
+        }
+        res.clearCookie('connect.sid', { path: '/' });
+        res.redirect('/login');
+    });
+});
 
 
 // Handle profile update form submission
