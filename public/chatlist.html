@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" sizes="192x192" href="images/logo.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat List - Find One by Click</title>
@@ -241,6 +242,11 @@ h2 {
     .chat-item-menu a:hover {
         background-color: #f5f5f5;
     }
+    .chat-list-item.unread {
+    font-weight: bold;
+    background-color: #f9f9f9;
+}
+
 </style>
 
 </head>
@@ -404,16 +410,20 @@ document.addEventListener('click', () => {
 
         // Function to update unread message count in the navbar
         function updateUnreadMessagesCount(users) {
-            const totalUnreadCount = users.reduce((sum, user) => sum + (user.unreadCount || 0), 0);
-            const unreadCountElement = document.getElementById('unreadCount');
-    
-            if (totalUnreadCount > 0) {
-                unreadCountElement.textContent = totalUnreadCount;
-                unreadCountElement.style.display = 'inline-block';
-            } else {
-                unreadCountElement.style.display = 'none';
-            }
-        }
+    const totalUnreadCount = users.reduce((sum, user) => sum + (user.unreadCount || 0), 0);
+    const unreadCountElement = document.getElementById('unreadCount');
+
+    if (totalUnreadCount > 0) {
+        unreadCountElement.textContent = totalUnreadCount;
+        unreadCountElement.style.display = 'inline-block';
+    } else {
+        unreadCountElement.style.display = 'none';
+    }
+}
+
+// Call this function again after marking messages as read
+fetchChatList();
+
     
         // Show the loading indicator when the page starts loading
         document.addEventListener('DOMContentLoaded', () => {
@@ -462,33 +472,34 @@ document.addEventListener('click', () => {
         }
     
         function openChat(chatUserId, username) {
-            fetch(`/api/mark-as-read`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId, chatUserId })
-            }).then(response => {
-                if (response.ok) {
-                    // Update the chat item in the UI
-                    const chatItem = document.querySelector(`.chat-list-item[data-user-id="${chatUserId}"]`);
-                    if (chatItem) {
-                        chatItem.classList.remove('unread');
-                        const unreadCount = chatItem.querySelector('.unread-count');
-                        if (unreadCount) {
-                            unreadCount.remove();
-                        }
-                    }
-                    // Redirect to the chat page
-                    window.location.href = `/messages.html?userId=${chatUserId}&username=${encodeURIComponent(username)}`;
-                } else {
-                    console.error('Error marking messages as read');
+    fetch(`/api/mark-as-read`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId, chatUserId })
+    }).then(response => {
+        if (response.ok) {
+            // Update the chat item in the UI
+            const chatItem = document.querySelector(`.chat-list-item[data-user-id="${chatUserId}"]`);
+            if (chatItem) {
+                chatItem.classList.remove('unread');
+                const unreadCount = chatItem.querySelector('.unread-count');
+                if (unreadCount) {
+                    unreadCount.remove(); // Remove unread count indicator
                 }
-            }).catch(error => {
-                console.error('Error marking messages as read:', error);
-            });
+            }
+
+            // Redirect to the chat page
+            window.location.href = `/messages.html?userId=${chatUserId}&username=${encodeURIComponent(username)}`;
+        } else {
+            console.error('Error marking messages as read');
         }
-    
+    }).catch(error => {
+        console.error('Error marking messages as read:', error);
+    });
+}
+
         document.addEventListener('DOMContentLoaded', fetchChatList);
     </script>
     

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings</title>
@@ -116,7 +117,44 @@ button:hover {
     opacity: 1;
   }
 }
+.blocked-users-list {
+            list-style-type: none;
+            padding: 0;
+        }
 
+        .blocked-user {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .blocked-user img {
+            height: 40px;
+            width: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .blocked-user .info {
+            flex-grow: 1;
+        }
+
+        .blocked-user button {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .blocked-user button:hover {
+            background-color: #c82333;
+        }
 /* Ensure input and button elements inside the modal are styled properly */
 .modal-content label {
   display: block;
@@ -197,11 +235,22 @@ button:hover {
     <!-- Blocked Users Section -->
     <section class="settings-section">
       <h2>Blocked Users</h2>
-      <button id="viewBlockedListButton">View Blocked Chat List</button>
-      <div id="blockedUsersContainer" style="display: none;">
-        <ul id="blockedUsersList"></ul>
-      </div>
+      <ul id="blockedUsersList" style="list-style-type: none; padding: 0;">
+        <!-- Blocked users will be dynamically loaded here -->
+      </ul>
     </section>
+    
+    <section class="settings-section">
+      <h2>Travel Mode</h2>
+      <label>
+          <input type="checkbox" id="travelModeToggle"> Enable Travel Mode
+      </label>
+      <div id="travelLocationSection" style="display: none;">
+          <label for="travelLocation">Temporary Location:</label>
+          <input type="text" id="travelLocation" placeholder="Enter city or region">
+          <button id="updateTravelLocation">Update Location</button>
+      </div>
+  </section>
   
     <!-- Privacy Settings -->
     <section class="settings-section">
@@ -280,6 +329,40 @@ button:hover {
   </main>
   
 <script>
+  document.getElementById('travelModeToggle').addEventListener('change', function() {
+    const isTravelModeEnabled = this.checked;
+    const travelLocationSection = document.getElementById('travelLocationSection');
+
+    // Show or hide the location input based on the toggle
+    travelLocationSection.style.display = isTravelModeEnabled ? 'block' : 'none';
+
+    if (!isTravelModeEnabled) {
+        // Clear travel location when Travel Mode is disabled
+        updateTravelLocation('');
+    }
+});
+
+document.getElementById('updateTravelLocation').addEventListener('click', async function() {
+    const location = document.getElementById('travelLocation').value;
+    if (location.trim() === '') {
+        alert('Please enter a location');
+        return;
+    }
+
+    // Call API to update Travel Mode and location
+    const response = await fetch('/api/update-travel-mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ travelMode: true, travelLocation: location })
+    });
+
+    if (response.ok) {
+        alert('Travel Mode updated successfully!');
+    } else {
+        console.error('Error updating Travel Mode');
+    }
+});
+
 // Show the Change Password Modal
 document.getElementById('updatePasswordButton').addEventListener('click', () => {
   const modal = document.getElementById('changePasswordModal');
@@ -438,79 +521,66 @@ document.getElementById('deleteAccountButton').addEventListener('click', () => {
   }
 });
 
-// Fetch the blocked users list and display it
-document.getElementById('viewBlockedListButton').addEventListener('click', async () => {
-  const container = document.getElementById('blockedUsersContainer');
-  container.style.display = container.style.display === 'none' ? 'block' : 'none';
-
-  if (container.style.display === 'block') {
-    try {
-      const response = await fetch('/api/blocked-users');
-      const blockedUsers = await response.json();
-
-      const blockedUsersList = document.getElementById('blockedUsersList');
-      blockedUsersList.innerHTML = ''; // Clear previous content
-
-      if (blockedUsers.length === 0) {
-        blockedUsersList.innerHTML = '<li>No blocked users found.</li>';
-        return;
+// Fetch blocked users and populate the list
+async function fetchBlockedUsers() {
+      try {
+        const response = await fetch('/api/blocked-users');
+        const blockedUsers = await response.json();
+        const blockedUsersList = document.getElementById('blockedUsersList');
+        blockedUsersList.innerHTML = ''; // Clear the list before re-rendering
+  
+        if (blockedUsers.length === 0) {
+          blockedUsersList.innerHTML = '<p>No blocked users.</p>';
+          return;
+        }
+  
+        blockedUsers.forEach(user => {
+          const userElement = document.createElement('li');
+          userElement.style.display = 'flex';
+          userElement.style.alignItems = 'center';
+          userElement.style.marginBottom = '10px';
+          userElement.innerHTML = `
+            <img src="${user.profilePicture || 'default-profile.png'}" 
+                 alt="${user.username}" 
+                 style="height: 40px; width: 40px; border-radius: 50%; margin-right: 10px;">
+            <div style="flex-grow: 1;">
+              <p style="margin: 0;">${user.username}</p>
+            </div>
+            <button style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;" 
+                    onclick="unblockUser(${user.id})">Unblock</button>
+          `;
+  
+          blockedUsersList.appendChild(userElement);
+        });
+      } catch (error) {
+        console.error('Error fetching blocked users:', error);
       }
-
-      blockedUsers.forEach(user => {
-        const listItem = document.createElement('li');
-        listItem.textContent = `${user.username} (${user.fullPhoneNumber})`;
-        const unblockButton = document.createElement('button');
-        unblockButton.textContent = 'Unblock';
-        unblockButton.addEventListener('click', () => unblockUser(user.id));
-        listItem.appendChild(unblockButton);
-        blockedUsersList.appendChild(listItem);
-      });
-    } catch (error) {
-      console.error('Error fetching blocked users:', error);
     }
-  }
-});
-
-async function unblockUser(blockedUserId) {
-  try {
-    const response = await fetch('/api/unblock-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ blockedUserId }),
-    });
-    const result = await response.json();
-    if (result.success) {
-      alert('User unblocked successfully.');
-      document.getElementById('viewBlockedListButton').click(); // Refresh the list
-    } else {
-      alert(result.message || 'Failed to unblock user.');
+  
+    // Unblock user functionality
+    async function unblockUser(userId) {
+      try {
+        const response = await fetch('/api/unblock-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ blockedUserId: userId })
+        });
+  
+        if (response.ok) {
+          alert('User unblocked successfully.');
+          fetchBlockedUsers(); // Refresh the blocked users list
+        } else {
+          alert('Failed to unblock user.');
+        }
+      } catch (error) {
+        console.error('Error unblocking user:', error);
+      }
     }
-  } catch (error) {
-    console.error('Error unblocking user:', error);
-  }
-}
-
-
-// Unblock a user
-async function unblockUser(blockedUserId) {
-  try {
-    const response = await fetch('/api/unblock-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ blockedUserId }),
-    });
-    const result = await response.json();
-    if (result.success) {
-      alert('User unblocked successfully.');
-      document.getElementById('viewBlockedListButton').click(); // Refresh the list
-    } else {
-      alert(result.message || 'Failed to unblock user.');
-    }
-  } catch (error) {
-    console.error('Error unblocking user:', error);
-  }
-}
-
+  
+    // Fetch blocked users when the page loads
+    document.addEventListener('DOMContentLoaded', fetchBlockedUsers);
 </script>
   <script src="scripts/settings.js"></script>
 </body>

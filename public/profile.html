@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" sizes="192x192" href="images/logo.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile</title>
@@ -391,7 +392,8 @@
         <a href="/anonymous-chat-room"><img src="icons/anonymouse.png" alt="Anonymous"> Anonymous</a>
         <a href="settings"><img src="icons/settings.png" alt="Settings"> Settings</a>
         <a href="/likes"><img src="icons/likes.png" alt="Likes"> Likes</a>
-        <a href="/login"><img src="icons/logout.png" alt="Logout"> Logout</a>
+        <a href="/logout"><img src="icons/logout.png" alt="Logout"> Logout</a>
+
       </nav>
       
     
@@ -430,7 +432,7 @@
                     if (user.profilePicture) {
                         document.getElementById('profilePicture').src = user.profilePicture;
                     } else {
-                        document.getElementById('profilePicture').src = 'path/to/default-avatar.png'; // Default avatar
+                        document.getElementById('profilePicture').src = 'images/logo.png'; // Default avatar
                     }
                 })
                 .catch(error => console.error('Error fetching profile:', error));
