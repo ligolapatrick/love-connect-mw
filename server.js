@@ -148,6 +148,19 @@ const sequelize = new Sequelize('postgresql://trecks:qbswIv5TafgR2bws3guwShCbRfF
     }
 });
 
+app.get('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Error destroying session:', err);
+      return res.status(500).send('Internal Server Error');
+    }
+
+    // Clear cookies explicitly to ensure session data is completely cleared
+    res.clearCookie('connect.sid'); // Default name for the session cookie
+    res.redirect('/login'); // Redirect to login page after logout
+  });
+});
+
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
 const io = socketIo(server);
