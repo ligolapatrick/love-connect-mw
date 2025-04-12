@@ -7,196 +7,399 @@
   <meta name="google-site-verification" content="tsUpn5M52vhhE7CcFHCjRL7dpZb2AOWk8JnmXFLR744" />
   <title>Find One by Click</title>
   <link rel="stylesheet" href="styles21.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+
+    .categories-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    .categories-container {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scroll-snap-type: x mandatory;
+      padding: 10px;
+    }
+
+    .category-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-size: cover;
+      background-position: center;
+      width: 200px;
+      height: 170px;
+      text-decoration: none;
+      color: #ffffff;
+      font-weight: bold;
+      border-radius: 10px;
+      flex: 0 0 auto;
+      scroll-snap-align: center;
+    }
+
+    .arrow {
+      background: none;
+      border: none;
+      font-size: 2rem;
+      cursor: pointer;
+      padding: 10px;
+    }
+
+    /* Responsive Design */
+    @media screen and (max-width: 600px) {
+      .categories-container {
+        width: 100%;
+      }
+      
+      .category-link {
+        width: 150px;
+        height: 220px;
+      }
+    }
+    
+    .profile-container {
+      position: relative;
+      width: 500px;
+      margin: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      scroll-snap-align: start;
+      flex: 0 0 auto;
+    }
+    .profile-picture {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+    }
+    .profile-details {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+    .loading {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .swipe-container {
+      display: flex;
+      overflow-x: auto;
+      white-space: nowrap;
+      scroll-snap-type: x mandatory;
+      justify-content: start;
+      padding-left: 10px;
+    }
+    .swipe-container .profile-container {
+      scroll-snap-align: center;
+    }
+    .message-button {
+  background-color: transparent;
+  color: #007bff;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5em;
+  transition: color 0.3s;
+}
+
+.message-button:hover {
+  color: #0056b3;
+}
+
+.heart-popup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3em;
+  color: #ff6347;
+  animation: heartPopup 1s ease-in-out;
+  opacity: 0;
+}
+
+@keyframes heartPopup {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.5); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+    /* User card buttons remain visible and responsive */
+.user-card-buttons {
+  position: absolute;
+  bottom: 50px;
+  right: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+/* Ensure buttons scale well on smaller screens */
+.user-card-buttons button {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Button colors */
+.like-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.dislike-button {
+  background-color: #dc3545;
+  color: white;
+}
+
+.message-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+/* Hover effects */
+.message-button:hover {
+  background-color: #0056b3;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .user-card-buttons {
+    bottom: 40px;
+    right: 5px;
+  }
+
+  .user-card-buttons button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .user-card-buttons {
+    bottom: 30px;
+    right: 5px;
+  }
+
+  .user-card-buttons button {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+}
+
+    /* Media Queries for smaller screens */
+    @media (max-width: 768px) {
+      .profile-container {
+        width: 300px;
+        margin: 10px 5px;
+      }
+      .profile-picture {
+        height: 350px;
+      }
+      .profile-details {
+        font-size: 0.8em;
+        padding: 5px;
+      }
+    }
+    @media (max-width: 480px) {
+      .profile-container {
+        width: 350px;
+      }
+      .profile-picture {
+        height: 500px;
+      }
+      .profile-details {
+        font-size: 0.7em;
+        padding: 3px;
+      }
+    }
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .profile-container {
+    width: 90%;
+    max-width: 350px;
+  }
+  
+  .profile-picture {
+    max-height: 250px;
+  }
+  
+  .profile-details {
+    font-size: 0.85em;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-container {
+    width: 95%;
+    max-width: 320px;
+  }
+  
+  .profile-picture {
+    max-height: 220px;
+  }
+  
+  .profile-details {
+    font-size: 0.75em;
+    padding: 6px;
+  }
+}
+
+  </style>
 </head>
 <body>
-   
-      <!-- Loading Indicator HTML -->
-<div class="loading-container" id="loadingIndicator">
-  <img src="images/logo.png" alt="Loading" class="loading-logo">
-</div>
 
-  <nav>
-   
+  <div class="swipe-container" id="matches"></div>
+  <div class="loading" id="loading">Loading matches...</div>
+
+  <!-- Categories Section -->
+  <div class="categories-wrapper">
+    <button class="arrow" onclick="scrollLeft('categories-container')">◀</button>
+    <div class="categories-container" id="categories-container">
+      <a href="/settings" class="category-link" style="background-image: url('images/Settings.jpg');">Settings</a>
+      <a href="/searching-base" class="category-link" style="background-image: url('images/Advanced Search.jpg');">Search</a>
+      <a href="/instantdate" class="category-link" style="background-image: url('images/hookup.jpeg');">Instantdate</a>
+      <a href="/song" class="category-link" style="background-image: url('images/hangout.jpeg');">Casual</a>
+      <a href="/nearby-users" class="category-link" style="background-image: url('images/friend-requests.jpg');">Near You</a>
+      <a href="/fitness-buddies" class="category-link" style="background-image: url('images/fitness-buddies.png');">Fit-Buddies</a>
+      <a href="/travel" class="category-link" style="background-image: url('images/travel.png');">Travel</a>
+      <a href="/fire" class="category-link" style="background-image: url('images/hangout-free.png');">Free To Hangout</a>
+      <a href="/quick-matches.html" class="category-link" style="background-image: url('images/Activity Feed.jpg');">Games</a>
+      <a href="/moodmatcher" class="category-link" style="background-image: url('images/games.png');">MoodMatch</a>
+      <a href="/location-matches" class="category-link" style="background-image: url('images/Events and Meetups.jpg');">Location-Match</a>
+      <a href="/coffee-room.html" class="category-link" style="background-image: url('images/Coffee Room.jpg');">Coffee-Room</a>
+      <a href="/relationship-goals" class="category-link" style="background-image: url('images/about.jpg');">Relationship</a>
+      <a href="/location-based-search.html" class="category-link" style="background-image: url('images/safety.jpg');">LocationMatch</a>
+      <a href="/potential-matches" class="category-link" style="background-image: url('images/loveconect dating app images.png');">BasedMatch</a>
+    </div>
+    <button class="arrow" onclick="scrollRight('categories-container')">▶</button>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="/chatlist"><img src="icons/message.png" alt="Messages"> Messages 
+      <span id="unreadCount" class="unread-count"></span>
+  </a>
+    <a href="/profile"><img src="icons/profile.png" alt="Profile"> Profile</a>
+    <a href="/matches"><img src="icons/matches.png" alt="Matches"> Matches</a>
+    <a href="/speed"><img src="icons/speed.png" alt="Speed"> Speed</a>
+    <a href="/notifications"><img src="icons/notification.png" alt="Notification"> Notification</a>
   </nav>
-  <hr>
-  <h1>Welcome to Find One by Click</h1>
-  <header>
-    <div class="top-right"></div>
-    <a href="/searching" class="nav-item">click to search for people anywhere</a>
-    <p id="user-welcome">Welcome, <span id="username"></span>!</p>
-    <div class="dropdown-menu" id="dropdown-menu">
-      <a href="searching-base.html">searching</a> |
-  </div>
-  </header>
-  <main>
-  </div>
-  <main class="dashboard">
-    <div class="left-side">
-      <section class="category">
-        <div class="category-header">
-          <h2>Near-You</h2>
-        </div>
-        <div class="single-card">
-          <div class="user-card">
-            <a href="nearby-users"><img src="images/Matches.jpg" alt="User 1"></a>
-          </div>
-        </div>
-      </section>
-    </div>
     
-    <div class="right-side">
-      <section class="category">
-        <div class="category-header">
-          <h2>Hangout</h2>
-        </div>
-        <div class="single-card">
-          <div class="user-card">
-            <a href="voice-chat-room"><img src="images/hookup.jpeg" alt="User 2"></a>
-          </div>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <main class="dashboard">
-    <div class="left-side">
-      <section class="category">
-        <div class="category-header">
-          <h2>instant-date</h2>
-        </div>
-        <div class="single-card">
-          <div class="user-card">
-            <a href="instantdate.html"><img src="images/friend-requests.jpg" alt="User 1"></a>
-          </div>
-        </div>
-      </section>
-    </div>
-    
-    <div class="right-side">
-      <section class="category">
-        <div class="category-header">
-          <h2>Mood Matcher</h2>
-        </div>
-        <div class="single-card">
-          <div class="user-card">
-            <a href="moodmatcher"><img src="images/LoveConnect calendar and messaging icon.png" alt="User 2"></a>
-          </div>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <main class="dashboard">
-    <div class="left-side">
-      <section class="category">
-        <div class="category-header">
-          <h2>Location Match</h2>
-        </div>
-        <div class="single-card">
-          <div class="user-card">
-            <a href="location-matches"><img src="images/Profile Verification.jpg" alt="User 1"></a>
-          </div>
-        </div>
-      </section>
-    </div>
-    
-    <div class="right-side">
-      <section class="category">
-        <div class="category-header">
-          <h2>Coffee-Room</h2>
-        </div>
-        <div class="single-card">
-          <div class="user-card">
-            <a href="coffee-room.html"><img src="images/Coffee Room.jpg" alt="User 2"></a>
-          </div>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <main class="dashboard">
-  <div class="left-side">
-    <section class="category">
-      <div class="category-header">
-        <h2>Maritual Goals</h2>
-      </div>
-      <div class="single-card">
-        <div class="user-card">
-          <a href="relationship-goals"><img src="images/loveconect dating app images.png" alt="User 1"></a>
-        </div>
-      </div>
-    </section>
-  </div>
-  
-  <div class="right-side">
-    <section class="category">
-      <div class="category-header">
-        <h2>quick match</h2>
-      </div>
-      <div class="single-card">
-        <div class="user-card">
-          <a href="quick-matches.html"><img src="images/about.jpg" alt="User 2"></a>
-        </div>
-      </div>
-    </section>
-  </div>
-</main>
-
-<main class="dashboard">
-  <div class="left-side">
-    <section class="category">
-      <div class="category-header">
-        <h2>location search</h2>
-      </div>
-      <div class="single-card">
-        <div class="user-card">
-          <a href="location-based-search.html"><img src="images/Advanced Search.jpg" alt="User 1"></a>
-        </div>
-      </div>
-    </section>
-  </div>
-  
-  <div class="right-side">
-    <section class="category">
-      <div class="category-header">
-        <h2>Based  match</h2>
-      </div>
-      <div class="single-card">
-        <div class="user-card">
-          <a href="potential-matches"><img src="images/Events and Meetups.jpg" alt="User 2"></a>
-        </div>
-      </div>
-    </section>
-  </div>
-</main>
-
-<nav class="bottom-nav">
-  <a href="/chatlist"><img src="icons/message.png" alt="Messages"> Messages 
-    <span id="unreadCount" class="unread-count"></span>
-</a>
-  <a href="/profile"><img src="icons/profile.png" alt="Profile"> Profile</a>
-  <a href="/matches"><img src="icons/matches.png" alt="Matches"> Matches</a>
-  <a href="/speed"><img src="icons/speed.png" alt="Speed"> Speed</a>
-  <a href="/notifications"><img src="icons/notification.png" alt="Notification"> Notification</a>
-</nav>
-  
-  <footer>
-    <p>&copy; 2025 LoveConnect. All rights reserved.</p>
-    <p><a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-service.html">Terms of Service</a></p>
-  </footer>
-
-  <!-- Notification Modal -->
-  <div id="notification-modal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <p>Welcome to LoveConnect! It seems like you're not registered. Please click the Register button if you don't have an account or the Login button if you are already registered. if you are already logged in ignore this message and continue enjoying the website!!</p>
-      <button id="register-button" onclick="window.location.href='registration.html'">Register</button>
-      <button id="login-button" onclick="window.location.href='logout'">Login</button>
-    </div>
-  </div>
- 
   <script>
-    async function checkUserRegistration() {
+       async function fetchMatches() {
+      try {
+        const response = await fetch('/api/matches-base');
+        const matches = await response.json();
+
+        const matchesDiv = document.getElementById('matches');
+        matchesDiv.innerHTML = ''; // Clear existing profiles
+        document.getElementById('loading').style.display = 'none';
+
+        if (matches.length === 0) {
+          matchesDiv.innerHTML = '<p>No matches found at the moment. Try again later!</p>';
+          return;
+        }
+
+        matches.forEach(match => {
+          const interests = Array.isArray(match.interests)
+            ? match.interests
+            : (typeof match.interests === 'string' ? match.interests.split(', ') : []);
+
+          const matchDiv = document.createElement('div');
+          matchDiv.className = 'profile-container';
+
+          const profilePicture = match.profilePicture || 'default-profile.png';
+          matchDiv.innerHTML = `
+            <img src="${profilePicture}" alt="Profile Picture" class="profile-picture">
+            <div class="profile-details">
+              <h2>${match.username}</h2>
+              <p><strong>Age:</strong> ${match.age}</p>
+              <p><strong>Gender:</strong> ${match.gender}</p>
+              <p><strong>Bio:</strong> ${match.bio || 'No bio provided.'}</p>
+              <p><strong>Interests:</strong> ${interests.length > 0 ? interests.join(', ') : 'No interests provided.'}</p>
+            </div>
+            <div class="user-card-buttons">
+              <button onclick="likeUser(${match.id})">Like ❤️</button>
+              <button onclick="dislikeUser(${match.id})">Dislike ❌</button>
+              <button onclick="messageUser(${match.id}, '${match.username}')">Message 💬</button>
+            </div>
+            <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
+          `;
+          matchesDiv.appendChild(matchDiv);
+        });
+      } catch (error) {
+        document.getElementById('loading').textContent = 'Failed to load matches. Please try again.';
+        console.error('Error fetching matches:', error);
+      }
+    }
+
+    function showHeartPopup(userId) {
+      const popup = document.getElementById(`heart-popup-${userId}`);
+      popup.style.opacity = 1;
+      setTimeout(() => {
+        popup.style.opacity = 0;
+      }, 1000);
+    }
+
+    async function likeUser(userId) {
+      try {
+        const response = await fetch('/api/like', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+        });
+        if (response.ok) {
+          showHeartPopup(userId);
+        }
+      } catch (error) {
+        console.error('Error liking user:', error);
+      }
+    }
+
+    async function dislikeUser(userId) {
+      try {
+        await fetch('/api/dislike', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+        });
+      } catch (error) {
+        console.error('Error disliking user:', error);
+      }
+    }
+
+    function messageUser(userId, username) {
+      window.location.href = `/messages.html?userId=${userId}&username=${encodeURIComponent(username)}`;
+    }
+
+    // Fetch matches on page load
+    fetchMatches();
+
+        async function checkUserRegistration() {
       try {
         const response = await fetch('/api/check-registration', {
           method: 'GET',
@@ -311,66 +514,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('loadingIndicator').style.display = 'none';
     });
 
+    function scrollLeft(containerId) {
+      document.getElementById(containerId).scrollBy({ right: -200, behavior: 'smooth' });
+    }
+
+    function scrollRight(containerId) {
+      document.getElementById(containerId).scrollBy({ left: 200, behavior: 'smooth' });
+    }
   </script>
-  <style>
-    /* Modal styles */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgb(0,0,0);
-      background-color: rgba(0,0,0,0.4);
-      padding-top: 60px;
-    }
-    .modal-content {
-      background-color: #fefefe;
-      margin: 5% auto;
-      padding: 20px;
-      border: 1px solid #888;
-      width: 80%;
-    }
-    .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-    }
-    .close:hover,
-    .close:focus {
-      color: black;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    .loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: rgba(255, 255, 255, 0.8);
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 999;
-}
-.loading-logo {
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
 
-
-  </style>
 </body>
 </html>
-
-

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile - LoveConnect</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('images/Matches.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .navbar, footer {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .form-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .form-background {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            width: 300px;
+            text-align: center;
+            display: none;
+        }
+
+        .form-background.active {
+            display: block;
+        }
+
+        .form-background input, .form-background select, .form-background button, .form-background textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        .form-background button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-logo">
+            <img src="images/LoveConnect logo.png" alt="LoveConnect Logo">
+        </div>
+        <div class="nav-contact">
+            <span><img src="images/whatsapp.png" alt="WhatsApp"> 0888202246</span>
+            <span><img src="images/email.png" alt="Email"> loveconnect61@gmail.com</span>
+        </div>
+    </nav>
+
+    <main>
+        <section class="form-section">
+            <form action="/profile" method="post" enctype="multipart/form-data" id="profileSetupForm">
+                <!-- Step 1: Age & Gender -->
+                <div class="form-background step step-1 active">
+                    <h2>now your info Step 1: Age & Gender</h2>
+                    <label for="age">Age:</label>
+                    <input type="number" id="editAge" name="age" required>
+
+                    <label for="gender">Gender:</label>
+                    <select id="editGender" name="gender" required>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="non-binary">Non-binary</option>
+                        <option value="prefer not to say">Prefer not to say</option>
+                    </select>
+
+                    <button type="button" id="toStep2">Next</button>
+                </div>
+
+                <!-- Step 2: Bio & Interests -->
+                <div class="form-background step step-2">
+                    <h2>Step 2: Bio & Interests</h2>
+                    <label for="bio">Bio:</label>
+                    <textarea id="editBio" name="bio" rows="4"></textarea>
+
+                    <label for="interests">Interests:</label>
+                    <select id="editInterests" name="interests">
+                        <option value="music">Music</option>
+                        <option value="sports">Sports</option>
+                        <option value="travel">Travel</option>
+                        <option value="reading">Reading</option>
+                        <option value="gaming">Gaming</option>
+                        <option value="art">Art</option>
+                        <option value="tech">Tech</option>
+                        <option value="fitness">Fitness</option>
+                        <option value="food">Food</option>
+                        <option value="movies">Movies</option>
+                    </select>
+
+                    <button type="button" id="toStep3">Next</button>
+                </div>
+
+                <!-- Step 3: Location -->
+                <div class="form-background step step-3">
+                    <h2>Step 3: Location</h2>
+                    <label for="location">Location:</label>
+                    <select id="editLocation" name="location" required>
+                        <option value="Blantyre">Blantyre</option>
+                        <option value="Chikwawa">Chikwawa</option>
+                        <option value="Chiradzulu">Chiradzulu</option>
+                        <option value="Machinga">Machinga</option>
+                        <option value="Mangochi">Mangochi</option>
+                        <option value="Mulanje">Mulanje</option>
+                        <option value="Nsanje">Nsanje</option>
+                        <option value="Phalombe">Phalombe</option>
+                        <option value="Thyolo">Thyolo</option>
+                        <option value="Zomba">Zomba</option>
+                        <option value="Balaka">Balaka</option>
+                        <option value="Neno">Neno</option>
+                        <option value="Mwanza">Mwanza</option>
+                        <option value="Lilongwe">Lilongwe</option>
+                        <option value="Dedza">Dedza</option>
+                        <option value="Dowa">Dowa</option>
+                        <option value="Kasungu">Kasungu</option>
+                        <option value="Mchinji">Mchinji</option>
+                        <option value="Nkhotakota">Nkhotakota</option>
+                        <option value="Ntcheu">Ntcheu</option>
+                        <option value="Ntchisi">Ntchisi</option>
+                        <option value="Salima">Salima</option>
+                        <option value="Chitipa">Chitipa</option>
+                        <option value="Karonga">Karonga</option>
+                        <option value="Likoma">Likoma</option>
+                        <option value="Mzimba">Mzimba</option>
+                        <option value="Nkhata Bay">Nkhata Bay</option>
+                        <option value="Rumphi">Rumphi</option>
+                        <!-- Add more locations -->
+                    </select>
+
+                    <button type="button" id="toStep4">Next</button>
+                </div>
+
+                <!-- Step 4: Profile Picture -->
+                <div class="form-background step step-4">
+                    <h2>Step 4: Profile Picture</h2>
+                    <label for="profilePicture">Upload Profile Picture:</label>
+                    <input type="file" id="profilePicture" name="profilePicture" accept="image/*" required>
+
+                    <button type="submit">Complete Setup</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 LoveConnect. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const steps = document.querySelectorAll('.step');
+        let currentStep = 0;
+
+        function showStep(index) {
+            steps.forEach((step, i) => {
+                step.classList.toggle('active', i === index);
+            });
+        }
+
+        document.getElementById("toStep2").addEventListener("click", () => {
+            showStep(1);
+        });
+
+        document.getElementById("toStep3").addEventListener("click", () => {
+            showStep(2);
+        });
+
+        document.getElementById("toStep4").addEventListener("click", () => {
+            showStep(3);
+        });
+
+        document.getElementById("profileSetupForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    const response = await fetch("/profile", {
+        method: "POST",
+        body: formData
+    });
+
+    if (response.ok) {
+        const userId = new URLSearchParams(window.location.search).get("userId"); // Extract user ID from URL
+        window.location.href = `/index.html?userId=${userId}`; // Redirect with user ID
+    } else {
+        alert("Error setting up profile. Please try again.");
+    }
+});
+
+    </script>
+
+</body>
+</html>
