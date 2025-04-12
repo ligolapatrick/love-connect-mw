@@ -455,7 +455,7 @@ app.post('/register', async (req, res) => {
     console.log('Creating new user...');
     const user = await User.create({ username, password, fullPhoneNumber });
     req.session.userId = user.id; // Save userId in session
-    res.redirect(`/profile?userId=${user.id}`);
+    res.redirect(`/profile-edit-step?userId=${user.id}`);
   } catch (error) {
     console.error('Error registering user:', error);
     res.status(500).send('Internal Server Error');
@@ -574,9 +574,11 @@ const requireLogin = (req, res, next) => {
 
 // Route to serve the index.html file
 app.get('/', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+app.get('/index', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
 // Route to serve the registration.html file
 app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'registration.html'));
@@ -596,7 +598,9 @@ app.get('/login1', (req, res) => {
 app.get('/profile', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
-
+app.get('/profile-edit-step', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'profile-edit-step.html'));
+});
 // Route to serve the matches.html file
 app.get('/matches', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'matches.html'));
@@ -735,6 +739,15 @@ app.get('/chat-zone', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'chat-zone.html'));
 });
 
+app.get('/song', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'song.html'));
+});
+app.get('/travel', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'travel.html'));
+});
+app.get('/fire', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'fire.html'));
+});
 // Route to serve the chat-zone.html file
 app.get('/relationship-goals', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'relationship-goals.html'));
