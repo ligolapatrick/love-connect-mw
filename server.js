@@ -660,7 +660,13 @@ app.get('/chat', requireLogin, (req, res) => {
 app.get('/speed', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'speed.html'));
 });
-
+// Route to serve the chat.html file
+app.get('/searching-base', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'searching-base.html'));
+});
+app.get('/location-based-search', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'location-based-search.html'));
+});
 // Route to serve the voice-chat-room.html file
 app.get('/voice-chat-room', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'voice-chat-room.html'));
