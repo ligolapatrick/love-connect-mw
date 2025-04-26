@@ -158,6 +158,74 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+/* General Mobile Adjustments */
+@media (max-width: 768px) {
+    .profile-card {
+        width: 90%;
+        height: 450px;
+    }
+
+    .profile-details {
+        font-size: 0.85em;
+        padding: 8px;
+    }
+
+    .action-buttons button img {
+        width: 30px;
+        height: 30px;
+    }
+
+    .loading-logo {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Older Devices (iPhone 6, SE, etc.) */
+@media (max-width: 375px) {
+    .profile-card {
+        width: 80%;
+        height: 400px;
+    }
+
+    .profile-details {
+        font-size: 0.75em;
+        padding: 6px;
+    }
+
+    .action-buttons button img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .loading-logo {
+        width: 35px;
+        height: 35px;
+    }
+}
+
+/* Very Small Screens (iPhone 5, Older Androids) */
+@media (max-width: 320px) {
+    .profile-card {
+        width: 75%;
+        height: 350px;
+    }
+
+    .profile-details {
+        font-size: 0.65em;
+        padding: 5px;
+    }
+
+    .action-buttons button img {
+        width: 25px;
+        height: 25px;
+    }
+
+    .loading-logo {
+        width: 30px;
+        height: 30px;
+    }
+}
 
   </style>
   
@@ -177,44 +245,71 @@
   </main>
 
   <script>
-    async function fetchLocationMatches() {
-      try {
-        const response = await fetch('/api/location-matches');
-        const matches = await response.json();
 
-        const container = document.getElementById('matches-container');
-        container.innerHTML = '';
+document.addEventListener("DOMContentLoaded", function () {
+    let page = 1; 
+    let loading = false; 
 
-        matches.forEach(match => {
-          const card = document.createElement('div');
-          card.className = 'profile-card';
-          card.innerHTML = `
-            <img src="${match.profilePicture || 'default-profile.png'}" alt="${match.username}">
-            <div class="profile-details">
-              <h2>${match.username}</h2>
-              <p><strong>Age:</strong> ${match.age}</p>
-              <p><strong>Distance:</strong> ${match.distance} km</p>
-              <p>${match.bio || 'No bio available.'}</p>
-            </div>
-            <div class="action-buttons">
-              <button onclick="likeUser(${match.id})">
-                <img src="icons/likes.png" alt="Like">
-              </button>
-              <button onclick="dislikeUser(${match.id})">
-                <img src="icons/dislike.png" alt="Dislike">
-              </button>
-              <button onclick="messageUser(${match.id}, '${match.username}')">
-                <img src="icons/message.png" alt="Message">
-              </button>
-            </div>
-            <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
-          `;
-          container.appendChild(card);
-        });
-      } catch (error) {
-        console.error('Error fetching location matches:', error);
-      }
+    async function fetchMoreProfiles() {
+        if (loading) return;
+        loading = true;
+
+        try {
+            const response = await fetch(`/api/location-matches?page=${page}`);
+            const profiles = await response.json();
+
+            if (profiles.length > 0) {
+                page++; 
+                renderProfiles(profiles);
+            }
+        } catch (error) {
+            console.error("Error fetching profiles:", error);
+        }
+
+        loading = false;
     }
+
+    function renderProfiles(profiles) {
+        const container = document.getElementById("matches-container");
+
+        profiles.forEach(profile => {
+            const card = document.createElement("div");
+            card.className = "profile-card";
+            card.innerHTML = `
+                <img src="${profile.profilePicture || 'default-profile.png'}" alt="${profile.username}">
+                <div class="profile-details">
+                    <h2>${profile.username}</h2>
+                    <p><strong>Age:</strong> ${profile.age}</p>
+                    <p><strong>Distance:</strong> ${profile.distance} km</p>
+                    <p>${profile.bio || "No bio available."}</p>
+                </div>
+                <div class="action-buttons">
+                    <button onclick="likeUser(${profile.id})">
+                        <img src="icons/likes.png" alt="Like">
+                    </button>
+                    <button onclick="dislikeUser(${profile.id})">
+                        <img src="icons/dislike.png" alt="Dislike">
+                    </button>
+                    <button onclick="messageUser(${profile.id}, '${profile.username}')">
+                        <img src="icons/message.png" alt="Message">
+                    </button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // Infinite Scroll Listener
+    window.addEventListener("scroll", () => {
+        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+        if (scrollTop + clientHeight >= scrollHeight - 10) {
+            fetchMoreProfiles();
+        }
+    });
+
+    // Initial Load
+    fetchMoreProfiles();
+});
 
     function likeUser(userId) {
       console.log(`User liked: ${userId}`);

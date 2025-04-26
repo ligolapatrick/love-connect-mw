@@ -1,283 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VirtualMeetup</title>
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f0f0;
-      margin: 0;
-      padding: 0;
-    }
-    nav {
-      background-color: #007bff;
-      color: white;
-      padding: 10px;
-      text-align: center;
-    }
-    nav a {
-      color: white;
-      margin: 0 10px;
-      text-decoration: none;
-    }
-    h2 {
-      text-align: center;
-      color: #333;
-    }
-    .virtual-events-section, .live-stream-section {
-      padding: 20px;
-    }
-    .virtual-event-card, .live-stream-card {
-      background-color: white;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      padding: 10px;
-      margin: 10px 0;
-    }
-    .live-stream-video {
-      position: relative;
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: black;
-    }
-    #live-video {
-      width: 100%;
-      height: auto;
-    }
-    .live-comments {
-      position: absolute;
-      bottom: 50px;
-      left: 10px;
-      right: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-      color: white;
-    }
-    .comment {
-      background-color: rgba(0, 0, 0, 0.5);
-      padding: 5px;
-      margin: 5px 0;
-      border-radius: 5px;
-    }
-    #comment-input {
-      width: calc(100% - 60px);
-      padding: 10px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 5px;
-    }
-    #likes-container {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .like {
-      background-color: rgba(255, 255, 255, 0.5);
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Me Anything Profiles</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+
+        .ama-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #ff4d4d;
+        }
+
+        .ama-card {
+            background: #fff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .question {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .answer-box {
+            display: flex;
+            flex-direction: column;
+            margin-top: 10px;
+        }
+
+        .answer-box textarea {
+            width: 100%;
+            height: 60px;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            resize: none;
+        }
+
+        .answer-box button {
+            margin-top: 5px;
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .answer-box button:hover {
+            background: #e63c3c;
+        }
+    </style>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a> |
-    <a href="daily-discovery.html">daily-discovery</a> |
-    <a href="fitness-buddies.html">fitness-buddies</a> |
-    <a href="relationship-goals.html">relationship-goals</a> |
-    <a href="quick-matches.html">quick-matches</a> |
-    <a href="login.html">Logout</a>
-  </nav>
-  <hr>
-     <div></div>
-  <main>
-    <section class="virtual-events-section">
-      <h2>Create a Virtual Meetup and Start Live Stream</h2>
-      <form id="virtual-event-form" onsubmit="createEventAndStartStream(event)">
-        <label for="event-title">Event Title:</label>
-        <input type="text" id="event-title" name="event-title" required>
-        
-        <label for="event-date">Event Date:</label>
-        <input type="datetime-local" id="event-date" name="event-date" required>
-        
-        <label for="event-description">Event Description:</label>
-        <textarea id="event-description" name="event-description" required></textarea>
-        
-        <button type="submit">Create Event and Start Live Stream</button>
-      </form>
-
-      <h2>Upcoming Virtual Meetups</h2>
-      <div id="virtual-events-container" class="virtual-events-container">
-        <!-- Virtual events will be dynamically loaded here -->
-      </div>
-    </section>
-    
-    <section class="live-stream-section">
-      <h2>Live Streaming</h2>
-      <div id="live-streams-container" class="live-streams-container">
-        <!-- Live streams will be dynamically loaded here -->
-      </div>
-      <div id="live-stream-video" class="live-stream-video" style="display: none;">
-        <video id="live-video" autoplay></video>
-        <div id="live-comments" class="live-comments">
-          <!-- Live comments will be dynamically loaded here -->
+    <div class="ama-container">
+        <h2>💬 Ask Me Anything</h2>
+        <div id="ama-container">
+            <!-- Questions will be loaded dynamically -->
         </div>
-        <input type="text" id="comment-input" placeholder="Type a comment...">
-        <button onclick="sendComment()">Send</button>
-        <button onclick="stopLiveStream()">Stop Live Stream</button>
-        <div id="likes-container" class="likes-container">
-          <button onclick="sendLike()">👍</button>
-        </div>
-      </div>
-    </section>
-  </main>
-  
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      fetch('/api/virtual-events')
-        .then(response => response.json())
-        .then(events => {
-          const container = document.getElementById('virtual-events-container');
-          container.innerHTML = '';
-          events.forEach(event => {
-            const eventElement = document.createElement('div');
-            eventElement.className = 'virtual-event-card';
-            eventElement.innerHTML = `
-              <h3>${event.title}</h3>
-              <p>Date: ${event.date}</p>
-              <p>${event.description}</p>
-              <button onclick="joinVirtualEvent(${event.id})">Join Event</button>
-            `;
-            container.appendChild(eventElement);
-          });
-        })
-        .catch(error => console.error('Error fetching events:', error));
+    </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", async function () {
+          const amaContainer = document.getElementById("ama-container");
       
-      fetch('/api/live-streams')
-        .then(response => response.json())
-        .then(streams => {
-          const container = document.getElementById('live-streams-container');
-          container.innerHTML = '';
-          streams.forEach(stream => {
-            const streamElement = document.createElement('div');
-            streamElement.className = 'live-stream-card';
-            streamElement.innerHTML = `
-              <h3>${stream.title}</h3>
-              <p>Host: ${stream.host}</p>
-              <button onclick="joinLiveStream('${stream.id}')">Join Live Stream</button>
-            `;
-            container.appendChild(streamElement);
-          });
-        })
-        .catch(error => console.error('Error fetching live streams:', error));
-    });
-
-    function createEventAndStartStream(event) {
-      event.preventDefault();
-      const title = document.getElementById('event-title').value;
-      const date = document.getElementById('event-date').value;
-      const description = document.getElementById('event-description').value;
-
-      fetch('/api/create-virtual-event', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ title, date, description })
-      }).then(response => {
-        if (response.ok) {
-          alert('Event created successfully!');
-          startLiveStream(title);
-        } else {
-          alert('Failed to create event');
-        }
-      }).catch(error => console.error('Error creating event:', error));
-    }
-
-    function startLiveStream(title) {
-      fetch('/api/start-live-stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ title })
-      }).then(response => {
-        if (response.ok) {
-          alert('Live stream started successfully!');
-          document.getElementById('live-stream-video').style.display = 'block';
-          startCamera();
-        } else {
-          alert('Failed to start live stream');
-        }
-      }).catch(error => console.error('Error starting live stream:', error));
-    }
-
-    function startCamera() {
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          const video = document.getElementById('live-video');
-          video.srcObject = stream;
-          video.play();
-        })
-        .catch(error => console.error('Error accessing camera:', error));
-    }
-
-    function stopLiveStream() {
-      const video = document.getElementById('live-video');
-      const stream = video.srcObject;
-      const tracks = stream.getTracks();
-      tracks.forEach(track => track.stop());
-      video.srcObject = null;
-      document.getElementById('live-stream-video').style.display = 'none';
-      alert('Live stream stopped');
-      location.reload();
-    }
-
-    function joinVirtualEvent(eventId) {
-      fetch('/api/register-virtual-event', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ eventId })
-      }).then(response => {
-        if (response.ok) {
-          alert('You have successfully joined the virtual event!');
-        } else {
-          alert('Failed to join the virtual event');
-        }
-      }).catch(error => console.error('Error joining virtual event:', error));
-    }
-
-    function joinLiveStream(streamId) {
-      window.location.href = `/live-stream?streamId=${streamId}`;
-    }
-
-    function sendComment() {
-      const comment = document.getElementById('comment-input').value;
-      if (comment) {
-        const commentElement = document.createElement('div');
-        commentElement.className = 'comment';
-        commentElement.textContent = comment;
-        document.getElementById('live-comments').appendChild(commentElement);
-        document.getElementById('comment-input').value = '';
+          try {
+              const response = await fetch("/api/get-public-ama"); // Fetch public AMA questions
+              const questions = await response.json();
+      
+              if (questions.length === 0) {
+                  amaContainer.innerHTML = "<p>No active AMA questions yet. Check back soon!</p>";
+                  return;
+              }
+      
+              questions.forEach(q => {
+                  const questionCard = document.createElement("div");
+                  questionCard.classList.add("ama-card");
+                  questionCard.innerHTML = `
+                      <h3>${q.username}</h3>
+                      <p class="question">"${q.question}"</p>
+      
+                      <div class="answer-box">
+                          <textarea id="answer-${q.id}" placeholder="Type your answer..."></textarea>
+                          <button onclick="submitAMAResponse(${q.id})">Send Reply</button>
+                      </div>
+      
+                      <div class="reaction-icons">
+                          <button onclick="reactToAnswer(${q.id}, 'like')">👍 <span id="reaction-like-${q.id}">0</span></button>
+                          <button onclick="reactToAnswer(${q.id}, 'funny')">😂 <span id="reaction-funny-${q.id}">0</span></button>
+                          <button onclick="reactToAnswer(${q.id}, 'love')">❤️ <span id="reaction-love-${q.id}">0</span></button>
+                      </div>
+                  `;
+                  amaContainer.appendChild(questionCard);
+              });
+      
+          } catch (error) {
+              console.error("Error fetching AMA questions:", error);
+              amaContainer.innerHTML = "<p>Failed to load questions.</p>";
+          }
+      });
+      
+      async function submitAMAResponse(questionId) {
+          const answerText = document.getElementById(`answer-${questionId}`).value;
+          const userId = getLoggedInUserId();
+      
+          if (!answerText.trim()) {
+              alert("Please enter a meaningful reply.");
+              return;
+          }
+      
+          try {
+              const response = await fetch("/api/ama-answers", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ questionId, userId, answer: answerText })
+              });
+      
+              if (response.ok) {
+                  alert("Reply sent!");
+                  document.getElementById(`answer-${questionId}`).value = "";
+                  window.location.href = "ama-responses.html"; 
+              } else {
+                  alert("Error sending reply.");
+              }
+          } catch (error) {
+              console.error("Error submitting AMA reply:", error);
+          }
       }
-    }
-
-    function sendLike() {
-      const likeElement = document.createElement('div');
-      likeElement.className = 'like';
-      likeElement.textContent = '👍';
-      document.getElementById('likes-container').appendChild(likeElement);
-    }
-  </script>
+      
+      async function reactToAnswer(answerId, reactionType) {
+          const userId = getLoggedInUserId(); 
+      
+          try {
+              const response = await fetch("/api/ama-reactions", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ answerId, userId, reaction: reactionType })
+              });
+      
+              if (response.ok) {
+                  updateReactionCount(answerId, reactionType);
+              } else {
+                  console.error("Error reacting to answer.");
+              }
+          } catch (error) {
+              console.error("Error handling reactions:", error);
+          }
+      }
+      
+      function updateReactionCount(answerId, reactionType) {
+          const reactionElement = document.getElementById(`reaction-${reactionType}-${answerId}`);
+          if (reactionElement) {
+              reactionElement.textContent = parseInt(reactionElement.textContent) + 1;
+          }
+      }
+      
+      function getLoggedInUserId() {
+          const user = JSON.parse(localStorage.getItem("user"));
+          return user ? user.id : null;
+      }
+      </script>
+      
 </body>
 </html>

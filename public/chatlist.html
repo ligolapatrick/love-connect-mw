@@ -1,154 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/png" sizes="192x192" href="images/logo.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat List - Find One by Click</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-<style>
-   /* General Reset */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+    <title>Chat List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+        }
 
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f9f9f9;
-    color: #333;
-    line-height: 1.5;
-    margin: 0;
-    padding: 0;
-}
+        .chat-container {
+            max-width: 500px;
+            margin: auto;
+            padding: 10px;
+        }
 
-/* Loading Indicator */
-.loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: rgba(255, 255, 255, 0.9);
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 999;
-}
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #1877F2;
+            color: white;
+        }
 
-.loading-logo {
-    width: 50px;
-    height: 50px;
-}
+        #search {
+            padding: 7px;
+            width: 80%;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
 
-/* Page Heading */
-h2 {
-    text-align: center;
-    color: #444;
-    margin: 20px 0;
-}
+        .chat-filters {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background: white;
+        }
 
-/* Filter Options */
-.filter-options {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 15px;
-}
+        .chat-filters button {
+            padding: 5px 10px;
+            border: none;
+            background: #ddd;
+            cursor: pointer;
+            border-radius: 5px;
+        }
 
-.filter-options button {
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    padding: 10px 15px;
-    font-size: 14px;
-    cursor: pointer;
-}
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            position: relative;
+            justify-content: space-between;
+            cursor: pointer;
+        }
 
-.filter-options button:hover {
-    background-color: #0056b3;
-}
+        .chat-item:hover {
+            background: #f0f0f0;
+        }
 
-/* Chat List */
-.chat-list {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-    max-width: 600px;
-    margin: 0 auto;
-}
+        .chat-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
 
-.chat-list-item {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #eee;
-    background-color: #fff;
-    transition: background-color 0.2s ease;
-    cursor: pointer;
-}
+        .chat-info {
+            flex-grow: 1;
+        }
 
-.chat-list-item:hover {
-    background-color: #f1f1f1;
-}
+        .timestamp {
+            font-size: 12px;
+            color: gray;
+        }
 
-.chat-list-item img {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    margin-right: 10px;
-    object-fit: cover;
-    background-color: #ddd; /* Placeholder for default profiles */
-}
+        .unread {
+            background: red;
+            color: white;
+            padding: 5px;
+            border-radius: 50%;
+            font-size: 12px;
+            text-align: center;
+            min-width: 18px;
+        }
 
-.chat-list-item div {
-    flex-grow: 1;
-}
+        .favorite {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 18px;
+            color: gold;
+        }
 
-.chat-list-item strong {
-    font-size: 16px;
-    color: #333;
-}
-
-.chat-list-item small {
-    display: block;
-    font-size: 12px;
-    color: #777;
-    margin-top: 5px;
-}
-
-.chat-list-item .message-time {
-    font-size: 12px;
-    color: #aaa;
-    text-align: right;
-}
-
-.chat-list-item .unread-count {
-    background-color: #007bff;
-    color: #fff;
-    font-size: 12px;
-    border-radius: 12px;
-    padding: 2px 6px;
-    margin-left: 5px;
-}
-
-/* Favorite Button */
-.favorite-btn {
-    background-color: transparent;
-    border: none;
-    font-size: 18px;
-    color: #ccc;
-    cursor: pointer;
-    margin-left: 10px;
-}
-
-.favorite-btn.active {
-    color: #f4b400; /* Gold color for active favorites */
-}
-
-/* Bottom Navigation Styles */
+        .favorite.active {
+            color: gray;
+        }
+        /* Bottom Navigation Styles */
 .bottom-nav {
   display: flex;
   justify-content: space-around;
@@ -174,7 +129,6 @@ h2 {
 .bottom-nav a.active {
     color: #b62948;
 }
-
 /* Responsive Styles */
 @media (max-width: 600px) {
     .filter-options button {
@@ -204,67 +158,144 @@ h2 {
         height: 20px;
     }
 }
-.unread-count {
-    display: inline-block;
-    background-color: #ff4d4d;
-    color: #fff;
-    font-size: 12px;
-    font-weight: bold;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    text-align: center;
-    line-height: 20px;
-    margin-left: 5px;
-    vertical-align: middle;
+#chat-list {
+    overflow-y: auto; /* Enables scroll if many chats */
+    max-height: calc(100vh - 140px); /* Ensures chats are visible above navbar */
+    padding-bottom: 60px; /* Prevents overlap with navbar */
+    scroll-behavior: smooth; /* Enables smooth scrolling */
 }
-
-.chat-item-menu {
-        display: none;
-        position: absolute;
-        right: 10px;
-        background-color: white;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        z-index: 100;
+/* General Mobile Adjustments */
+@media (max-width: 375px) {
+    .chat-container {
+        max-width: 100%;
+        padding: 5px;
     }
 
-    .chat-item-menu a {
-        display: block;
-        padding: 10px 15px;
-        text-decoration: none;
-        color: #333;
+    header {
+        padding: 8px;
         font-size: 14px;
-        cursor: pointer;
     }
 
-    .chat-item-menu a:hover {
-        background-color: #f5f5f5;
+    #search {
+        width: 70%;
+        padding: 5px;
+        font-size: 12px;
     }
-    .chat-list-item.unread {
-    font-weight: bold;
-    background-color: #f9f9f9;
+
+    .chat-filters button {
+        font-size: 12px;
+        padding: 4px;
+    }
+
+    .chat-item {
+        padding: 8px;
+        flex-wrap: wrap;
+    }
+
+    .chat-item img {
+        width: 40px;
+        height: 40px;
+    }
+
+    .chat-info strong {
+        font-size: 12px;
+    }
+
+    .chat-info p {
+        font-size: 11px;
+    }
+
+    .timestamp {
+        font-size: 10px;
+    }
+
+    .unread {
+        padding: 4px;
+        font-size: 10px;
+        min-width: 16px;
+    }
+
+    .favorite {
+        font-size: 16px;
+    }
+
+    .bottom-nav {
+        padding: 8px 0;
+    }
+
+    .bottom-nav a {
+        font-size: 12px;
+    }
+
+    .bottom-nav a img {
+        width: 18px;
+        height: 18px;
+    }
 }
 
-</style>
+/* Older Device Specific Adjustments (iPhone 5/SE, etc.) */
+@media (max-width: 320px) {
+    .chat-container {
+        padding: 3px;
+    }
 
+    header {
+        font-size: 12px;
+    }
+
+    #search {
+        width: 65%;
+        font-size: 11px;
+    }
+
+    .chat-item img {
+        width: 35px;
+        height: 35px;
+    }
+
+    .chat-info strong {
+        font-size: 11px;
+    }
+
+    .chat-info p {
+        font-size: 10px;
+    }
+
+    .timestamp {
+        font-size: 9px;
+    }
+
+    .bottom-nav a {
+        font-size: 11px;
+    }
+
+    .bottom-nav a img {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+    </style>
 </head>
 <body>
-    <div class="loading-container" id="loadingIndicator">
-        <img src="images/logo.png" alt="Loading" class="loading-logo">
+
+    <div class="chat-container">
+        <header>
+            <h2>Chats</h2>
+            <input type="text" id="search" placeholder="Search users...">
+        </header>
+
+        <div class="chat-filters">
+            <button onclick="filterChats('all')">All</button>
+            <button onclick="filterChats('unread')">Unread</button>
+            <button onclick="filterChats('favorites')">Favorites</button>
+        </div>
+
+        <div id="chat-list">
+            <!-- Chat items will be loaded dynamically here -->
+        </div>
     </div>
-    
-    <h2>Your Chats</h2>
-    <div class="filter-options">
-        <button onclick="filterChatList('unread')">Unread</button>
-        <button onclick="filterChatList('favorites')">Favorites</button>
-        <button onclick="filterChatList('date')">By Date</button>
-    </div>
-    <div id="loading" style="text-align: center; margin-top: 20px;">Loading chats...</div>
-    <ul id="chatList" class="chat-list">
-        <!-- Chat items will be inserted here -->
-    </ul>
+
     <main>
         <nav class="bottom-nav">
             <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
@@ -279,229 +310,77 @@ h2 {
         
     </main>
     <script>
-        const userId = 'yourUserId'; // Replace this with dynamic userId
-    
-        function fetchChatList() {
-            document.getElementById('loading').style.display = 'block';
-            fetch(`/api/chat-list?userId=${userId}`)
-                .then(response => response.json())
-                .then(users => {
-                    document.getElementById('loading').style.display = 'none';
-                    renderChatList(users);
-                    updateUnreadMessagesCount(users); // Update unread count in the navbar
-                })
-                .catch(error => {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('chatList').innerHTML = '<p>Error loading chat list. Please try again later.</p>';
-                    console.error('Error fetching chat list:', error);
-                });
-        }
-    
-        function renderChatList(users) {
-    // Sort users by the most recent message time in descending order (newest first)
-    users.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+        document.addEventListener("DOMContentLoaded", async () => {
+            loadChats('all');
 
-    const chatList = document.getElementById('chatList');
-    chatList.innerHTML = '';
-    users.forEach(user => {
-        const chatItem = document.createElement('li');
-        chatItem.className = 'chat-list-item';
-        chatItem.dataset.userId = user.id;
-
-        const profilePicture = user.profilePicture ? user.profilePicture : 'default-profile.png';
-        const lastMessageTime = user.lastMessageTime ? new Date(user.lastMessageTime).toLocaleTimeString() : 'N/A';
-
-        chatItem.innerHTML = `
-            <img src="${profilePicture}" alt="${user.username}">
-            <div>
-                <strong>${user.username}</strong>
-                <small>${user.lastMessage || ''}</small>
-                <div class="message-time">${lastMessageTime}</div>
-                ${user.unreadCount > 0 ? `<span class="unread-count">${user.unreadCount}</span>` : ''}
-            </div>
-            <div class="menu-container">
-                <span class="favorite-icon ${user.favorite ? 'active' : ''}" onclick="toggleFavorite(event, ${user.id})">⭐</span>
-                <button class="menu-btn" onclick="toggleChatMenu(event, ${user.id})">...</button>
-                <div id="menu-${user.id}" class="chat-item-menu">
-                    <a onclick="openChat(${user.id}, '${user.username}')">Open Chat</a>
-                    <a onclick="deleteChat(${user.id})">Delete Chat</a>
-                </div>
-            </div>
-        `;
-
-        chatItem.addEventListener('click', () => {
-            window.location.href = `/messages.html?userId=${user.id}&username=${encodeURIComponent(user.username)}`;
+            const searchInput = document.getElementById("search");
+            searchInput.addEventListener("input", () => {
+                filterChats(searchInput.value.toLowerCase());
+            });
         });
-        chatList.appendChild(chatItem);
-    });
-}
 
-// Toggle favorite status
-function toggleFavorite(event, chatUserId) {
-    event.stopPropagation();
-    const favoriteIcon = event.target;
-    const isFavorite = favoriteIcon.classList.toggle('active');
+        async function loadChats(filter, searchQuery = "") {
+            const chatList = document.getElementById("chat-list");
+            chatList.innerHTML = "";
 
-    fetch(`/api/toggle-favorite`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId, chatUserId, isFavorite })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to toggle favorite');
-        }
-        console.log(`Chat with userId ${chatUserId} marked as ${isFavorite ? 'favorite' : 'not favorite'}.`);
-    })
-    .catch(error => {
-        console.error('Error toggling favorite:', error);
-        favoriteIcon.classList.toggle('active'); // Revert on error
-    });
-}
+            const response = await fetch("/api/chat-list");
+            const chats = await response.json();
 
-// Toggle the menu for a specific chat item
-function toggleChatMenu(event, userId) {
-    event.stopPropagation();
-    const menu = document.getElementById(`menu-${userId}`);
-    const allMenus = document.querySelectorAll('.chat-item-menu');
+            let filteredChats = chats;
 
-    // Close other open menus
-    allMenus.forEach(menu => menu.style.display = 'none');
-
-    // Toggle current menu
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-}
-
-// Delete a chat
-async function deleteChat(chatUserId) {
-    const confirmation = confirm('Are you sure you want to delete this chat?');
-    if (!confirmation) return;
-
-    try {
-        const response = await fetch(`/api/delete-chat`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ chatUserId, userId })
-        });
-        if (response.ok) {
-            // Remove chat item from the UI
-            const chatItem = document.querySelector(`.chat-list-item[data-user-id="${chatUserId}"]`);
-            if (chatItem) {
-                chatItem.remove();
+            if (filter === "unread") {
+                filteredChats = chats.filter(chat => chat.unreadCount > 0);
+            } else if (filter === "favorites") {
+                filteredChats = chats.filter(chat => chat.isFavorite);
             }
-            console.log(`Chat with user ${chatUserId} deleted.`);
-        } else {
-            console.error('Error deleting chat:', await response.text());
-        }
-    } catch (error) {
-        console.error('Error deleting chat:', error);
-    }
-}
 
-// Close all menus when clicking outside
-document.addEventListener('click', () => {
-    const allMenus = document.querySelectorAll('.chat-item-menu');
-    allMenus.forEach(menu => menu.style.display = 'none');
-});
+            if (searchQuery) {
+                filteredChats = filteredChats.filter(chat => chat.username.toLowerCase().includes(searchQuery));
+            }
 
-        // Function to update unread message count in the navbar
-        function updateUnreadMessagesCount(users) {
-    const totalUnreadCount = users.reduce((sum, user) => sum + (user.unreadCount || 0), 0);
-    const unreadCountElement = document.getElementById('unreadCount');
+            filteredChats.forEach(chat => {
+                const chatItem = document.createElement("div");
+                chatItem.classList.add("chat-item");
+                chatItem.innerHTML = `
+                    <img src="${chat.profilePicture}" alt="${chat.username}">
+                    <div class="chat-info">
+                        <strong>${chat.username}</strong>
+                        <p>${chat.lastMessage}</p>
+                    </div>
+                    <small class="timestamp">${new Date(chat.lastMessageTime).toLocaleTimeString()}</small>
+                    ${chat.unreadCount > 0 ? `<span class="unread">${chat.unreadCount}</span>` : ""}
+                    <span class="favorite ${chat.isFavorite ? 'active' : ''}" onclick="toggleFavorite(${chat.id}, this)">★</span>
+                `;
 
-    if (totalUnreadCount > 0) {
-        unreadCountElement.textContent = totalUnreadCount;
-        unreadCountElement.style.display = 'inline-block';
-    } else {
-        unreadCountElement.style.display = 'none';
-    }
-}
-
-// Call this function again after marking messages as read
-fetchChatList();
-
-    
-        // Show the loading indicator when the page starts loading
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('loadingIndicator').style.display = 'flex';
-        });
-    
-        // Hide the loading indicator once the page is fully loaded
-        window.addEventListener('load', () => {
-            document.getElementById('loadingIndicator').style.display = 'none';
-        });
-    
-        function filterChatList(filter) {
-            console.log(`Filter by: ${filter}`);
-            fetch(`/api/chat-list?userId=${userId}&filter=${filter}`)
-                .then(response => response.json())
-                .then(users => {
-                    renderChatList(users);
-                    updateUnreadMessagesCount(users); // Update unread count with filtered list
-                })
-                .catch(error => {
-                    console.error('Error fetching filtered chat list:', error);
+                chatItem.addEventListener("click", () => {
+                    window.location.href = `messages.html?chatUserId=${chat.id}`;
                 });
-        }
-    
-        function toggleFavorite(event, chatUserId) {
-            event.stopPropagation();
-            const button = event.target;
-            const isFavorite = button.classList.toggle('active');
-    
-            fetch(`/api/toggle-favorite`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId, chatUserId, isFavorite })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to toggle favorite');
-                }
-            })
-            .catch(error => {
-                console.error('Error toggling favorite:', error);
-                button.classList.toggle('active'); // Revert the change on error
+
+                chatList.appendChild(chatItem);
             });
         }
-    
-        function openChat(chatUserId, username) {
-    fetch(`/api/mark-as-read`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId, chatUserId })
-    }).then(response => {
-        if (response.ok) {
-            // Update the chat item in the UI
-            const chatItem = document.querySelector(`.chat-list-item[data-user-id="${chatUserId}"]`);
-            if (chatItem) {
-                chatItem.classList.remove('unread');
-                const unreadCount = chatItem.querySelector('.unread-count');
-                if (unreadCount) {
-                    unreadCount.remove(); // Remove unread count indicator
-                }
-            }
 
-            // Redirect to the chat page
-            window.location.href = `/messages.html?userId=${chatUserId}&username=${encodeURIComponent(username)}`;
-        } else {
-            console.error('Error marking messages as read');
+        
+        function filterChats(filter) {
+            const searchQuery = document.getElementById("search").value.toLowerCase();
+            loadChats(filter, searchQuery);
         }
-    }).catch(error => {
-        console.error('Error marking messages as read:', error);
-    });
-}
 
-        document.addEventListener('DOMContentLoaded', fetchChatList);
+        function toggleFavorite(userId, element) {
+            const isFavorite = element.classList.contains("active");
+
+            fetch("/api/toggle-favorite", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId, isFavorite: !isFavorite })
+            }).then(() => {
+                element.classList.toggle("active");
+                element.style.color = isFavorite ? "gold" : "gray";
+            });
+        }
+
+        
     </script>
-    
+
 </body>
 </html>

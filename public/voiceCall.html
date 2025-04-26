@@ -3,195 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Call - LoveConnect</title>
-    <link rel="stylesheet" href="styles2.css">
+    <title>Create AMA Question</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: url('images/logo.png') no-repeat center center fixed;
-            background-size: cover;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            background-color: #f4f4f4;
             margin: 0;
             padding: 0;
         }
-        .container {
+        header {
+            background-color: #ff4d4d;
+            color: white;
             text-align: center;
-            background-color: rgba(255, 255, 255, 0.8);
             padding: 20px;
+        }
+        main {
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+        }
+        .ama-create-container {
+            background-color: white;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 800px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
         }
-        audio {
-            display: none; /* Hide audio elements */
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            padding: 10px;
         }
-        .call-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 20px;
-        }
-        .call-controls button {
-            background-color: #075E54;
+        button {
+            background-color: #ff4d4d;
             color: white;
             border: none;
-            padding: 10px 15px;
-            border-radius: 10px;
+            padding: 10px 20px;
+            border-radius: 5px;
             cursor: pointer;
-            outline: none;
-            transition: background-color 0.3s;
-            margin: 0 10px;
         }
-        .call-controls button:hover {
-            background-color: #006f4a;
-        }
-        .timer {
-            font-size: 1.5em;
-            color: #007bff;
-            margin-top: 10px;
+        button:hover {
+            background-color: #e60000;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Calling <span id="calleeName"></span></h2>
-        <audio id="remoteAudio" autoplay></audio>
-        <audio id="callingSound" src="sound/calling_sound.mp3" loop></audio> <!-- Calling sound -->
-        <div class="timer" id="callTimer">00:30</div>
-        <div class="call-controls" id="callerControls">
-            <button id="callButton">Call</button>
+    <header>
+        <h1>Create AMA Question</h1>
+    </header>
+    <main>
+        <div class="ama-create-container">
+            <h2>💬 Create Your AMA Question</h2>
+            <textarea id="amaQuestion" placeholder="Type your question..."></textarea>
+            <button onclick="createAMA()">Post Question</button>
         </div>
-        <div class="call-controls" id="endCallControls" style="display: none;">
-            <button id="endCallButton">End Call</button>
-        </div>
-    </div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    </main>
+
     <script>
-        const socket = io();
-        const callButton = document.getElementById('callButton');
-        const endCallButton = document.getElementById('endCallButton');
-        const remoteAudio = document.getElementById('remoteAudio');
-        const callingSound = document.getElementById('callingSound');
-        const callTimer = document.getElementById('callTimer');
-        const callerControls = document.getElementById('callerControls');
-        const endCallControls = document.getElementById('endCallControls');
-        const calleeNameElement = document.getElementById('calleeName');
+        async function createAMA() {
+            const amaQuestion = document.getElementById('amaQuestion').value;
+            const userId = getLoggedInUserId(); 
 
-        const calleeName = new URLSearchParams(window.location.search).get('calleeName');
-        calleeNameElement.textContent = calleeName;
+            if (!amaQuestion.trim()) {
+                alert("Please enter a valid question.");
+                return;
+            }
 
-        let peerConnection;
-        let localStream;
-        let remoteStream;
-        let countdown;
+            if (!userId) {
+                alert("User ID not found. Make sure you're logged in.");
+                return;
+            }
 
-        const config = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
-
-        const startCallTimer = () => {
-            let timeRemaining = 30;
-            countdown = setInterval(() => {
-                const seconds = timeRemaining.toString().padStart(2, '0');
-                callTimer.textContent = `00:${seconds}`;
-                if (timeRemaining <= 0) {
-                    clearInterval(countdown);
-                    endCall();
-                    socket.emit('missedCall', { fromUserId: 'callerId', toUserId: 'receiverId' });
-                }
-                timeRemaining -= 1;
-            }, 1000);
-        };
-
-        const setupPeerConnection = () => {
-            peerConnection = new RTCPeerConnection(config);
-            peerConnection.ontrack = (event) => {
-                if (!remoteStream) {
-                    remoteStream = new MediaStream();
-                    remoteAudio.srcObject = remoteStream;
-                }
-                remoteStream.addTrack(event.track);
-            };
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('iceCandidate', event.candidate);
-                }
-            };
-        };
-
-        const initiateCall = async () => {
-            setupPeerConnection();
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('callOffer', { offer, toUserId: 'receiverId' });
-            callingSound.play();
-            startCallTimer();
-            callerControls.style.display = 'none';
-            endCallControls.style.display = 'flex';
-        };
-
-        const handleCallAnswer = async (answer) => {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-            clearInterval(countdown);
-        };
-
-        const handleIceCandidate = async (candidate) => {
             try {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-            } catch (error) {
-                console.error('Error adding received ICE candidate', error);
-            }
-        };
+                const response = await fetch('/api/ama-question', {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userId, question: amaQuestion })
+                });
 
-        const endCall = () => {
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
-                localStream.getTracks().forEach(track => track.stop());
-                if (remoteStream) {
-                    remoteStream.getTracks().forEach(track => track.stop());
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('AMA Question created successfully!');
+                    document.getElementById('amaQuestion').value = '';
+                    window.location.href = "virtualmeetup.html"; // Redirect to view posted AMA
+                } else {
+                    alert(`Error: ${result.error}`);
                 }
-                socket.emit('endCall', { toUserId: 'receiverId' });
-                callingSound.pause();
-                clearInterval(countdown);
-                endCallControls.style.display = 'none';
-                callerControls.style.display = 'flex';
+            } catch (error) {
+                console.error("Error posting AMA question:", error);
+                alert("An unexpected error occurred.");
             }
-        };
+        }
 
-        socket.on('callAnswer', (answer) => {
-            handleCallAnswer(answer);
-        });
-
-        socket.on('iceCandidate', (candidate) => {
-            handleIceCandidate(candidate);
-        });
-
-        socket.on('callEnded', () => {
-            endCall();
-        });
-
-        callButton.addEventListener('click', () => {
-            initiateCall();
-        });
-
-        endCallButton.addEventListener('click', () => {
-            endCall();
-        });
-
-        socket.emit('startCall');
+        function getLoggedInUserId() {
+            const user = JSON.parse(localStorage.getItem("user")); 
+            return user ? user.id : null;
+        }
     </script>
 </body>
 </html>

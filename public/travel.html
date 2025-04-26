@@ -47,7 +47,7 @@
         .profile-picture-container {
             position: relative;
             width: 100%;
-            height: 400px;
+            height: 350px;
             overflow: hidden;
         }
 
@@ -66,33 +66,107 @@
         .profile-card p {
             font-size: 14px;
             color: #555;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
-        /* Message Button */
-        .chat-now-btn {
-            display: inline-block;
-            background-color: #007bff;
-            color: white;
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .action-buttons button {
+            background: none;
             border: none;
-            padding: 8px 15px;
-            border-radius: 20px;
             cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
         }
 
-        .chat-now-btn:hover {
-            background-color: #0056b3;
+        .action-buttons button img {
+            width: 30px;
+            height: 30px;
         }
 
-        /* Empty Profiles Message */
-        .empty-message {
-            text-align: center;
-            margin: 50px 0;
-            font-size: 16px;
-            color: #888;
+        .like-count,
+        .dislike-count {
+            font-size: 12px;
+            color: gray;
         }
+
+        /* Heart Popup */
+        .heart-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            color: #ff6347;
+            opacity: 0;
+            animation: heartPopup 1s ease-in-out;
+        }
+
+        @keyframes heartPopup {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+        @media (max-width: 768px) {
+    .profile-card {
+        width: 90%;
+        height: 380px;
+    }
+
+    .profile-picture-container {
+        height: 300px;
+    }
+
+    .action-buttons button img {
+        width: 25px;
+        height: 25px;
+    }
+}
+
+@media (max-width: 375px) {
+    .profile-card {
+        width: 85%;
+        height: 350px;
+    }
+
+    .profile-picture-container {
+        height: 280px;
+    }
+
+    .action-buttons button img {
+        width: 22px;
+        height: 22px;
+    }
+
+    .heart-popup {
+        font-size: 2.5em;
+    }
+}
+
+@media (max-width: 320px) {
+    .profile-card {
+        width: 80%;
+        height: 320px;
+    }
+
+    .profile-picture-container {
+        height: 250px;
+    }
+
+    .action-buttons button img {
+        width: 20px;
+        height: 20px;
+    }
+
+    .heart-popup {
+        font-size: 2.2em;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -100,54 +174,113 @@
         <h2>Travel Mode Matches</h2>
     </header>
     <main>
-        <div class="profile-grid" id="profileList">
-            <!-- Profiles will be dynamically loaded here -->
-        </div>
+        <div class="profile-grid" id="profileList"></div>
     </main>
-    <script>
-        document.addEventListener('DOMContentLoaded', fetchTravelMatches);
 
-        // Fetch profiles in Travel Mode
-        async function fetchTravelMatches() {
-            try {
-                const response = await fetch('/api/travel-matches'); // Backend API for fetching matches
-                const matches = await response.json();
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    let page = 1;
+    let loading = false;
 
-                const profileList = document.getElementById('profileList');
-                profileList.innerHTML = '';
+    async function fetchMoreProfiles() {
+        if (loading) return;
+        loading = true;
 
-                if (matches.length === 0) {
-                    profileList.innerHTML = '<p class="empty-message">No matches found for your current travel location.</p>';
-                    return;
-                }
+        try {
+            const response = await fetch(`/api/travel-matches?page=${page}`);
+            const profiles = await response.json();
 
-                matches.forEach(user => {
-                    const profileCard = document.createElement('div');
-                    profileCard.className = 'profile-card';
-
-                    profileCard.innerHTML = `
-                        <div class="profile-picture-container">
-                            <img src="${user.profilePicture || 'default-avatar.png'}" alt="${user.username}" class="profile-picture">
-                        </div>
-                        <h3>${user.username}</h3>
-                        <p><strong>Age:</strong> ${user.age || 'Not specified'}</p>
-                        <p>${user.bio || 'No bio available'}</p>
-                        <button class="chat-now-btn" onclick="startChat(${user.id})">Chat Now</button>
-                    `;
-
-                    profileList.appendChild(profileCard);
-                });
-            } catch (error) {
-                console.error('Error fetching travel matches:', error);
-                const profileList = document.getElementById('profileList');
-                profileList.innerHTML = '<p class="empty-message">Error loading matches. Please try again later.</p>';
+            if (profiles.length > 0) {
+                page++; // Load next batch
+                renderProfiles(profiles);
             }
+        } catch (error) {
+            console.error("Error fetching profiles:", error);
         }
 
-        // Redirect to Messages Page
-        function startChat(userId) {
-            window.location.href = `/messages.html?userId=${userId}`;
+        loading = false;
+    }
+
+    function renderProfiles(profiles) {
+        const container = document.getElementById("profileList");
+
+        profiles.forEach(profile => {
+            const card = document.createElement("div");
+            card.className = "profile-card";
+            card.innerHTML = `
+                <div class="profile-picture-container">
+                    <img src="${profile.profilePicture || 'default-avatar.png'}" alt="${profile.username}" class="profile-picture">
+                </div>
+                <h3>${profile.username}</h3>
+                <p><strong>Age:</strong> ${profile.age || 'Not specified'}</p>
+                <p>${profile.bio || "No bio available"}</p>
+                <div class="action-buttons">
+                    <button onclick="likeUser(${profile.id})">
+                        <img src="icons/likes.png" alt="Like">
+                        <span class="like-count" id="like-count-${profile.id}">${profile.likeCount || 0}</span>
+                    </button>
+                    <button onclick="dislikeUser(${profile.id})">
+                        <img src="icons/dislike.png" alt="Dislike">
+                        <span class="dislike-count" id="dislike-count-${profile.id}">${profile.dislikeCount || 0}</span>
+                    </button>
+                </div>
+                <div class="heart-popup" id="heart-popup-${profile.id}">❤️</div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // Infinite Scroll Listener (Triggers when user nears bottom)
+    window.addEventListener("scroll", () => {
+        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+        if (scrollTop + clientHeight >= scrollHeight - 500) { // Load when near bottom
+            fetchMoreProfiles();
         }
+    });
+
+    // Initial Load
+    fetchMoreProfiles();
+});
+
+    async function likeUser(userId) {
+        document.getElementById(`heart-popup-${userId}`).style.opacity = 1;
+        setTimeout(() => {
+            document.getElementById(`heart-popup-${userId}`).style.opacity = 0;
+        }, 1000);
+    
+        try {
+            const response = await fetch(`/api/like`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId })
+            });
+    
+            if (response.ok) {
+                const countElement = document.getElementById(`like-count-${userId}`);
+                countElement.textContent = parseInt(countElement.textContent) + 1;
+            }
+        } catch (error) {
+            console.error("Error liking user:", error);
+        }
+    }
+    
+    async function dislikeUser(userId) {
+        try {
+            const response = await fetch(`/api/dislike`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId })
+            });
+    
+            if (response.ok) {
+                const countElement = document.getElementById(`dislike-count-${userId}`);
+                countElement.textContent = parseInt(countElement.textContent) + 1;
+            }
+        } catch (error) {
+            console.error("Error disliking user:", error);
+        }
+    }
     </script>
+    
 </body>
 </html>

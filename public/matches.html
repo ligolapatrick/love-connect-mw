@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script async src="https://cse.google.com/cse.js?cx=14c0d649ce291419f">
+  </script>
+  <div class="gcse-search"></div>
   <link rel="icon" type="image/png" sizes="192x192" href="images/logo.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,7 +21,6 @@
       scroll-snap-align: start;
       flex: 0 0 auto;
     }
-    
     .profile-picture {
       width: 100%;
       height: 500px;
@@ -185,130 +187,94 @@
   </nav>
 
   <script>
- let currentPage = 1;
-let isFetching = false;
-
-document.addEventListener("DOMContentLoaded", () => {
-    fetchMatches();
-    setupInfiniteScrolling();
-});
-
-// Initialize Intersection Observer for Lazy Loading
-const lazyLoadObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add("loaded");
-            lazyLoadObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0.5 });
-
-async function fetchMatches() {
-    if (isFetching) return;
-    isFetching = true;
-
-    try {
-        const response = await fetch(`/api/matches-base?page=${currentPage}&limit=5`);
+    async function fetchMatches() {
+      try {
+        const response = await fetch('/api/matches-base');
         const matches = await response.json();
 
         const matchesDiv = document.getElementById('matches');
+        matchesDiv.innerHTML = ''; // Clear existing profiles
         document.getElementById('loading').style.display = 'none';
 
-        if (matches.length === 0 && currentPage === 1) {
-            matchesDiv.innerHTML = '<p>No matches found at the moment. Try again later!</p>';
-            return;
+        if (matches.length === 0) {
+          matchesDiv.innerHTML = '<p>No matches found at the moment. Try again later!</p>';
+          return;
         }
 
-        matches.forEach(match => addMatchToUI(match));
+        matches.forEach(match => {
+          const interests = Array.isArray(match.interests)
+            ? match.interests
+            : (typeof match.interests === 'string' ? match.interests.split(', ') : []);
 
-        currentPage++;
-        isFetching = false;
+          const matchDiv = document.createElement('div');
+          matchDiv.className = 'profile-container';
 
-    } catch (error) {
-        console.error('Error fetching matches:', error);
+          const profilePicture = match.profilePicture || 'default-profile.png';
+          matchDiv.innerHTML = `
+            <img src="${profilePicture}" alt="Profile Picture" class="profile-picture">
+            <div class="profile-details">
+              <h2>${match.username}</h2>
+              <p><strong>Age:</strong> ${match.age}</p>
+              <p><strong>Gender:</strong> ${match.gender}</p>
+              <p><strong>Bio:</strong> ${match.bio || 'No bio provided.'}</p>
+              <p><strong>Interests:</strong> ${interests.length > 0 ? interests.join(', ') : 'No interests provided.'}</p>
+            </div>
+            <div class="user-card-buttons">
+              <button onclick="likeUser(${match.id})">Like ❤️</button>
+              <button onclick="dislikeUser(${match.id})">Dislike ❌</button>
+              <button onclick="messageUser(${match.id}, '${match.username}')">Message 💬</button>
+            </div>
+            <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
+          `;
+          matchesDiv.appendChild(matchDiv);
+        });
+      } catch (error) {
         document.getElementById('loading').textContent = 'Failed to load matches. Please try again.';
-        isFetching = false;
+        console.error('Error fetching matches:', error);
+      }
     }
-}
 
-function addMatchToUI(match) {
-    const matchesDiv = document.getElementById('matches');
-    const matchDiv = document.createElement('div');
-    matchDiv.className = 'profile-container';
-
-    matchDiv.innerHTML = `
-        <img src="${match.profilePicture || 'default-profile.png'}" class="profile-picture">
-        <div class="profile-details">
-            <h2>${match.username}</h2>
-            <p><strong>Age:</strong> ${match.age}</p>
-            <p><strong>Gender:</strong> ${match.gender}</p>
-            <p><strong>Bio:</strong> ${match.bio || 'No bio provided.'}</p>
-            <p><strong>Interests:</strong> ${match.interests ? match.interests.join(', ') : 'No interests provided.'}</p>
-        </div>
-        <div class="user-card-buttons">
-            <button onclick="likeUser(${match.id})">Like ❤️</button>
-            <button onclick="dislikeUser(${match.id})">Dislike ❌</button>
-            <button onclick="messageUser(${match.id}, '${match.username}')">Message 💬</button>
-        </div>
-        <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
-    `;
-
-    matchesDiv.appendChild(matchDiv);
-    lazyLoadObserver.observe(matchDiv); // Apply lazy loading animation
-}
-
-function setupInfiniteScrolling() {
-    window.addEventListener("scroll", () => {
-        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
-            fetchMatches();
-        }
-    });
-}
-
-function showHeartPopup(userId) {
-    const popup = document.getElementById(`heart-popup-${userId}`);
-    popup.style.opacity = 1;
-    setTimeout(() => {
+    function showHeartPopup(userId) {
+      const popup = document.getElementById(`heart-popup-${userId}`);
+      popup.style.opacity = 1;
+      setTimeout(() => {
         popup.style.opacity = 0;
-    }, 1000);
-}
+      }, 1000);
+    }
 
-async function likeUser(userId) {
-    try {
+    async function likeUser(userId) {
+      try {
         const response = await fetch('/api/like', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
         });
         if (response.ok) {
-            showHeartPopup(userId);
+          showHeartPopup(userId);
         }
-    } catch (error) {
+      } catch (error) {
         console.error('Error liking user:', error);
+      }
     }
-}
 
-async function dislikeUser(userId) {
-    try {
+    async function dislikeUser(userId) {
+      try {
         await fetch('/api/dislike', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
         });
-    } catch (error) {
+      } catch (error) {
         console.error('Error disliking user:', error);
+      }
     }
-}
 
-function messageUser(userId, username) {
-    window.location.href = `/messages.html?userId=${userId}&username=${encodeURIComponent(username)}`;
-}
+    function messageUser(userId, username) {
+      window.location.href = `/messages.html?userId=${userId}&username=${encodeURIComponent(username)}`;
+    }
 
-// Fetch matches on page load
-fetchMatches();
-
+    // Fetch matches on page load
+    fetchMatches();
   </script>
 </body>
 </html>
-
-

@@ -198,6 +198,46 @@ button:hover {
     transform: scale(1.2);
     margin-left: 10px;
 }
+.ama-create {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 15px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.ama-create h3 {
+    color: #ff4d4d;
+    margin-bottom: 10px;
+}
+
+.ama-create textarea {
+    width: 100%;
+    height: 80px;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    resize: none;
+}
+
+.ama-create button {
+    margin-top: 10px;
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.ama-create button:hover {
+    background: #e63c3c;
+}
+
   </style>
 </head>
 <body>
@@ -252,6 +292,11 @@ button:hover {
       </div>
   </section>
   
+  <label class="toggle-label">
+    Enable Ask Me Anything Mode: 
+    <input type="checkbox" id="ama-toggle" onchange="toggleAMA()">
+</label>
+
     <!-- Privacy Settings -->
     <section class="settings-section">
       <h2>Privacy Settings</h2>
@@ -294,6 +339,12 @@ button:hover {
       </label>
     </section>
   
+    <div class="ama-create">
+      <h3>Create Your AMA Question</h3>
+      <textarea id="ama-question" placeholder="Type your question..."></textarea>
+      <button onclick="postAMA()">Submit Question</button>
+  </div>
+  
 <!-- Password Management Section -->
 <section class="settings-section">
   <h2>Password Management</h2>
@@ -327,8 +378,62 @@ button:hover {
       <button id="deleteAccountButton">Delete Account</button>
     </section>
   </main>
-  
+
+
 <script>
+async function postAMA() {
+    const questionText = document.getElementById("ama-question").value;
+
+    if (!questionText.trim()) {
+        alert("Please enter a valid question.");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/ama-question", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profileId: userProfileId, question: questionText })
+        });
+
+        if (response.ok) {
+            alert("Your AMA question is live!");
+            document.getElementById("ama-question").value = ""; // Clear input
+        } else {
+            alert("Error posting AMA question. Try again.");
+        }
+    } catch (error) {
+        console.error("Error posting AMA question:", error);
+    }
+}
+
+    document.addEventListener("DOMContentLoaded", async function () {
+        try {
+            const response = await fetch("/api/user-settings");
+            const settings = await response.json();
+    
+            document.getElementById("ama-toggle").checked = settings.amaEnabled;
+        } catch (error) {
+            console.error("Error fetching user settings:", error);
+        }
+    });
+    
+    async function toggleAMA() {
+        const isEnabled = document.getElementById("ama-toggle").checked;
+    
+        try {
+            await fetch("/api/toggle-ama", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amaEnabled: isEnabled })
+            });
+    
+            alert(isEnabled ? "Ask Me Anything mode enabled!" : "Ask Me Anything mode disabled.");
+        } catch (error) {
+            console.error("Error updating AMA setting:", error);
+        }
+    }
+   
   document.getElementById('travelModeToggle').addEventListener('change', function() {
     const isTravelModeEnabled = this.checked;
     const travelLocationSection = document.getElementById('travelLocationSection');

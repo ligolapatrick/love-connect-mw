@@ -158,26 +158,34 @@
   border-radius: 5px;
   cursor: pointer;
 }
+/* Bottom Navigation Styles */
+.bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: hsl(120, 19%, 31%);
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
 
-/* Button colors */
-.like-button {
-  background-color: #28a745;
-  color: white;
-}
+        .bottom-nav a {
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            font-size: 14px;
+        }
 
-.dislike-button {
-  background-color: #dc3545;
-  color: white;
-}
+        .bottom-nav a img {
+            display: block;
+            width: 20px;
+            height: 30px;
+            margin: 0 auto;
+        }
 
-.message-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 10px;
-}
+        .bottom-nav a.active {
+            color: rgb(0, 0, 0);
+        }
 
 /* Hover effects */
 .message-button:hover {
@@ -268,6 +276,130 @@
     padding: 6px;
   }
 }
+/* General Mobile Adjustments */
+@media (max-width: 768px) {
+    .chat-container {
+        width: 95%;
+        max-width: 100%;
+        padding: 8px;
+    }
+
+    header {
+        padding: 8px;
+        font-size: 14px;
+    }
+
+    .profile-container {
+        width: 90%;
+        max-width: 350px;
+    }
+
+    .profile-picture {
+        max-height: 250px;
+    }
+
+    .profile-details {
+        font-size: 0.85em;
+        padding: 8px;
+    }
+
+    .bottom-nav {
+        padding: 8px 0;
+    }
+
+    .bottom-nav a {
+        font-size: 12px;
+    }
+
+    .bottom-nav a img {
+        width: 18px;
+        height: 18px;
+    }
+
+    .chat-footer input {
+        font-size: 12px;
+        padding: 8px;
+    }
+
+    .chat-footer button {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+
+    #chat-list {
+        max-height: calc(100vh - 140px);
+        padding-bottom: 60px;
+        scroll-behavior: smooth;
+    }
+}
+
+/* Older Devices (iPhone 6, SE, etc.) */
+@media (max-width: 375px) {
+    .chat-container {
+        padding: 5px;
+    }
+
+    header {
+        font-size: 12px;
+    }
+
+    .profile-container {
+        width: 90%;
+        max-width: 320px;
+    }
+
+    .profile-picture {
+        max-height: 220px;
+    }
+
+    .profile-details {
+        font-size: 0.75em;
+        padding: 6px;
+    }
+
+    .bottom-nav a {
+        font-size: 11px;
+    }
+
+    .bottom-nav a img {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* Very Small Screens (iPhone 5, Older Androids) */
+@media (max-width: 320px) {
+    .chat-container {
+        padding: 3px;
+    }
+
+    header {
+        font-size: 10px;
+    }
+
+    .profile-container {
+        width: 95%;
+        max-width: 280px;
+    }
+
+    .profile-picture {
+        max-height: 200px;
+    }
+
+    .profile-details {
+        font-size: 0.65em;
+        padding: 5px;
+    }
+
+    .bottom-nav a {
+        font-size: 10px;
+    }
+
+    .bottom-nav a img {
+        width: 14px;
+        height: 14px;
+    }
+}
 
   </style>
 </head>
@@ -278,7 +410,7 @@
 
   <!-- Categories Section -->
   <div class="categories-wrapper">
-    <button class="arrow" onclick="scrollLeft('categories-container')">◀</button>
+  
     <div class="categories-container" id="categories-container">
       <a href="/settings" class="category-link" style="background-image: url('images/Settings.jpg');">Settings</a>
       <a href="/searching-base" class="category-link" style="background-image: url('images/Advanced Search.jpg');">Search</a>
@@ -288,95 +420,171 @@
       <a href="/fitness-buddies" class="category-link" style="background-image: url('images/fitness-buddies.png');">Fit-Buddies</a>
       <a href="/travel" class="category-link" style="background-image: url('images/travel.png');">Travel</a>
       <a href="/fire" class="category-link" style="background-image: url('images/hangout-free.png');">Free To Hangout</a>
-      <a href="/quick-matches" class="category-link" style="background-image: url('images/Activity Feed.jpg');">Games</a>
+      <a href="/quick-matches.html" class="category-link" style="background-image: url('images/Activity Feed.jpg');">Games</a>
       <a href="/moodmatcher" class="category-link" style="background-image: url('images/games.png');">MoodMatch</a>
       <a href="/location-matches" class="category-link" style="background-image: url('images/Events and Meetups.jpg');">Location-Match</a>
       <a href="/coffee-room.html" class="category-link" style="background-image: url('images/Coffee Room.jpg');">Coffee-Room</a>
       <a href="/relationship-goals" class="category-link" style="background-image: url('images/about.jpg');">Relationship</a>
-      <a href="/location-based-search" class="category-link" style="background-image: url('images/safety.jpg');">LocationMatch</a>
+      <a href="/location-based-search.html" class="category-link" style="background-image: url('images/safety.jpg');">LocationMatch</a>
       <a href="/potential-matches" class="category-link" style="background-image: url('images/loveconect dating app images.png');">BasedMatch</a>
+      <a href="/virtualmeetup.html" class="category-link" style="background-image: url('images/notifications.jpg');">Ask Anything</a>
+      <a href="/voiceCall.html" class="category-link" style="background-image: url('images/Messages.jpg');">ama message</a>
     </div>
-    <button class="arrow" onclick="scrollRight('categories-container')">▶</button>
+ 
   </div>
 
   <nav class="bottom-nav">
-    <a href="/chatlist"><img src="icons/message.png" alt="Messages"> 
+    <a href="/chatlist"><img src="icons/message.png" alt="Messages"> Messages 
       <span id="unreadCount" class="unread-count"></span>
   </a>
-    <a href="/profile"><img src="icons/profile.png" alt="Profile"> </a>
-    <a href="/matches"><img src="icons/matches.png" alt="Matches"></a>
-    <a href="/speed"><img src="icons/speed.png" alt="Speed"> </a>
-    <a href="/notifications"><img src="icons/notification.png" alt="Notification"> </a>
+    <a href="/profile"><img src="icons/profile.png" alt="Profile"> Profile</a>
+    <a href="/matches"><img src="icons/matches.png" alt="Matches"> Matches</a>
+    <a href="/speed"><img src="icons/speed.png" alt="Speed"> Speed</a>
+    <a href="/notifications"><img src="icons/notification.png" alt="Notification"> Notification</a>
   </nav>
     
+  <div class="news-section">
+    <h2>💖 LoveConnect News & Updates</h2>
+    
+    <div class="news-card">
+        <h3>🚀 Exciting Features Coming Soon!</h3>
+        <p>We're working on **AI-powered matchmaking**, **video introductions**, and **live chat enhancements**. Stay tuned!</p>
+    </div>
+
+    <div class="news-card">
+        <h3>🌍 Connect with Singles Near You!</h3>
+        <p>Find **compatible matches** based on location, interests, and relationship goals. Love could be just a click away!</p>
+    </div>
+
+    <div class="news-card highlight">
+        <h3>🔔 Not Registered Yet? Join Now!</h3>
+        <p>Unlock **exclusive matchmaking**, **verified profiles**, and **real-time messaging**.</p>
+        <button onclick="window.location.href='/login'">🔥 Register Now</button>
+    </div>
+
+    <div class="news-card app-link">
+        <h3>📲 Get the LoveConnect App</h3>
+        <p>Take your connections **on the go**! Download LoveConnect now.</p>
+        <button onclick="window.location.href='/login'">Download App</button>
+    </div>
+</div>
+
+<style>
+.news-section {
+    background: #fff;
+    padding: 20px;
+    text-align: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin: 20px auto;
+    max-width: 600px;
+}
+
+.news-section h2 {
+    color: #ff4d4d;
+    margin-bottom: 15px;
+}
+
+.news-card {
+    background: #f9f9f9;
+    padding: 15px;
+    margin: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.news-card.highlight {
+    background: #ff4d4d;
+    color: white;
+}
+
+.news-card.app-link {
+    background: #007bff;
+    color: white;
+}
+
+.news-card h3 {
+    margin-bottom: 5px;
+}
+
+.news-card button {
+    background: white;
+    color: #ff4d4d;
+    border: none;
+    padding: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.news-card button:hover {
+    background: #ff2a2a;
+    color: white;
+}
+</style>
+
   <script>
-    let currentPage = 1;
-let isFetching = false;
+   document.addEventListener("DOMContentLoaded", function () {
+    let page = 1;
+    let loading = false;
 
-document.addEventListener("DOMContentLoaded", () => {
-    fetchMatches();
-    setupInfiniteScrolling();
-});
+    async function fetchMatches() {
+        if (loading) return;
+        loading = true;
 
-async function fetchMatches() {
-    if (isFetching) return; // Prevent duplicate requests
-    isFetching = true;
+        try {
+            const response = await fetch(`/api/matches-base?page=${page}`);
+            const matches = await response.json();
 
-    try {
-        const response = await fetch(`/api/matches-base?page=${currentPage}&limit=5`);
-        const matches = await response.json();
-
-        const matchesDiv = document.getElementById('matches');
-        document.getElementById('loading').style.display = 'none';
-
-        if (matches.length === 0 && currentPage === 1) {
-            matchesDiv.innerHTML = '<p>No matches found at the moment. Try again later!</p>';
-            return;
+            if (matches.length > 0) {
+                page++; // Load next page on scroll
+                renderMatches(matches);
+            }
+        } catch (error) {
+            console.error("Error fetching matches:", error);
         }
 
-        matches.forEach(match => {
-            const interests = Array.isArray(match.interests) ? match.interests : (typeof match.interests === 'string' ? match.interests.split(', ') : []);
-            const matchDiv = document.createElement('div');
-            matchDiv.className = 'profile-container';
+        loading = false;
+    }
 
-            const profilePicture = match.profilePicture || 'default-profile.png';
+    function renderMatches(matches) {
+        const matchesDiv = document.getElementById("matches");
+
+        matches.forEach(match => {
+            const matchDiv = document.createElement("div");
+            matchDiv.className = "profile-container";
+
+            const profilePicture = match.profilePicture || "default-profile.png";
             matchDiv.innerHTML = `
                 <img src="${profilePicture}" alt="Profile Picture" class="profile-picture">
                 <div class="profile-details">
                     <h2>${match.username}</h2>
                     <p><strong>Age:</strong> ${match.age}</p>
                     <p><strong>Gender:</strong> ${match.gender}</p>
-                    <p><strong>Bio:</strong> ${match.bio || 'No bio provided.'}</p>
-                    <p><strong>Interests:</strong> ${interests.length > 0 ? interests.join(', ') : 'No interests provided.'}</p>
+                    <p><strong>Bio:</strong> ${match.bio || "No bio provided."}</p>
                 </div>
                 <div class="user-card-buttons">
                     <button onclick="likeUser(${match.id})">Like ❤️</button>
                     <button onclick="dislikeUser(${match.id})">Dislike ❌</button>
                     <button onclick="messageUser(${match.id}, '${match.username}')">Message 💬</button>
                 </div>
-                <div class="heart-popup" id="heart-popup-${match.id}">❤️</div>
             `;
             matchesDiv.appendChild(matchDiv);
         });
-
-        currentPage++; // Move to next page
-        isFetching = false; // Allow next request
-
-    } catch (error) {
-        document.getElementById('loading').textContent = 'Failed to load matches. Please try again.';
-        console.error('Error fetching matches:', error);
-        isFetching = false;
     }
-}
 
-// Infinite scrolling setup
-function setupInfiniteScrolling() {
+    // Infinite Scroll Listener
     window.addEventListener("scroll", () => {
-        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
-            fetchMatches(); // Load more users
+        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+        if (scrollTop + clientHeight >= scrollHeight - 10) {
+            fetchMatches();
         }
     });
-}
+
+    // Initial Load
+    fetchMatches();
+});
 
     function showHeartPopup(userId) {
       const popup = document.getElementById(`heart-popup-${userId}`);
@@ -417,41 +625,6 @@ function setupInfiniteScrolling() {
       window.location.href = `/messages.html?userId=${userId}&username=${encodeURIComponent(username)}`;
     }
 
-    // Fetch matches on page load
-    fetchMatches();
-
-        async function checkUserRegistration() {
-      try {
-        const response = await fetch('/api/check-registration', {
-          method: 'GET',
-          credentials: 'include'
-        });
-        const result = await response.json();
-        return result.isRegistered;
-      } catch (error) {
-        console.error('Error checking registration status:', error);
-        return false; // Default to not registered in case of error
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', async function() {
-      const isRegistered = await checkUserRegistration();
-      if (!isRegistered) {
-        const modal = document.getElementById('notification-modal');
-        modal.style.display = 'block';
-
-        const closeModal = document.getElementsByClassName('close')[0];
-        closeModal.onclick = function() {
-          modal.style.display = 'none';
-        };
-
-        window.onclick = function(event) {
-          if (event.target === modal) {
-            modal.style.display = 'none';
-          }
-        };
-      }
-    });
 
     if ('serviceWorker' in navigator && 'PushManager' in window) {
     navigator.serviceWorker.register('/service-worker.js')
@@ -542,7 +715,56 @@ document.addEventListener('DOMContentLoaded', () => {
     function scrollRight(containerId) {
       document.getElementById(containerId).scrollBy({ left: 200, behavior: 'smooth' });
     }
-  </script>
 
+    document.addEventListener("DOMContentLoaded", function () {
+          let page = 1; // Tracks the current page
+          let loading = false; // Prevents duplicate requests
+      
+          async function fetchContent() {
+              if (loading) return;
+              loading = true;
+      
+              try {
+                  const response = await fetch(`/api/get-content?page=${page}`); // Update API endpoint
+                  const items = await response.json();
+      
+                  if (items.length > 0) {
+                      page++; // Load next page on scroll
+                      renderItems(items);
+                  }
+              } catch (error) {
+                  console.error("Error fetching content:", error);
+              }
+      
+              loading = false;
+          }
+      
+          function renderItems(items) {
+              const container = document.getElementById("content-container"); // Change to your div ID
+      
+              items.forEach(item => {
+                  const itemDiv = document.createElement("div");
+                  itemDiv.className = "content-item";
+                  itemDiv.innerHTML = `
+                      <h2>${item.title}</h2>
+                      <p>${item.description}</p>
+                  `;
+                  container.appendChild(itemDiv);
+              });
+          }
+      
+          // Infinite Scroll Listener
+          window.addEventListener("scroll", () => {
+              const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+              if (scrollTop + clientHeight >= scrollHeight - 10) {
+                  fetchContent();
+              }
+          });
+      
+          // Initial Load
+          fetchContent();
+      });
+  </script>
+  
 </body>
 </html>
