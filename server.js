@@ -664,9 +664,7 @@ app.get('/speed', requireLogin, (req, res) => {
 app.get('/searching-base', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'searching-base.html'));
 });
-app.get('/location-based-search', requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'location-based-search.html'));
-});
+
 // Route to serve the voice-chat-room.html file
 app.get('/voice-chat-room', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'voice-chat-room.html'));
@@ -1087,7 +1085,6 @@ app.get('/api/messages', requireLogin, async (req, res) => {
 // Fetch the chat list for a user with filters and unread message count
 app.get('/api/chat-list', requireLogin, async (req, res) => {
     const userId = req.session.userId;
-    const { filter } = req.query;
 
     try {
         // Fetch blocked user IDs
@@ -1097,52 +1094,51 @@ app.get('/api/chat-list', requireLogin, async (req, res) => {
         });
         const blockedUserIds = blockedUsers.map(block => block.blockedUserId);
 
-        let whereClause = {
-            [Op.or]: [
-                { fromUserId: userId },
-                { toUserId: userId }
-            ]
-        };
-
-        if (filter === 'unread') {
-            whereClause.read = false;
-        } else if (filter === 'favorites') {
-            whereClause.favorite = true;
-        }
-
+        // Find all chats involving the user
         const messages = await Message.findAll({
-            where: whereClause,
-            attributes: ['fromUserId', 'toUserId', 'content', 'createdAt', 'read']
+            where: {
+                [Op.or]: [{ fromUserId: userId }, { toUserId: userId }]
+            },
+            attributes: ['fromUserId', 'toUserId', 'content', 'createdAt', 'read'],
+            order: [['createdAt', 'DESC']]
         });
 
         const chatUserIds = new Set();
         const unreadCounts = {};
         const lastMessageTimes = {};
+        const lastMessages = {};
 
         messages.forEach(msg => {
             const otherUserId = msg.fromUserId === userId ? msg.toUserId : msg.fromUserId;
 
-            // Skip adding blocked users to the chat list
             if (blockedUserIds.includes(otherUserId)) return;
 
             chatUserIds.add(otherUserId);
+
             if (!msg.read && msg.toUserId === userId) {
                 unreadCounts[otherUserId] = (unreadCounts[otherUserId] || 0) + 1;
             }
+
             lastMessageTimes[otherUserId] = lastMessageTimes[otherUserId]
                 ? new Date(Math.max(new Date(lastMessageTimes[otherUserId]), new Date(msg.createdAt)))
                 : msg.createdAt;
+
+            lastMessages[otherUserId] = msg.content; // Fix: Ensuring last message is properly assigned
         });
 
+        // Retrieve user details for each chat
         const chatUsers = await User.findAll({
             where: { id: Array.from(chatUserIds) },
             attributes: ['id', 'username', 'profilePicture']
         });
 
         res.json(chatUsers.map(user => ({
-            ...user.toJSON(),
+            id: user.id,
+            username: user.username,
+            profilePicture: user.profilePicture,
             unreadCount: unreadCounts[user.id] || 0,
-            lastMessageTime: lastMessageTimes[user.id] || null
+            lastMessageTime: lastMessageTimes[user.id] ? new Date(lastMessageTimes[user.id]).toISOString() : null,
+            lastMessage: lastMessages[user.id] || "" // Fix: Ensure lastMessage always has a value
         })));
     } catch (error) {
         console.error('Error fetching chat list:', error);
@@ -3578,6 +3574,148 @@ app.get('/api/posts/popular', async (req, res) => {
     res.status(500).json({ error: 'Error fetching popular posts' });
   }
 });
+
+// Define AMA models with associations properly
+
+const AMAProfile = sequelize.define("AMAProfile", {
+    userId: { type: DataTypes.INTEGER, allowNull: false },
+    visibility: { type: DataTypes.ENUM("public", "matches_only", "private"), defaultValue: "public" }
+});
+
+const AMAQuestion = sequelize.define("AMAQuestion", {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    userId: { type: DataTypes.INTEGER, references: { model: User, key: 'id' }, allowNull: false },
+    question: { type: DataTypes.TEXT, allowNull: false }
+});
+
+const AMAAnswer = sequelize.define("AMAAnswer", {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    questionId: { type: DataTypes.INTEGER, references: { model: AMAQuestion, key: 'id' }, allowNull: false },
+    userId: { type: DataTypes.INTEGER, references: { model: User, key: 'id' }, allowNull: false },
+    answer: { type: DataTypes.TEXT, allowNull: false }
+});
+
+const AMAReaction = sequelize.define("AMAReaction", {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    answerId: { type: DataTypes.INTEGER, references: { model: AMAAnswer, key: 'id' }, allowNull: false },
+    userId: { type: DataTypes.INTEGER, references: { model: User, key: 'id' }, allowNull: false },
+    reaction: { type: DataTypes.ENUM("like", "love", "funny") }
+});
+
+// Define associations similar to post system
+User.hasMany(AMAQuestion, { foreignKey: 'userId', onDelete: 'CASCADE' });
+AMAQuestion.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+
+AMAQuestion.hasMany(AMAAnswer, { foreignKey: 'questionId', onDelete: 'CASCADE' });
+AMAAnswer.belongsTo(AMAQuestion, { foreignKey: 'questionId', onDelete: 'CASCADE' });
+
+AMAAnswer.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+
+AMAAnswer.hasMany(AMAReaction, { foreignKey: 'answerId', onDelete: 'CASCADE' });
+AMAReaction.belongsTo(AMAAnswer, { foreignKey: 'answerId', onDelete: 'CASCADE' });
+
+AMAReaction.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+
+
+// ✅ Route to create AMA question
+app.post("/api/ama-question", async (req, res) => {
+    const { userId, question } = req.body;
+
+    if (!userId || !question.trim()) {
+        return res.status(400).json({ error: "Invalid data received." });
+    }
+
+    try {
+        const newQuestion = await AMAQuestion.create({ userId, question });
+        res.json({ success: true, message: "AMA Question posted!", question: newQuestion });
+    } catch (error) {
+        console.error("Error posting AMA question:", error);
+        res.status(500).json({ error: "Error posting AMA question." });
+    }
+});
+
+// ✅ Route to fetch AMA questions created by logged-in user
+app.get("/api/get-user-ama", async (req, res) => {
+    try {
+        const { userId } = req.session;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, error: "User not authenticated." });
+        }
+
+        const questions = await AMAQuestion.findAll({
+            where: { userId },
+            include: [{ model: User, attributes: ["username"] }],
+            order: [["createdAt", "DESC"]]
+        });
+
+        res.json(questions);
+    } catch (error) {
+        console.error("Error fetching user AMA questions:", error);
+        res.status(500).json({ success: false, error: "Error fetching user AMA questions." });
+    }
+});
+
+// ✅ Route to fetch all public AMA questions
+app.get("/api/get-public-ama", async (req, res) => {
+    try {
+        const questions = await AMAQuestion.findAll({
+            include: [{ model: User, attributes: ["username"] }],
+            order: [["createdAt", "DESC"]]
+        });
+
+        res.json(questions);
+    } catch (error) {
+        console.error("Error fetching public AMA questions:", error);
+        res.status(500).json({ success: false, error: "Error fetching public AMA questions." });
+    }
+});
+
+// ✅ Route to submit AMA answers
+app.post("/api/ama-answers", async (req, res) => {
+    const { questionId, userId, answer } = req.body;
+
+    try {
+        await AMAAnswer.create({ questionId, userId, answer });
+        res.json({ success: true, message: "Answer submitted!" });
+    } catch (error) {
+        console.error("Error submitting AMA answer:", error);
+        res.status(500).json({ error: "Error submitting AMA answer." });
+    }
+});
+
+// ✅ Route to react to AMA answers
+app.post("/api/ama-reactions", async (req, res) => {
+    const { answerId, userId, reaction } = req.body;
+
+    try {
+        await AMAReaction.create({ answerId, userId, reaction });
+        res.json({ success: true, message: "Reaction added!" });
+    } catch (error) {
+        console.error("Error adding AMA reaction:", error);
+        res.status(500).json({ error: "Error adding reaction." });
+    }
+});
+
+// ✅ Route to delete AMA question
+app.delete("/api/delete-ama/:questionId", async (req, res) => {
+    try {
+        const { userId } = req.session;
+        const { questionId } = req.params;
+
+        const question = await AMAQuestion.findByPk(questionId);
+        if (!question || question.userId !== userId) {
+            return res.status(403).json({ success: false, error: "Unauthorized or not found." });
+        }
+
+        await question.destroy();
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error deleting AMA question:", error);
+        res.status(500).json({ success: false, error: "Error deleting AMA question." });
+    }
+});
+
 
 // Define the BlockedUser model
 const BlockedUser = sequelize.define('BlockedUser', {
