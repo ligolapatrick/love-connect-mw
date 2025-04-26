@@ -137,7 +137,7 @@ app.get('/auth/facebook/callback',
 const { Sequelize, DataTypes, Op } = require('sequelize');
 
 
-const sequelize = new Sequelize('postgresql://trecks:qbswIv5TafgR2bws3guwShCbRfFfHV1o@dpg-cvjagvidbo4c738rjbfg-a.oregon-postgres.render.com/find_one_by_click', {
+const sequelize = new Sequelize('postgresql://patrigo:C5q256etbYsYfuyDnGjBKcABi7RBCQyC@dpg-d06ds4ili9vc73e94lm0-a.oregon-postgres.render.com/loveconnect_7qiw', {
     dialect: 'postgres',
     logging: false,
     dialectOptions: {
