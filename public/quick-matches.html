@@ -1,237 +1,363 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/png" sizes="192x192" href="images/logo.png">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riddle Game</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            width: 90%;
-            max-width: 800px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        h1 {
-            margin-bottom: 20px;
-            color: #333;
-        }
-        .timers {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        .timer {
-            font-size: 1.2em;
-            color: #007bff;
-        }
-        .riddle {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-            color: #444;
-        }
-        .inputs {
-            display: flex;
-            justify-content: space-between;
-        }
-        .input {
-            flex: 1;
-            margin: 0 10px;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            font-size: 1em;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 1em;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        .feedback {
-            margin-top: 10px;
-            font-size: 1.2em;
-            color: #555;
-        }
-        .scoreboard {
-            margin-top: 20px;
-            font-size: 1.2em;
-            display: flex;
-            justify-content: space-between;
-        }
-        
-             /* Bottom Navigation Styles */
-             .bottom-nav {
-                  display: flex;
-                  justify-content: space-around;
-                  background-color: hsl(120, 19%, 31%);
-                  padding: 10px 0;
-                  position: fixed;
-                  bottom: 0;
-                  width: 100%;
-              }
-      
-              .bottom-nav a {
-                  color: white;
-                  text-align: center;
-                  text-decoration: none;
-                  font-size: 14px;
-              }
-      
-              .bottom-nav a img {
-                  display: block;
-                  width: 20px;
-                  height: 20px;
-                  margin: 0 auto;
-              }
-      
-              .bottom-nav a.active {
-                  color: rgb(0, 0, 0);
-              }
-              .unread-count {
-        background-color: #ff6347;
-        color: white;
-        border-radius: 50%;
-        padding: 2px 6px;
-        font-size: 0.8em;
-        margin-left: 5px;
-              }
-    </style>
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Riddle Game</title>
+  <style>
+    /* Global Reset & Box Sizing */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Online User Count - Top Right */
+    .user-count {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: #007bff;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 1em;
+      z-index: 1000;
+    }
+
+    /* Main container */
+    .container {
+      width: 90%;
+      max-width: 800px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+      position: relative;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .timers {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .timer {
+      font-size: 1.2em;
+      color: #007bff;
+    }
+
+    .riddle {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      color: #444;
+    }
+
+    .inputs {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    .input {
+      flex: 1 1 45%;
+      margin: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    .feedback {
+      margin-top: 10px;
+      font-size: 1.2em;
+      color: #555;
+    }
+
+    .scoreboard {
+      margin-top: 20px;
+      font-size: 1.2em;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Popup Messages */
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2em;
+      display: none;
+      z-index: 100;
+    }
+
+    .winner {
+      color: green;
+      animation: popAnimation 0.8s ease-in-out;
+    }
+
+    .loser {
+      color: red;
+      animation: shakeAnimation 0.8s ease-in-out;
+    }
+
+    .draw {
+      color: orange;
+      animation: fadeAnimation 1s ease-in-out;
+    }
+
+    @keyframes popAnimation {
+      0% { transform: translate(-50%, -50%) scale(0.8); }
+      50% { transform: translate(-50%, -50%) scale(1.2); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @keyframes shakeAnimation {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      25% { transform: translate(-50%, -50%) rotate(-10deg); }
+      50% { transform: translate(-50%, -50%) rotate(10deg); }
+      75% { transform: translate(-50%, -50%) rotate(-10deg); }
+      100% { transform: translate(-50%, -50%) rotate(0deg); }
+    }
+
+    @keyframes fadeAnimation {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    /* Bottom Navigation Styles */
+    .bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      background-color: hsl(120, 19%, 31%);
+      padding: 10px 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+
+    .bottom-nav a {
+      color: #fff;
+      text-align: center;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .bottom-nav a img {
+      display: block;
+      width: 20px;
+      height: 30px;
+      margin: 0 auto;
+    }
+
+    .bottom-nav a.active {
+      color: rgb(0, 0, 0);
+    }
+
+    /* Responsive Styles for Small Devices */
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.5em;
+      }
+      .riddle {
+        font-size: 1.2em;
+      }
+      .timer, .feedback, .scoreboard {
+        font-size: 1em;
+      }
+      input, button {
+        font-size: 0.9em;
+      }
+      .bottom-nav a {
+        font-size: 12px;
+      }
+      .input {
+        flex: 1 1 100%;
+        margin: 5px 0;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Riddle Game</h1>
-        <div class="timers">
-            <div class="timer">Riddle Time Left: <span id="riddleTimer">40</span>s</div>
-            <div class="timer">Session Time Left: <span id="sessionTimer">180</span>s</div>
-        </div>
-        <div class="riddle" id="riddleText">Loading riddle...</div>
-        <div class="inputs">
-            <div class="input">
-                <h3>Your Answer</h3>
-                <input type="text" id="userInput" placeholder="Type your answer here">
-            </div>
-            <div class="input">
-                <h3>Opponent's Answer</h3>
-                <input type="text" id="opponentInput" placeholder="Waiting for opponent..." disabled>
-            </div>
-        </div>
-        <button id="submitAnswer">Submit</button>
-        <div class="feedback" id="feedback"></div>
-        <div class="scoreboard">
-            <div>You: <span id="userScore">0</span></div>
-            <div>Opponent: <span id="opponentScore">0</span></div>
-        </div>
+  <!-- Online Users Count -->
+  <div class="user-count">Users Online: <span id="userOnline">0</span></div>
+  
+  <div class="container">
+    <h1>Riddle Game</h1>
+    <div class="timers">
+      <div class="timer">Riddle Time Left: <span id="riddleTimer">40</span>s</div>
+      <div class="timer">Session Time Left: <span id="sessionTimer">180</span>s</div>
     </div>
+    <div class="riddle" id="riddleText">Loading riddle...</div>
+    <div class="inputs">
+      <div class="input">
+        <h3>Your Answer</h3>
+        <input type="text" id="userInput" placeholder="Type your answer here">
+      </div>
+      <div class="input">
+        <h3>Opponent's Answer</h3>
+        <input type="text" id="opponentInput" placeholder="Waiting for opponent..." disabled>
+      </div>
+    </div>
+    <button id="submitAnswer">Submit</button>
+    <div class="feedback" id="feedback"></div>
+    <div class="scoreboard">
+      <div>You: <span id="userScore">0</span></div>
+      <div>Opponent: <span id="opponentScore">0</span></div>
+    </div>
+    <!-- Popups -->
+    <div id="winnerPopup" class="popup winner">🎉❤️ Congratulations! ❤️🎉</div>
+    <div id="loserPopup" class="popup loser">😢 Better luck next time! 😢</div>
+    <div id="drawPopup" class="popup draw">🤝 It's a draw! 🤝</div>
+  </div>
+  
+  <nav class="bottom-nav">
+    <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
+    <a href="fire.html"><img src="icons/message.png" alt="Settings"> HookUp</a>
+    <a href="/song.html"><img src="icons/anonymouse.png" alt="Anonymous"> Casual</a>
+    <a href="/trivia.html"><img src="icons/likes.png" alt="Likes"> Hangout</a>
+    <a href="/travel.html"><img src="icons/logout.png" alt="Logout"> Travel</a>
+  </nav>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
 
-    <nav class="bottom-nav">
-      <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
-      <a href="fire.html"><img src="icons/message.png" alt="Settings">HookUp</a>
-      <a href="/song.html"><img src="icons/anonymouse.png" alt="Anonymous"> Casual</a>
-      <a href="/trivia.html"><img src="icons/likes.png" alt="Likes"> Hangout</a>
-      <a href="/travel.html"><img src="icons/logout.png" alt="Logout"> Travel</a>
-    </nav>
-    
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-       const socket = io();
+    // Tell the server we're joining the riddle game.
+    socket.emit('joinRiddleGame');
 
-const riddleText = document.getElementById('riddleText');
-const userInput = document.getElementById('userInput');
-const opponentInput = document.getElementById('opponentInput');
-const submitAnswer = document.getElementById('submitAnswer');
-const feedback = document.getElementById('feedback');
-const userScore = document.getElementById('userScore');
-const opponentScore = document.getElementById('opponentScore');
-const riddleTimer = document.getElementById('riddleTimer');
-const sessionTimer = document.getElementById('sessionTimer');
+    // Update online user count.
+    socket.on('updateUserCount', ({ count }) => {
+      document.getElementById('userOnline').textContent = count;
+    });
 
-// Notify the server that the user has joined the game
-socket.emit('joinRiddleGame');
+    // When a new riddle is received, update the riddle text and clear old feedback.
+    socket.on('newRiddle', (riddle) => {
+      document.getElementById('riddleText').textContent = riddle.riddle;
+      document.getElementById('feedback').textContent = '';
+    });
 
-// Display the riddle
-socket.on('newRiddle', (riddle) => {
-    riddleText.textContent = riddle.riddle;
-    feedback.textContent = '';
-    opponentInput.value = ''; // Clear opponent's input
-});
+    // When the user submits an answer.
+    document.getElementById('submitAnswer').addEventListener('click', () => {
+      const answer = document.getElementById('userInput').value;
+      socket.emit('submitAnswer', { input: answer });
+      document.getElementById('userInput').value = '';
+      document.getElementById('feedback').textContent = '';
+    });
 
-// Update opponent's typing in real time
-userInput.addEventListener('input', () => {
-    socket.emit('typing', { input: userInput.value });
-});
+    // Handle correct answer events.
+    socket.on('correctAnswer', (data) => {
+      if (data.userId === socket.id) {
+        document.getElementById('feedback').textContent = '✅ You got the correct answer!';
+        document.getElementById('feedback').style.color = 'green';
+        document.getElementById('winnerPopup').style.display = "block";
+        document.getElementById('userScore').textContent =
+          parseInt(document.getElementById('userScore').textContent, 10) + 1;
+      } else {
+        document.getElementById('feedback').textContent = '🎉 Your opponent answered correctly!';
+        document.getElementById('feedback').style.color = 'blue';
+        document.getElementById('loserPopup').style.display = "block";
+        document.getElementById('opponentScore').textContent =
+          parseInt(document.getElementById('opponentScore').textContent, 10) + 1;
+      }
+      // Clear feedback and hide popups after 3 seconds.
+      setTimeout(() => {
+        document.getElementById('feedback').textContent = '';
+        document.getElementById('winnerPopup').style.display = "none";
+        document.getElementById('loserPopup').style.display = "none";
+      }, 3000);
+    });
 
-socket.on('opponentTyping', ({ input }) => {
-    opponentInput.value = input || '';
-});
+    // Handle incorrect answer events.
+    socket.on('incorrectAnswer', (data) => {
+      document.getElementById('feedback').textContent = '❌ Incorrect! Try again.';
+      document.getElementById('feedback').style.color = 'red';
+      setTimeout(() => {
+        document.getElementById('feedback').textContent = '';
+      }, 5000);
+    });
 
-// Handle submission of answers
-submitAnswer.addEventListener('click', () => {
-    socket.emit('submitAnswer', { input: userInput.value });
-    userInput.value = ''; // Clear the input after submission
-});
+    // Handle session end events.
+    socket.on('sessionEnd', ({ userScore, opponentScore }) => {
+      const uScore = parseInt(userScore, 10);
+      const oScore = parseInt(opponentScore, 10);
+      if (uScore > oScore) {
+        document.getElementById('feedback').textContent = '🏆 You won the session!';
+        document.getElementById('feedback').style.color = 'gold';
+        document.getElementById('winnerPopup').style.display = "block";
+      } else if (uScore < oScore) {
+        document.getElementById('feedback').textContent = '😞 You lost this round!';
+        document.getElementById('feedback').style.color = 'red';
+        document.getElementById('loserPopup').style.display = "block";
+      } else {
+        document.getElementById('feedback').textContent = "🤝 It's a draw!";
+        document.getElementById('feedback').style.color = 'orange';
+        document.getElementById('drawPopup').style.display = "block";
+      }
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    });
 
-// Handle correct answers
-socket.on('correctAnswer', (data) => {
-    if (data.userId === socket.id) {
-        feedback.textContent = 'Correct! Great job!';
-        feedback.style.color = 'green';
-        userScore.textContent = parseInt(userScore.textContent) + 1;
-    } else {
-        feedback.textContent = 'Your opponent got it correct!';
-        feedback.style.color = 'red';
-        opponentScore.textContent = parseInt(opponentScore.textContent) + 1;
-    }
-});
+    // Update riddle timer.
+    socket.on('riddleTimerUpdate', ({ riddleTime }) => {
+      document.getElementById('riddleTimer').textContent = `${riddleTime}s`;
+    });
 
-// Handle incorrect answers
-socket.on('incorrectAnswer', (data) => {
-    feedback.textContent = data.message;
-    feedback.style.color = 'orange';
-});
+    // Update session timer in MM:SS format.
+    socket.on('sessionTimerUpdate', ({ sessionTime }) => {
+      const minutes = Math.floor(sessionTime / 60);
+      const seconds = sessionTime % 60;
+      document.getElementById('sessionTimer').textContent =
+        `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    });
 
-// Update the riddle timer
-socket.on('riddleTimerUpdate', ({ riddleTime }) => {
-    riddleTimer.textContent = riddleTime + 's';
-});
+    // Broadcast real-time typing.
+    document.getElementById('userInput').addEventListener('input', () => {
+      socket.emit('typing', { input: document.getElementById('userInput').value });
+    });
 
-// Update the session timer
-socket.on('sessionTimerUpdate', ({ sessionTime }) => {
-    const minutes = Math.floor(sessionTime / 60);
-    const seconds = sessionTime % 60;
-    sessionTimer.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-});
-
-// Handle end of session
-socket.on('sessionEnd', ({ message }) => {
-    alert(message);
-    riddleText.textContent = 'Game Over!';
-    feedback.textContent = 'Session has ended. Waiting for a new match...';
-});
-
-    </script>
+    // Display opponent's typing.
+    socket.on('opponentTyping', ({ input }) => {
+      document.getElementById('opponentInput').value = input || '';
+    });
+  </script>
 </body>
 </html>
