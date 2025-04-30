@@ -4629,6 +4629,10 @@ app.post('/api/change-password', requireLogin, async (req, res) => {
   }
 });
 
+// Global variables for pairing and user count.
+let waitingPlayer = null;
+let sessions = {};
+
 
 const riddles = [
   { id: 6, riddle: "What has to be broken before you can use it?", answer: "Egg", hint: "It's fragile and edible." },
@@ -4675,145 +4679,232 @@ const riddles = [
   { id: 47, riddle: "What kind of coat can only be put on when wet?", answer: "Paint", hint: "Used for walls or art." },
   { id: 48, riddle: "What has roots as nobody sees, is taller than trees, up, up it goes, and yet it never grows?", answer: "Mountain", hint: "You climb it." },
   { id: 49, riddle: "If you drop me, I’m sure to crack, but smile at me, and I’ll smile back. What am I?", answer: "Mirror", hint: "Reflects your image." },
-  { id: 50, riddle: "What has a spine but no bones?", answer: "Book", hint: "It's full of stories." }
+  { id: 50, riddle: "What has a spine but no bones?", answer: "Book", hint: "It's full of stories." },
+  { id: 51, riddle: "I have branches, yet I have no leaves, no trunk, and no fruit. What am I?", answer: "Bank", hint: "Think of a financial institution with multiple locations." },
+  { id: 52, riddle: "What room do ghosts avoid?", answer: "The living room", hint: "It contrasts with being dead." },
+  { id: 53, riddle: "What word becomes shorter when you add two letters to it?", answer: "Short", hint: "The word itself means reduced in length." },
+  { id: 54, riddle: "What invention lets you look right through a wall?", answer: "Window", hint: "It's transparent." },
+  { id: 55, riddle: "I shrink smaller every time I take a bath. What am I?", answer: "Soap", hint: "It dissolves gradually in water." },
+  { id: 57, riddle: "What goes up a chimney down, but can't come down a chimney up?", answer: "Umbrella", hint: "Think about its open and closed states." },
+  { id: 58, riddle: "What always ends everything?", answer: "The letter G", hint: "Look at the word 'everything'." },
+  { id: 59, riddle: "What runs around the yard but never moves?", answer: "Fence", hint: "It encloses your outdoor space." },
+  { id: 60, riddle: "What breaks but never falls, and what falls but never breaks?", answer: "Day breaks and night falls", hint: "A play on words about time." },
+  { id: 61, riddle: "I am taken from a mine and shut in a wooden case. What am I?", answer: "Pencil lead", hint: "It's found in every pencil." },
+  { id: 62, riddle: "What has ears but cannot hear?", answer: "Corn", hint: "They grow on a cob." },
+  { id: 63, riddle: "What letter is in the middle of water?", answer: "T", hint: "Spell out 'water' to find the center." },
+  { id: 64, riddle: "What letter appears once in a year, twice in a decade, and never in a month?", answer: "E", hint: "Look closely at the words." },
+  { id: 65, riddle: "What can be cracked, made, told, and played?", answer: "A joke", hint: "It’s meant to entertain." },
+  { id: 66, riddle: "What is black when you buy it, red when you use it, and gray when you throw it away?", answer: "Charcoal", hint: "It burns and then turns to ash." },
+  { id: 67, riddle: "What has a heart that doesn’t beat?", answer: "An artichoke", hint: "Look for the edible 'heart'." },
+  { id: 68, riddle: "What flies without wings?", answer: "Time", hint: "It passes quickly without physical form." },
+  { id: 69, riddle: "What gets sharper the more you use it?", answer: "Your mind", hint: "Exercise your brain." },
+  { id: 70, riddle: "What can you hold without ever touching it?", answer: "A conversation", hint: "It’s intangible." },
+  { id: 71, riddle: "What begins with a P, ends with an E, and has thousands of letters?", answer: "Post office", hint: "It handles mail." },
+  { id: 72, riddle: "I am heavy forward, but backward I'm not. What am I?", answer: "Ton", hint: "Think about the reversed spelling." },
+  { id: 73, riddle: "What has many rings but no fingers?", answer: "Saturn", hint: "It's a planet known for its rings." },
+  { id: 74, riddle: "What has many faces but never complains?", answer: "Dice", hint: "Used in numerous games." },
+  { id: 75, riddle: "What has a neck but no head, and two arms but no hands?", answer: "A shirt", hint: "It's a piece of clothing." },
+  { id: 76, riddle: "What type of room has no doors or windows?", answer: "Mushroom", hint: "A fun play on words." },
+  { id: 77, riddle: "What is always coming, but never arrives?", answer: "Tomorrow", hint: "It’s perpetually in the future." },
+  { id: 78, riddle: "I am not alive, but I have five fingers. What am I?", answer: "Glove", hint: "You wear it on your hand." },
+  { id: 79, riddle: "What do you call a bear with no teeth?", answer: "Gummy bear", hint: "Think of a sweet, chewy treat." },
+  { id: 80, riddle: "What never asks a question but gets answered all the time?", answer: "A doorbell", hint: "You ring it, and someone responds." },
+  { id: 81, riddle: "How many months have 28 days?", answer: "All of them", hint: "Every month has at least 28 days." },
+  { id: 82, riddle: "What is hard to get but easy to lose?", answer: "Your temper", hint: "It can flare up quickly." },
+  { id: 83, riddle: "What belongs to you but is used more by others?", answer: "Your name", hint: "Others call you by it." },
+  { id: 84, riddle: "If an electric train is moving north at 100mph and a wind is blowing east at 10mph, which way does the smoke blow?", answer: "None", hint: "Electric trains don’t produce smoke." },
+  { id: 85, riddle: "What kind of tree can you carry in your hand?", answer: "Palm", hint: "A play on words." },
+  { id: 86, riddle: "What word is always spelled incorrectly in every dictionary?", answer: "Incorrectly", hint: "That’s exactly how it’s written." },
+  { id: 87, riddle: "What can’t you put in a saucepan?", answer: "Its lid", hint: "Because it's already covering it." },
+  { id: 88, riddle: "What is the center of gravity?", answer: "The letter V", hint: "Examine the word closely." },
+  { id: 89, riddle: "What has four eyes but cannot see?", answer: "Mississippi", hint: "Count the letter 'i's in it." },
+  { id: 90, riddle: "What kind of cup doesn't hold water?", answer: "A cupcake", hint: "It’s a delicious dessert." },
+  { id: 91, riddle: "What has bark but no bite?", answer: "A tree", hint: "It covers the trunk and branches." },
+  { id: 92, riddle: "What can you break, even if you never pick it up?", answer: "A promise", hint: "It's not a physical object." },
+  { id: 93, riddle: "What goes up when the rain comes down?", answer: "An umbrella", hint: "It opens when it rains." },
+  { id: 94, riddle: "I am an odd number. Take away one letter and I become even. What number am I?", answer: "Seven", hint: "Remove the 's' to reveal 'even'." },
+  { id: 95, riddle: "What goes around in circles but still moves forward?", answer: "A wheel", hint: "It rotates continuously." },
+  { id: 96, riddle: "What word is a palindrome?", answer: "Racecar", hint: "It reads the same forwards and backwards." },
+  { id: 97, riddle: "What jumps when it walks and sits when it stands?", answer: "Kangaroo", hint: "This marsupial is known for hopping." },
+  { id: 98, riddle: "What has feet but can't walk?", answer: "A ruler", hint: "It's used for measuring." },
+  { id: 99, riddle: "I build up castles, yet tear down mountains. I make some men blind, yet help others to see. What am I?", answer: "Sand", hint: "Found at the beach or in the desert." },
+  { id: 100, riddle: "What can bring back the dead, make you cry, make you laugh, and last a lifetime?", answer: "Memory", hint: "It lives in your mind." }
 ];
 
-let waitingPlayer = null; // Store the first waiting player
-let sessions = {}; // Keep track of active sessions
+// Track online users count
+let onlineUserCount = 0;
+
+// User pairing and session tracking
 
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
+  // Increment online user count and notify all clients
+  onlineUserCount++;
+  io.emit('updateUserCount', { count: onlineUserCount });
+  console.log(`User connected: ${socket.id} | Online users: ${onlineUserCount}`);
 
-    let currentSession = null;
+  let currentSession = null;
 
-    // Handle user joining the game
-    socket.on('joinRiddleGame', () => {
-        if (waitingPlayer) {
-            // Pair the current player with the waiting player
-            currentSession = {
-                player1: waitingPlayer,
-                player2: socket.id,
-                riddleIndex: 0,
-                activeRiddle: null,
-                riddleTimer: null,
-                sessionTimer: null,
-                riddles: [...riddles], // Clone riddles array for the session
-            };
-            sessions[socket.id] = currentSession;
-            sessions[waitingPlayer] = currentSession;
+  // Handle game joining
+  socket.on('joinRiddleGame', () => {
+    if (waitingPlayer) {
+      // Pair the players
+      const session = {
+        player1: waitingPlayer,
+        player2: socket.id,
+        scores: {},
+        activeRiddle: null,
+        riddleTimer: null,
+        sessionTimer: null,
+        riddles: [...riddles]
+      };
 
-            waitingPlayer = null; // Clear waiting user
+      // Initialize scores
+      session.scores[session.player1] = 0;
+      session.scores[session.player2] = 0;
 
-            io.to(currentSession.player1).emit('matchFound', { opponent: currentSession.player2 });
-            io.to(currentSession.player2).emit('matchFound', { opponent: currentSession.player1 });
+      // Store session
+      sessions[socket.id] = session;
+      sessions[waitingPlayer] = session;
+      currentSession = session;
 
-            startRiddleSession(currentSession); // Start the game for both players
-        } else {
-            waitingPlayer = socket.id;
-            socket.emit('waiting', { message: "Waiting for an opponent..." });
-        }
-    });
+      // Notify match found
+      io.to(session.player1).emit('matchFound', { opponent: session.player2 });
+      io.to(session.player2).emit('matchFound', { opponent: session.player1 });
+      waitingPlayer = null;
 
-    // Start a riddle session
-    const startRiddleSession = (session) => {
-        const players = [session.player1, session.player2];
-        let sessionTime = 180; // 3 minutes
+      // Start the session
+      startRiddleSession(session);
+    } else {
+      waitingPlayer = socket.id;
+      socket.emit('waiting', { message: "Waiting for an opponent..." });
+    }
+  });
 
-        const sendNextRiddle = () => {
-            if (session.riddles.length === 0) {
-                io.to(players).emit('sessionEnd', { message: "All riddles completed!" });
-                endSession(players);
-                return;
-            }
+  // Function to start a riddle session
+  const startRiddleSession = (session) => {
+    const players = [session.player1, session.player2];
+    let sessionTime = 180;
 
-            // Select a random riddle
-            const randomIndex = Math.floor(Math.random() * session.riddles.length);
-            const riddle = session.riddles[randomIndex];
-            session.riddles.splice(randomIndex, 1); // Remove the selected riddle
-            session.activeRiddle = riddle; // Track the active riddle
-
-            io.to(players).emit('newRiddle', riddle);
-
-            let timeLeft = 30; // 30 seconds per riddle
-            session.riddleTimer = setInterval(() => {
-                if (timeLeft <= 0) {
-                    clearInterval(session.riddleTimer);
-                    io.to(players).emit('riddleTimeout', { message: "Time's up! Moving to the next riddle." });
-                    sendNextRiddle();
-                } else {
-                    io.to(players).emit('riddleTimerUpdate', { riddleTime: timeLeft });
-                    timeLeft--;
-                }
-            }, 1000);
-        };
-
-        // Session timer
-        session.sessionTimer = setInterval(() => {
-            if (sessionTime <= 0) {
-                clearInterval(session.sessionTimer);
-                clearInterval(session.riddleTimer);
-                io.to(players).emit('sessionEnd', { message: "Session time is over!" });
-                endSession(players);
-            } else {
-                io.to(players).emit('sessionTimerUpdate', { sessionTime });
-                sessionTime--;
-            }
-        }, 1000);
-
-        sendNextRiddle(); // Start the first riddle
-    };
-
-    // Handle answer submission
-    socket.on('submitAnswer', ({ input }) => {
-        const session = sessions[socket.id];
-        if (!session) return;
-
-        const sanitizedInput = input.trim().toLowerCase();
-        const correctAnswer = session.activeRiddle.answer.toLowerCase();
-
-        if (sanitizedInput === correctAnswer) {
-            // Notify both players of the correct answer
-            io.to(session.player1).emit('correctAnswer', { userId: socket.id });
-            io.to(session.player2).emit('correctAnswer', { userId: socket.id });
-            clearInterval(session.riddleTimer); // Stop the current riddle timer
-            startRiddleSession(session); // Start the next riddle
-        } else {
-            // Notify the player who submitted the wrong answer
-            socket.emit('incorrectAnswer', { message: "Wrong answer! Try again." });
-        }
-    });
-
-    // Broadcast typing updates to the opponent
-    socket.on('typing', ({ input }) => {
-        const session = sessions[socket.id];
-        if (!session) return;
-
-        const opponent = session.player1 === socket.id ? session.player2 : session.player1;
-        io.to(opponent).emit('opponentTyping', { input });
-    });
-
-    // Handle disconnection
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-        const session = sessions[socket.id];
-        if (session) {
-            const opponent = session.player1 === socket.id ? session.player2 : session.player1;
-            io.to(opponent).emit('endChat', { message: "Your opponent has left the game." });
-            endSession([session.player1, session.player2]);
-        }
-
-        if (waitingPlayer === socket.id) {
-            waitingPlayer = null;
-        }
-    });
-
-    // End a session and clean up
-    const endSession = (players) => {
-        players.forEach(player => {
-            delete sessions[player];
+    const sendNextRiddle = () => {
+      if (session.riddles.length === 0) {
+        io.to(players[0]).emit('sessionEnd', { 
+          userScore: session.scores[players[0]], 
+          opponentScore: session.scores[players[1]] 
         });
+        io.to(players[1]).emit('sessionEnd', { 
+          userScore: session.scores[players[1]], 
+          opponentScore: session.scores[players[0]] 
+        });
+        endSession(players);
+        return;
+      }
+
+      // Select a random riddle
+      const randomIndex = Math.floor(Math.random() * session.riddles.length);
+      const riddle = session.riddles[randomIndex];
+      session.riddles.splice(randomIndex, 1);
+      session.activeRiddle = riddle;
+
+      // Send riddle to players
+      io.to(players[0]).emit('newRiddle', riddle);
+      io.to(players[1]).emit('newRiddle', riddle);
+
+      let timeLeft = 30;
+      session.riddleTimer = setInterval(() => {
+        if (timeLeft <= 0) {
+          clearInterval(session.riddleTimer);
+          io.to(players[0]).emit('riddleTimeout', { message: "Time's up! Next riddle." });
+          io.to(players[1]).emit('riddleTimeout', { message: "Time's up! Next riddle." });
+          sendNextRiddle();
+        } else {
+          io.to(players[0]).emit('riddleTimerUpdate', { riddleTime: timeLeft });
+          io.to(players[1]).emit('riddleTimerUpdate', { riddleTime: timeLeft });
+          timeLeft--;
+        }
+      }, 1000);
     };
+
+    // Start session timer
+    session.sessionTimer = setInterval(() => {
+      if (sessionTime <= 0) {
+        clearInterval(session.sessionTimer);
+        clearInterval(session.riddleTimer);
+        io.to(players[0]).emit('sessionEnd', { 
+          userScore: session.scores[players[0]], 
+          opponentScore: session.scores[players[1]] 
+        });
+        io.to(players[1]).emit('sessionEnd', { 
+          userScore: session.scores[players[1]], 
+          opponentScore: session.scores[players[0]] 
+        });
+        endSession(players);
+      } else {
+        io.to(players[0]).emit('sessionTimerUpdate', { sessionTime });
+        io.to(players[1]).emit('sessionTimerUpdate', { sessionTime });
+        sessionTime--;
+      }
+    }, 1000);
+
+    // Send first riddle
+    sendNextRiddle();
+  };
+
+  // Handle answer submission
+  socket.on('submitAnswer', ({ input }) => {
+    const session = sessions[socket.id];
+    if (!session) return;
+
+    const sanitizedInput = input.trim().toLowerCase();
+    const correctAnswer = session.activeRiddle.answer.toLowerCase();
+
+    if (sanitizedInput === correctAnswer) {
+      session.scores[socket.id] = (session.scores[socket.id] || 0) + 1;
+      io.to(session.player1).emit('correctAnswer', { userId: socket.id });
+      io.to(session.player2).emit('correctAnswer', { userId: socket.id });
+
+      clearInterval(session.riddleTimer);
+      startRiddleSession(session);
+    } else {
+      socket.emit('incorrectAnswer', { message: "Wrong answer! Try again." });
+    }
+  });
+
+  // Handle real-time typing
+  socket.on('typing', ({ input }) => {
+    const session = sessions[socket.id];
+    if (!session) return;
+    const opponent = session.player1 === socket.id ? session.player2 : session.player1;
+    io.to(opponent).emit('opponentTyping', { input });
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log(`User disconnected: ${socket.id}`);
+    
+    onlineUserCount--;
+    io.emit('updateUserCount', { count: onlineUserCount });
+
+    const session = sessions[socket.id];
+    if (session) {
+      const opponent = session.player1 === socket.id ? session.player2 : session.player1;
+      io.to(opponent).emit('endChat', { message: "Your opponent has left the game." });
+      endSession([session.player1, session.player2]);
+    }
+
+    if (waitingPlayer === socket.id) {
+      waitingPlayer = null;
+    }
+  });
+
+  // Clean up session
+  const endSession = (players) => {
+    players.forEach(player => {
+      delete sessions[player];
+    });
+  };
 });
+
+
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
