@@ -148,7 +148,6 @@ const sequelize = new Sequelize('postgresql://patrigo:RW67Gff5chKsOEz5CVMELfYu9N
 });
 
 
-
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -768,6 +767,29 @@ app.get('/get-cities/:countryCode', async (req, res) => {
     } catch (error) {
         console.error('Error fetching cities:', error);
         res.status(500).json({ success: false, message: 'Failed to fetch cities' });
+    }
+});
+
+app.get('/get-regions/:countryCode', async (req, res) => {
+    const countryCode = req.params.countryCode;
+    const countryName = countryCodeMap[countryCode]; // Convert phone code to country name
+
+    if (!countryName) {
+        return res.status(400).json({ success: false, message: "Invalid country code." });
+    }
+
+    try {
+        const query = `[out:json];area[name="${countryName}"]->.searchArea;
+                      (relation[boundary=administrative][admin_level=4](area.searchArea);
+                      );out;`;
+        const response = await axios.get(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+
+        const regions = response.data.elements.map(region => region.tags.name).filter(Boolean); // Extract region names
+
+        res.json({ success: true, regions });
+    } catch (error) {
+        console.error('Error fetching regions:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch regions' });
     }
 });
 
