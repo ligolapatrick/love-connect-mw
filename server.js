@@ -148,6 +148,7 @@ const sequelize = new Sequelize('postgresql://patrigo:RW67Gff5chKsOEz5CVMELfYu9N
 });
 
 
+
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -687,26 +688,26 @@ app.use((req, res, next) => {
 
 // Handle registration form submission
 app.post('/register', async (req, res) => {
-  const { username, password, countryCode, phone } = req.body;
-  if (password.length < 6) {
-    return res.status(400).send('Password must be at least 6 characters long.');
-  }
-  const fullPhoneNumber = `${countryCode}${phone}`;
-  try {
-    console.log('Checking existing user...');
-    const existingUser = await User.findOne({ where: { fullPhoneNumber } });
-    if (existingUser) {
-      return res.status(400).send('Phone number is already used by another user.');
+    const { username, password, countryCode, phone, location } = req.body;
+    const fullPhoneNumber = `${countryCode}${phone}`;
+
+    try {
+        const existingUser = await User.findOne({ where: { fullPhoneNumber } });
+        if (existingUser) {
+            return res.status(400).send('Phone number is already used by another user.');
+        }
+
+        // Ensure we save location along with country code
+        const user = await User.create({ username, password, fullPhoneNumber, countryCode, location });
+        req.session.userId = user.id;
+
+        res.redirect(`/profile-edit-step?userId=${user.id}`);
+    } catch (error) {
+        console.error('Error registering user:', error);
+        res.status(500).send('Internal Server Error');
     }
-    console.log('Creating new user...');
-    const user = await User.create({ username, password, fullPhoneNumber });
-    req.session.userId = user.id; // Save userId in session
-    res.redirect(`/profile-edit-step?userId=${user.id}`);
-  } catch (error) {
-    console.error('Error registering user:', error);
-    res.status(500).send('Internal Server Error');
-  }
 });
+
 
 app.post('/check-phone', async (req, res) => {
   const { fullPhoneNumber } = req.body;
@@ -721,6 +722,74 @@ app.post('/check-phone', async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
+
+const countryCodeMap = {
+    "+265": "Malawi",
+    "+263": "Zimbabwe",
+    "+264": "Namibia",
+    "+267": "Botswana",
+    "+81": "Japan",
+    "+260": "Zambia",
+    "+254": "Kenya",
+    "+256": "Uganda",
+    "+1": "USA",
+    "+44": "United Kingdom",
+    "+27": "South Africa",
+    "+234": "Nigeria",
+    "+91": "India",
+    "+20": "Egypt",
+    "+213": "Algeria",
+    "+216": "Tunisia",
+    "+218": "Libya",
+    "+249": "Sudan",
+    "+212": "Morocco",
+    "+973": "Bahrain",
+    "+966": "Saudi Arabia",
+    "+971": "United Arab Emirates",
+    "+92": "Pakistan",
+};
+
+
+// ✅ API Route to Fetch Cities by Country
+app.get('/get-cities/:countryCode', async (req, res) => {
+    const countryCode = req.params.countryCode;
+    const countryName = countryCodeMap[countryCode]; // Convert code to country name
+
+    if (!countryName) {
+        return res.status(400).json({ success: false, message: "Invalid country code." });
+    }
+
+    try {
+        const query = `[out:json];area[name="${countryName}"]->.searchArea;(node[place="city"](area.searchArea););out;`;
+        const response = await axios.get(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+
+        const cities = response.data.elements.map(city => city.tags.name).filter(Boolean);
+        res.json({ success: true, cities });
+    } catch (error) {
+        console.error('Error fetching cities:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch cities' });
+    }
+});
+
+app.get('/get-user-country/:userId', async (req, res) => {
+    const userId = req.params.userId;
+    console.log("Fetching country code for user ID:", userId); // Debugging step
+
+    try {
+        const user = await User.findOne({ where: { id: userId } });
+        console.log("User Data:", user); // Debugging step
+
+        if (!user || !user.countryCode) {
+            return res.json({ success: false, message: 'User not found or country code missing' });
+        }
+
+        res.json({ success: true, countryCode: user.countryCode });
+    } catch (error) {
+        console.error('Error fetching user country:', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
 
 // Handle login form submission
 app.post('/login', async (req, res) => {
@@ -5054,6 +5123,8 @@ app.get('/admin/api/users-by-gender', requireAdmin, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+
 
 // Start the server
 const port = 5000;
