@@ -24,7 +24,6 @@ cloudinary.config({
   cloud_name: 'drool594s', // Your Cloudinary name
   api_key: '749679254351494', // Your API key
   api_secret: 'UaNi7GGqMNgTkqc9I3gcy_-_WCk', // Your API secret
-  // Please store API keys in environment variables for better security in production!
 });
 
 // Set up Cloudinary storage with multer
@@ -137,7 +136,7 @@ app.get('/auth/facebook/callback',
 const { Sequelize, DataTypes, Op } = require('sequelize');
 
 
-const sequelize = new Sequelize('postgresql://patrigo:C5q256etbYsYfuyDnGjBKcABi7RBCQyC@dpg-d06ds4ili9vc73e94lm0-a.oregon-postgres.render.com/loveconnect_7qiw', {
+const sequelize = new Sequelize('postgresql://patrigo:RW67Gff5chKsOEz5CVMELfYu9NKDGdw9@dpg-d0iubgidbo4c738sshtg-a.oregon-postgres.render.com/ligola', {
     dialect: 'postgres',
     logging: false,
     dialectOptions: {
@@ -419,6 +418,253 @@ User.hasMany(Message, { as: 'SentMessages', foreignKey: 'fromUserId' });
 User.hasMany(Message, { as: 'ReceivedMessages', foreignKey: 'toUserId' });
 Message.belongsTo(User, { as: 'Sender', foreignKey: 'fromUserId' });
 Message.belongsTo(User, { as: 'Receiver', foreignKey: 'toUserId' });
+
+
+
+// Define the Post model
+const Post = sequelize.define('Post', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id'
+    },
+    allowNull: false
+  },
+  image1: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  image2: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  caption: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  }
+});
+
+// Define the Comment model
+const Comment = sequelize.define('Comment', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  postId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Post,
+      key: 'id'
+    },
+    allowNull: false
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id'
+    },
+    allowNull: false
+  },
+  parentCommentId: {
+    type: DataTypes.INTEGER,
+    allowNull: true // Null for top-level comments
+  },
+  text: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  }
+});
+
+
+// Define Comment associations
+Comment.associate = (models) => {
+  Comment.hasMany(models.Comment, {
+    as: 'Replies',
+    foreignKey: 'parentCommentId',
+    onDelete: 'CASCADE'
+  });
+
+  Comment.belongsTo(models.Comment, {
+    as: 'Parent',
+    foreignKey: 'parentCommentId',
+    onDelete: 'CASCADE'
+  });
+
+  Comment.belongsTo(models.Post, {
+    foreignKey: 'postId',
+    onDelete: 'CASCADE'
+  });
+
+  Comment.belongsTo(models.User, {
+    foreignKey: 'userId',
+    onDelete: 'CASCADE'
+  });
+};
+
+module.exports = { Comment };
+
+
+// Define the PostLike model
+const PostLike = sequelize.define('PostLike', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  postId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Post,
+      key: 'id'
+    },
+    allowNull: false
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id'
+    },
+    allowNull: false
+  }
+});
+
+
+// Define the PostDislike model
+const PostDislike = sequelize.define('PostDislike', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  postId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Post,
+      key: 'id'
+    },
+    allowNull: false
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id'
+    },
+    allowNull: false
+  }
+});
+
+// Define associations between models
+User.hasMany(Post, { foreignKey: 'userId', onDelete: 'CASCADE' });
+Post.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+
+Post.hasMany(Comment, { foreignKey: 'postId', onDelete: 'CASCADE' });
+Comment.belongsTo(Post, { foreignKey: 'postId', onDelete: 'CASCADE' });
+
+Comment.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+
+Comment.hasMany(Comment, { as: 'Replies', foreignKey: 'parentCommentId', onDelete: 'CASCADE' });
+Comment.belongsTo(Comment, { as: 'Parent', foreignKey: 'parentCommentId', onDelete: 'CASCADE' });
+
+Post.hasMany(PostLike, { foreignKey: 'postId', as: 'PostLikes', onDelete: 'CASCADE' });
+PostLike.belongsTo(Post, { foreignKey: 'postId', onDelete: 'CASCADE' });
+
+Post.hasMany(PostDislike, { foreignKey: 'postId', as: 'PostDislikes', onDelete: 'CASCADE' });
+PostDislike.belongsTo(Post, { foreignKey: 'postId', onDelete: 'CASCADE' });
+
+PostLike.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+PostDislike.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+
+
+// Define the BlockedUser model
+const BlockedUser = sequelize.define('BlockedUser', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  blockedUserId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  }
+});
+
+
+// Sync the model with the database
+BlockedUser.sync();
+
+
+  // Define the Like model
+const Like = sequelize.define('Like', {
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  likedUserId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  }
+});
+
+const Dislike = sequelize.define('Dislike', {
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  dislikedUserId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  }
+});
+
+  
+  // Define the Notification model
+const Notification = sequelize.define('Notification', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  senderId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  message: {
+    type: DataTypes.STRING,
+    allowNull: false
+  }
+});
+
+
+// User associations
+User.hasMany(Notification, { foreignKey: 'userId' });
+Notification.belongsTo(User, { foreignKey: 'userId', as: 'receiver' });
+User.hasMany(Notification, { foreignKey: 'senderId' });
+Notification.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
+
+User.hasMany(Like, { foreignKey: 'userId' });
+User.hasMany(Dislike, { foreignKey: 'userId' });
+
+sequelize.sync({ alter: true }).then(() => {
+  console.log('Database & tables updated!');
+});
 
 // Serve static files from the 'public' directory
 app.use(bodyParser.json());
@@ -3103,170 +3349,6 @@ app.get('/api/user/:userId', (req, res) => {
   res.json(user);
 });
 
-// Define the Post model
-const Post = sequelize.define('Post', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: User,
-      key: 'id'
-    },
-    allowNull: false
-  },
-  image1: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  image2: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  caption: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  }
-});
-
-// Define the Comment model
-const Comment = sequelize.define('Comment', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  postId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Post,
-      key: 'id'
-    },
-    allowNull: false
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: User,
-      key: 'id'
-    },
-    allowNull: false
-  },
-  parentCommentId: {
-    type: DataTypes.INTEGER,
-    allowNull: true // Null for top-level comments
-  },
-  text: {
-    type: DataTypes.TEXT,
-    allowNull: false
-  }
-});
-
-
-// Define Comment associations
-Comment.associate = (models) => {
-  Comment.hasMany(models.Comment, {
-    as: 'Replies',
-    foreignKey: 'parentCommentId',
-    onDelete: 'CASCADE'
-  });
-
-  Comment.belongsTo(models.Comment, {
-    as: 'Parent',
-    foreignKey: 'parentCommentId',
-    onDelete: 'CASCADE'
-  });
-
-  Comment.belongsTo(models.Post, {
-    foreignKey: 'postId',
-    onDelete: 'CASCADE'
-  });
-
-  Comment.belongsTo(models.User, {
-    foreignKey: 'userId',
-    onDelete: 'CASCADE'
-  });
-};
-
-module.exports = { Comment };
-
-
-// Define the PostLike model
-const PostLike = sequelize.define('PostLike', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  postId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Post,
-      key: 'id'
-    },
-    allowNull: false
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: User,
-      key: 'id'
-    },
-    allowNull: false
-  }
-});
-
-
-// Define the PostDislike model
-const PostDislike = sequelize.define('PostDislike', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  postId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Post,
-      key: 'id'
-    },
-    allowNull: false
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: User,
-      key: 'id'
-    },
-    allowNull: false
-  }
-});
-
-// Define associations between models
-User.hasMany(Post, { foreignKey: 'userId', onDelete: 'CASCADE' });
-Post.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
-
-Post.hasMany(Comment, { foreignKey: 'postId', onDelete: 'CASCADE' });
-Comment.belongsTo(Post, { foreignKey: 'postId', onDelete: 'CASCADE' });
-
-Comment.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
-
-Comment.hasMany(Comment, { as: 'Replies', foreignKey: 'parentCommentId', onDelete: 'CASCADE' });
-Comment.belongsTo(Comment, { as: 'Parent', foreignKey: 'parentCommentId', onDelete: 'CASCADE' });
-
-Post.hasMany(PostLike, { foreignKey: 'postId', as: 'PostLikes', onDelete: 'CASCADE' });
-PostLike.belongsTo(Post, { foreignKey: 'postId', onDelete: 'CASCADE' });
-
-Post.hasMany(PostDislike, { foreignKey: 'postId', as: 'PostDislikes', onDelete: 'CASCADE' });
-PostDislike.belongsTo(Post, { foreignKey: 'postId', onDelete: 'CASCADE' });
-
-PostLike.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
-PostDislike.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
-
-
 // Route to get posts created by the logged-in user
 app.get('/api/get-user-posts', async (req, res) => {
   try {
@@ -3716,87 +3798,6 @@ app.delete("/api/delete-ama/:questionId", async (req, res) => {
     }
 });
 
-
-// Define the BlockedUser model
-const BlockedUser = sequelize.define('BlockedUser', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  blockedUserId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  }
-});
-
-
-// Sync the model with the database
-BlockedUser.sync();
-
-
-  // Define the Like model
-const Like = sequelize.define('Like', {
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  likedUserId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  }
-});
-
-const Dislike = sequelize.define('Dislike', {
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  dislikedUserId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  }
-});
-
-  
-  // Define the Notification model
-const Notification = sequelize.define('Notification', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  senderId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  message: {
-    type: DataTypes.STRING,
-    allowNull: false
-  }
-});
-
-
-// User associations
-User.hasMany(Notification, { foreignKey: 'userId' });
-Notification.belongsTo(User, { foreignKey: 'userId', as: 'receiver' });
-User.hasMany(Notification, { foreignKey: 'senderId' });
-Notification.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
-
-User.hasMany(Like, { foreignKey: 'userId' });
-User.hasMany(Dislike, { foreignKey: 'userId' });
-
-sequelize.sync({ alter: true }).then(() => {
-  console.log('Database & tables updated!');
-});
 
 
 app.get('/api/nearby-users', async (req, res) => {
