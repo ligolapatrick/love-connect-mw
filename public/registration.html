@@ -139,75 +139,117 @@
 }
 
     </style>
+
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-logo">
-            <img src="images/LoveConnect logo.png" alt="LoveConnect Logo">
+  <nav class="navbar">
+    <div class="nav-logo">
+      <img src="images/LoveConnect logo.png" alt="LoveConnect Logo">
+    </div>
+    <div class="nav-contact">
+      <span><img src="images/Limav-Flat-Gradient-Social-Whatsapp.512.png" alt="WhatsApp Icon"> 0888202246</span>
+      <span><img src="images/Graphicloads-100-Flat-Email-2.256 (1).png" alt="Email Icon"> loveconnect61@gmail.com</span>
+    </div>
+  </nav>
+  <main>
+    <section class="form-section">
+      <form action="/register" method="post" id="registrationForm">
+        <!-- Step 1: Basic Information -->
+        <div class="form-background step step-1 active">
+          <h2>Step 1: Basic Information</h2>
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username" required>
+          <label for="phone">Phone Number:</label>
+          <select id="countryCode" name="countryCode" required>
+            <option value="+263" selected>+263 (Zimbabwe)</option>
+            <option value="+265">+265 (Malawi)</option>
+            <option value="+264">+264 (Namibia)</option>
+            <option value="+267">+267 (Botswana)</option>
+            <option value="+81">+81 (Japan)</option>
+            <option value="+260">+260 (Zambia)</option>
+            <option value="+254">+254 (Kenya)</option>
+            <option value="+256">+256 (Uganda)</option>
+            <option value="+234">+234 (Nigeria)</option>
+            <option value="+91">+91 (India)</option>
+            <option value="+1">+1 (USA)</option>
+            <option value="+44">+44 (UK)</option>
+            <option value="+27">+27 (South Africa)</option>
+            <option value="+20">+20 (Egypt)</option>
+            <option value="+213">+213 (Algeria)</option>
+            <option value="+216">+216 (Tunisia)</option>
+            <option value="+218">+218 (Libya)</option>
+            <option value="+249">+249 (Sudan)</option>
+            <option value="+212">+212 (Morocco)</option>
+            <option value="+973">+973 (Bahrain)</option>
+            <option value="+966">+966 (Saudi Arabia)</option>
+            <option value="+971">+971 (United Arab Emirates)</option>
+            <option value="+92">+92 (Pakistan)</option>
+        </select>
+        
+          <input type="text" id="phone" name="phone" required>
+          <!-- Added Location Selection: -->
+          <label for="registrationLocation">City:</label>
+          <select id="registrationLocation" name="location" required>
+            <option value="" disabled selected>Loading cities...</option>
+          </select>
+          <p class="error-message" id="step1Error" style="display:none;">Please fill in all fields.</p>
+          <p>Already have an account? <a href="login1">Login here</a></p>
+          <button type="button" id="toStep2">Next</button>
         </div>
-        <div class="nav-contact">
-            <span><img src="images/Limav-Flat-Gradient-Social-Whatsapp.512.png" alt="WhatsApp Icon"> 0888202246</span>
-            <span><img src="images/Graphicloads-100-Flat-Email-2.256 (1).png" alt="one-loveconnect@gmail.com icon"> loveconnect61@gmail.com</span>
+        <!-- Step 2: Password Setup -->
+        <div class="form-background step step-2">
+          <h2>Step 2: Password Setup</h2>
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password" required>
+          <div class="password-strength" id="passwordStrength">
+            <span></span>
+          </div>
+          <label for="retypePassword">Retype Password:</label>
+          <input type="password" id="retypePassword" required>
+          <p class="error-message" id="passwordError" style="display:none;">Passwords do not match.</p>
+          <button type="button" id="toStep3">Next</button>
         </div>
-    </nav>
-    <main>
-        <section class="form-section">
-            <form action="/register" method="post" id="registrationForm">
-                <!-- Step 1: Basic Information -->
-                <div class="form-background step step-1 active">
-                    <h2>Step 1: Basic Information</h2>
-                    <label for="username">Username:</label>
-                    <input type="text" id="username" name="username" required>
-                    <label for="phone">Phone Number:</label>
-                    <select id="countryCode" name="countryCode" required>
-                        <option value="+265" selected>+265 (Malawi)</option>
-                        <option value="+263">+263 (Zimbabwe)</option>
-                        <option value="+264">+264 (Namibia)</option>
-                        <option value="+267">+267 (Botswana)</option>
-                        <option value="+81">+81 (Japan)</option>
-                        <option value="+260">+260 (Zambia)</option>
-                        <option value="+254">+254 (Kenya)</option>
-                        <option value="+256">+256 (Uganda)</option>
-                        <option value="+1">+1 (USA)</option>
-                        <option value="+44">+44 (UK)</option>
-                        <option value="+27">+27 (South Africa)</option>
-                        <!-- Other country codes -->
-                    </select>
-                    <input type="text" id="phone" name="phone" required>
-                    <p class="error-message" id="step1Error" style="display:none;">Please fill in all fields.</p>
-                    <p>Already have an account? <a href="login1">Login here</a></p>
-                    <button type="button" id="toStep2">Next</button>
-                </div>
+        <!-- Step 3: Confirmation -->
+        <div class="form-background step step-3">
+          <h2>Step 3: Confirm Details</h2>
+          <p id="reviewDetails"></p>
+          <button type="submit" id="register">Register</button>
+          <button type="button" id="backToStep2">Back</button>
+        </div>
+      </form>
+    </section>
+  </main>
+  <footer>
+    <p>&copy; 2025 LoveConnect. All rights reserved.</p>
+  </footer>
+  <script>
+    // Dynamic loading of cities based on country selection:
+    document.getElementById("countryCode").addEventListener("change", async function() {
+    const selectedCountryCode = this.value; // Now using phone country codes
+    const locationSelect = document.getElementById("registrationLocation");
 
-                <!-- Step 2: Password Setup -->
-                <div class="form-background step step-2">
-                    <h2>Step 2: Password Setup</h2>
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
-                    <div class="password-strength" id="passwordStrength">
-                        <span></span>
-                    </div>
-                    <label for="retypePassword">Retype Password:</label>
-                    <input type="password" id="retypePassword" required>
-                    <p class="error-message" id="passwordError" style="display:none;">Passwords do not match.</p>
-                    <button type="button" id="toStep3">Next</button>
-                </div>
+    locationSelect.innerHTML = '<option value="" disabled selected>Loading cities...</option>';
 
-                <!-- Step 3: Confirmation -->
-                <div class="form-background step step-3">
-                    <h2>Step 3: Confirm Details</h2>
-                    <p id="reviewDetails"></p>
-                    <button type="submit" id="register">Register</button>
-                    <button type="button" id="backToStep2">Back</button>
-                </div>
-            </form>
-        </section>
-    </main>
-    <footer>
-        <p>&copy; 2025 LoveConnect. All rights reserved.</p>
-    </footer>
-    <script>
-        const step1 = document.querySelector('.step-1');
+    try {
+        const response = await fetch(`/get-cities/${selectedCountryCode}`);
+        const data = await response.json();
+
+        locationSelect.innerHTML = '<option value="" disabled selected>Select your city</option>';
+        if (data.success) {
+            data.cities.forEach(city => {
+                const option = document.createElement("option");
+                option.value = city;
+                option.textContent = city;
+                locationSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error("Failed to fetch cities:", error);
+    }
+});
+
+
+    const step1 = document.querySelector('.step-1');
         const step2 = document.querySelector('.step-2');
         const step3 = document.querySelector('.step-3');
         
@@ -309,6 +351,6 @@
             step3.classList.remove('active');
             step2.classList.add('active');
         });
-    </script>
+  </script>
 </body>
 </html>
