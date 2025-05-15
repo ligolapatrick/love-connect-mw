@@ -225,26 +225,26 @@
   <script>
     // Dynamic loading of cities based on country selection:
     document.getElementById("countryCode").addEventListener("change", async function() {
-    const selectedCountryCode = this.value; // Now using phone country codes
+    const selectedCountryCode = this.value; // Using phone country codes
     const locationSelect = document.getElementById("registrationLocation");
 
-    locationSelect.innerHTML = '<option value="" disabled selected>Loading cities...</option>';
+    locationSelect.innerHTML = '<option value="" disabled selected>Loading regions...</option>';
 
     try {
-        const response = await fetch(`/get-cities/${selectedCountryCode}`);
+        const response = await fetch(`/get-regions/${selectedCountryCode}`);
         const data = await response.json();
 
-        locationSelect.innerHTML = '<option value="" disabled selected>Select your city</option>';
+        locationSelect.innerHTML = '<option value="" disabled selected>Select your region</option>';
         if (data.success) {
-            data.cities.forEach(city => {
+            data.regions.forEach(region => {
                 const option = document.createElement("option");
-                option.value = city;
-                option.textContent = city;
+                option.value = region;
+                option.textContent = region;
                 locationSelect.appendChild(option);
             });
         }
     } catch (error) {
-        console.error("Failed to fetch cities:", error);
+        console.error("Failed to fetch regions:", error);
     }
 });
 
