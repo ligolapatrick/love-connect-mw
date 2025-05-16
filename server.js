@@ -135,7 +135,6 @@ app.get('/auth/facebook/callback',
 // Initialize Sequelize with PostgreSQL
 const { Sequelize, DataTypes, Op } = require('sequelize');
 
-
 const sequelize = new Sequelize('postgresql://patrigo:RW67Gff5chKsOEz5CVMELfYu9NKDGdw9@dpg-d0iubgidbo4c738sshtg-a.oregon-postgres.render.com/ligola', {
     dialect: 'postgres',
     logging: false,
@@ -146,6 +145,7 @@ const sequelize = new Sequelize('postgresql://patrigo:RW67Gff5chKsOEz5CVMELfYu9N
         }
     }
 });
+
 
 
 // Create HTTP server and Socket.IO instance
@@ -5147,6 +5147,47 @@ app.get('/admin/api/users-by-gender', requireAdmin, async (req, res) => {
 });
 
 
+
+
+
+app.get('/api/find-nearby', async (req, res) => {
+    const { latitude, longitude } = req.query;
+
+    try {
+        const users = await User.findAll({
+            attributes: ['id', 'username', 'profilePicture', 'age', 'gender', 'bio', 'interests', 'latitude', 'longitude'],
+            where: {
+                latitude: { [Op.ne]: null },
+                longitude: { [Op.ne]: null },
+                [Op.and]: Sequelize.literal(
+                    `(6371 * acos(cos(${latitude} * PI() / 180) * cos(latitude * PI() / 180) * cos((longitude - ${longitude}) * PI() / 180) + sin(${latitude} * PI() / 180) * sin(latitude * PI() / 180))) <= 20`
+                )
+            },
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+app.post('/api/clear-unread', async (req, res) => {
+    const { userId } = req.body;
+
+    try {
+        await Message.update(
+            { unread: false }, // Set unread messages to false
+            { where: { senderId: userId, receiverId: req.session.userId, unread: true } }
+        );
+
+        res.status(200).send({ success: true });
+    } catch (error) {
+        console.error("Error clearing unread messages:", error);
+        res.status(500).send({ success: false, error: "Internal Server Error" });
+    }
+});
 
 // Start the server
 const port = 5000;
