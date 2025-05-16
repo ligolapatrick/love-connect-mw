@@ -318,47 +318,50 @@
                 filterChats(searchInput.value.toLowerCase());
             });
         });
-
         async function loadChats(filter, searchQuery = "") {
-            const chatList = document.getElementById("chat-list");
-            chatList.innerHTML = "";
+    const chatList = document.getElementById("chat-list");
+    chatList.innerHTML = "";
 
-            const response = await fetch("/api/chat-list");
-            const chats = await response.json();
+    const response = await fetch("/api/chat-list");
+    const chats = await response.json();
 
-            let filteredChats = chats;
+    // Sort chats by lastMessageTime (latest first)
+    chats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
 
-            if (filter === "unread") {
-                filteredChats = chats.filter(chat => chat.unreadCount > 0);
-            } else if (filter === "favorites") {
-                filteredChats = chats.filter(chat => chat.isFavorite);
-            }
+    let filteredChats = chats;
 
-            if (searchQuery) {
-                filteredChats = filteredChats.filter(chat => chat.username.toLowerCase().includes(searchQuery));
-            }
+    if (filter === "unread") {
+        filteredChats = chats.filter(chat => chat.unreadCount > 0);
+    } else if (filter === "favorites") {
+        filteredChats = chats.filter(chat => chat.isFavorite);
+    }
 
-            filteredChats.forEach(chat => {
-                const chatItem = document.createElement("div");
-                chatItem.classList.add("chat-item");
-                chatItem.innerHTML = `
-                    <img src="${chat.profilePicture}" alt="${chat.username}">
-                    <div class="chat-info">
-                        <strong>${chat.username}</strong>
-                        <p>${chat.lastMessage}</p>
-                    </div>
-                    <small class="timestamp">${new Date(chat.lastMessageTime).toLocaleTimeString()}</small>
-                    ${chat.unreadCount > 0 ? `<span class="unread">${chat.unreadCount}</span>` : ""}
-                    <span class="favorite ${chat.isFavorite ? 'active' : ''}" onclick="toggleFavorite(${chat.id}, this)">★</span>
-                `;
+    if (searchQuery) {
+        filteredChats = filteredChats.filter(chat => chat.username.toLowerCase().includes(searchQuery));
+    }
 
-                chatItem.addEventListener("click", () => {
-                    window.location.href = `messages.html?chatUserId=${chat.id}`;
-                });
+    filteredChats.forEach(chat => {
+        const chatItem = document.createElement("div");
+        chatItem.classList.add("chat-item");
+        chatItem.innerHTML = `
+            <img src="${chat.profilePicture}" alt="${chat.username}">
+            <div class="chat-info">
+                <strong>${chat.username}</strong>
+                <p>${chat.lastMessage}</p>
+            </div>
+            <small class="timestamp">${new Date(chat.lastMessageTime).toLocaleTimeString()}</small>
+            ${chat.unreadCount > 0 ? `<span class="unread">${chat.unreadCount}</span>` : ""}
+            <span class="favorite ${chat.isFavorite ? 'active' : ''}" onclick="toggleFavorite(${chat.id}, this)">★</span>
+        `;
 
-                chatList.appendChild(chatItem);
-            });
-        }
+        chatItem.addEventListener("click", () => {
+            window.location.href = `messages.html?userId=${chat.id}&username=${encodeURIComponent(chat.username)}`;
+        });
+
+        chatList.appendChild(chatItem);
+    });
+}
+
 
         
         function filterChats(filter) {

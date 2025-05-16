@@ -18,17 +18,16 @@
             padding: 10px;
         }
 
-        header {
+        .chat-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 10px;
             background: #075E54;
             color: white;
-            position: relative;
         }
 
-        header button {
+        .chat-header button {
             background: none;
             border: none;
             color: white;
@@ -36,38 +35,21 @@
             cursor: pointer;
         }
 
-        .settings {
-            cursor: pointer;
-            font-size: 24px;
+        .chat-header img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
         }
 
-        .settings-menu {
-            display: none;
-            position: absolute;
-            top: 50px;
-            right: 10px;
-            background: white;
-            border: 1px solid #ccc;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .settings-menu a {
-            display: block;
-            padding: 10px;
-            text-decoration: none;
-            color: #333;
-        }
-
-        .settings-menu a:hover {
-            background-color: #f0f0f0;
-        }
-
-        #chat-messages {
+        .chat-body {
             display: flex;
             flex-direction: column;
             padding: 10px;
             height: 400px;
             overflow-y: scroll;
+            background: white;
+            border-radius: 10px;
         }
 
         .message {
@@ -76,265 +58,162 @@
             margin-bottom: 10px;
             max-width: 75%;
             position: relative;
-        }
-
-        .sender {
-            align-self: flex-end;
-            justify-content: flex-end;
-            text-align: right;
-            display: flex;
-            flex-direction: row-reverse;
-        }
-
-        .receiver {
-            align-self: flex-start;
-            justify-content: flex-start;
-            text-align: left;
-            display: flex;
-            flex-direction: row;
-        }
-
-        .message-content {
             padding: 10px;
             border-radius: 10px;
             font-size: 14px;
-            display: flex;
-            flex-direction: column;
-            position: relative;
         }
 
-        .sender .message-content {
+        .sent {
+            align-self: flex-end;
+            justify-content: flex-end;
             background: #c8e6c9;
-            margin-left: auto;
+            text-align: right;
         }
 
-        .receiver .message-content {
+        .received {
+            align-self: flex-start;
+            justify-content: flex-start;
             background: #e1f5fe;
-            margin-right: auto;
+            text-align: left;
         }
 
-        .profile-pic {
-            width: 40px;
-            height: 40px;
+        .message img {
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             margin-right: 10px;
         }
 
-        .message-user {
-            font-size: 12px;
-            color: gray;
-            margin-bottom: 2px;
-        }
-
-        .status {
-            font-size: 12px;
-            color: gray;
-            position: absolute;
-            bottom: -15px;
-            right: 5px;
-        }
         .chat-footer {
-      display: flex;
-      align-items: center;
-      padding: 10px;
-      border-top: 1px solid #ccc;
-    }
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-top: 1px solid #ccc;
+        }
 
-    .chat-footer input {
-      flex-grow: 1;
-      padding: 10px;
-      border-radius: 20px;
-      border: 1px solid #ccc;
-    }
+        .chat-footer input {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+        }
 
-    .chat-footer button {
-      background-color: #075E54;
-      color: white;
-      padding: 10px 20px;
-      margin-left: 10px;
-      border: none;
-      border-radius: 20px;
-      cursor: pointer;
-    }
+        .chat-footer button {
+            background-color: #075E54;
+            color: white;
+            padding: 10px 20px;
+            margin-left: 10px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
 
-    .chat-footer button:hover {
-      background-color: #066a4d;
-    }
-    /* Adjustments for Small Screens */
-@media (max-width: 375px) {
-    .chat-container {
-        max-width: 100%;
-        padding: 5px;
-    }
-
-    header {
-        padding: 8px;
-        font-size: 14px;
-    }
-
-    #chat-title {
-        font-size: 16px;
-    }
-
-    .settings {
-        font-size: 20px;
-    }
-
-    .message-content {
-        font-size: 13px;
-        padding: 8px;
-    }
-
-    .profile-pic {
-        width: 30px;
-        height: 30px;
-        margin-right: 5px;
-    }
-
-    .message-user {
-        font-size: 11px;
-    }
-
-    .status {
-        font-size: 10px;
-    }
-
-    .chat-footer {
-        padding: 8px;
-    }
-
-    .chat-footer input {
-        font-size: 12px;
-        padding: 8px;
-    }
-
-    .chat-footer button {
-        padding: 8px 16px;
-        font-size: 12px;
-    }
-}
-
-/* Older Devices (iPhone 5, SE) */
-@media (max-width: 320px) {
-    .chat-container {
-        padding: 3px;
-    }
-
-    header {
-        font-size: 12px;
-        padding: 6px;
-    }
-
-    #chat-title {
-        font-size: 14px;
-    }
-
-    .settings {
-        font-size: 18px;
-    }
-
-    .message-content {
-        font-size: 12px;
-        padding: 7px;
-    }
-
-    .profile-pic {
-        width: 25px;
-        height: 25px;
-        margin-right: 4px;
-    }
-
-    .message-user {
-        font-size: 10px;
-    }
-
-    .status {
-        font-size: 9px;
-    }
-
-    .chat-footer {
-        padding: 6px;
-    }
-
-    .chat-footer input {
-        font-size: 11px;
-        padding: 7px;
-    }
-
-    .chat-footer button {
-        padding: 7px 14px;
-        font-size: 11px;
-    }
-}
-
+        .chat-footer button:hover {
+            background-color: #066a4d;
+        }
     </style>
 </head>
 <body>
-
-    <div class="chat-container">
-        <header>
-            <button onclick="window.location.href='chatlist.html'">← Back</button>
-            <h2 id="chat-title">Chat with User</h2>
-            <div class="settings" onclick="toggleSettingsMenu()">⚙️</div>
-            <div id="settingsMenu" class="settings-menu">
-                <a href="#" id="blockUnblockUser">Block</a>
-            </div>
-        </header>
-
-        <div id="chat-messages"></div>
-
-        <div class="chat-footer">
-            <input type="text" id="messageInput" placeholder="Type a message">
-            <button id="sendButton">Send</button>
-        </div>
+  <div class="chat-container">
+    <div class="chat-header">
+      <button onclick="window.location.href='chatlist.html'">← Back</button>
+      <img id="chatUserProfilePic" src="default-profile.png" alt="Profile Picture">
+      <div class="header-info">
+        <h3 id="chatWith">Chat with</h3>
+      </div>
+      <div class="settings" onclick="toggleSettingsMenu()">⚙️</div>
+      <div id="settingsMenu" class="settings-menu">
+        <a href="#" id="blockUnblockUser">Block</a>
+      </div>
     </div>
+    <div class="chat-body" id="messageContainer">
+      <!-- Messages will be dynamically loaded here -->
+    </div>
+    <div class="chat-footer">
+      <input type="text" id="messageInput" placeholder="Type a message">
+      <button id="sendButton">Send</button>
+    </div>
+  </div>
+  <script>
+    const userId = Number(sessionStorage.getItem('userId')); 
+    const chatUserId = Number(new URLSearchParams(window.location.search).get('userId'));
+    const chatUsername = new URLSearchParams(window.location.search).get('username');
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", async () => {
-            const chatMessages = document.getElementById("chat-messages");
-            const chatTitle = document.getElementById("chat-title");
-            const chatUserId = new URLSearchParams(window.location.search).get("chatUserId");
-            const userId = sessionStorage.getItem("userId");
+    document.getElementById('chatWith').textContent = `Chat with ${chatUsername}`;
 
-            if (!chatUserId) {
-                alert("Chat user not specified.");
-                return;
+    fetch(`/api/profile?userId=${chatUserId}`)
+        .then(response => response.json())
+        .then(user => {
+            if (user && user.profilePicture) {
+                document.getElementById('chatUserProfilePic').src = user.profilePicture;
+                document.getElementById('chatUserProfilePic').alt = chatUsername;
+            } else {
+                document.getElementById('chatUserProfilePic').src = 'default-profile.png';
             }
+        })
+        .catch(error => console.error('Error fetching profile:', error));
 
+    function appendMessage(message) {
+        const messageContainer = document.getElementById('messageContainer');
+        const messageElement = document.createElement('div');
+
+        const isYou = message.fromUserId === userId;
+        const profilePic = isYou ? sessionStorage.getItem('userProfilePicture') : message.senderProfilePicture;
+
+        messageElement.className = `message ${isYou ? 'sent' : 'received'}`;
+        messageElement.innerHTML = `
+            <img src="${profilePic || 'default-profile.png'}" class="profile-pic">
+            <div class="message-content">
+                <p class="message-user">${isYou ? 'You' : message.senderName}</p>
+                <p>${message.content}</p>
+                <small>${new Date(message.timestamp).toLocaleString()}</small>
+            </div>
+        `;
+
+        messageContainer.appendChild(messageElement);
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
+
+    async function fetchMessages() {
+        try {
             const response = await fetch(`/api/messages?chatUserId=${chatUserId}`);
             const messages = await response.json();
+            const messageContainer = document.getElementById('messageContainer');
+            messageContainer.innerHTML = '';
+            messages.forEach(appendMessage);
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+        }
+    }
 
-            messages.forEach(msg => {
-                const isSender = msg.senderId === userId;
-                const messageDiv = document.createElement("div");
-                messageDiv.className = `message ${isSender ? "sender" : "receiver"}`;
+    document.getElementById('sendButton').addEventListener('click', async () => {
+        const content = document.getElementById('messageInput').value;
+        if (!content.trim()) return;
 
-                const status = msg.read ? "✓✓✓" : msg.delivered ? "✓✓" : "✓";
-
-                messageDiv.innerHTML = `
-                    ${isSender ? "" : `<img src="${msg.senderProfilePicture}" class="profile-pic">`}
-                    <div class="message-content">
-                        <p class="message-user">${msg.senderName}</p>
-                        <p>${msg.content}</p>
-                        <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
-                    </div>
-                    ${isSender ? `<img src="${msg.senderProfilePicture}" class="profile-pic">` : ""}
-                    ${isSender ? `<small class="status">${status}</small>` : ""}
-                `;
-
-                chatMessages.appendChild(messageDiv);
+        try {
+            const response = await fetch('/api/send-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ toUserId: chatUserId, content })
             });
 
-            chatTitle.innerText = `Chat with ${messages[0]?.senderName || "User"}`;
-        });
-
-        function toggleSettingsMenu() {
-            const menu = document.getElementById('settingsMenu');
-            menu.style.display = menu.style.display === 'none' || menu.style.display === '' ? 'block' : 'none';
+            const newMessage = await response.json();
+            newMessage.senderName = 'You';
+            appendMessage(newMessage);
+            document.getElementById('messageInput').value = '';
+        } catch (error) {
+            console.error('Error sending message:', error);
         }
+    });
 
-    </script>
+    function toggleSettingsMenu() {
+        const menu = document.getElementById('settingsMenu');
+        menu.style.display = menu.style.display === 'none' || menu.style.display === '' ? 'block' : 'none';
+    }
 
+    fetchMessages();
+    setInterval(fetchMessages, 5000);
+  </script>
 </body>
 </html>
