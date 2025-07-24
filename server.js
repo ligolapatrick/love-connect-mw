@@ -132,20 +132,15 @@ app.get('/auth/facebook/callback',
     }
 );
 
+
 // Initialize Sequelize with PostgreSQL
 const { Sequelize, DataTypes, Op } = require('sequelize');
 
-const sequelize = new Sequelize('postgresql://patrigo:RW67Gff5chKsOEz5CVMELfYu9NKDGdw9@dpg-d0iubgidbo4c738sshtg-a.oregon-postgres.render.com/ligola', {
-    dialect: 'postgres',
-    logging: false,
-    dialectOptions: {
-        ssl: {
-            require: true,
-            rejectUnauthorized: false // Allows self-signed certificates
-        }
-    }
+// Initialize Sequelize with SQLite
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: 'database.sqlite'
 });
-
 
 
 // Create HTTP server and Socket.IO instance
