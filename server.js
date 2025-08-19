@@ -138,9 +138,15 @@ const { Sequelize, DataTypes, Op } = require('sequelize');
 
 // Initialize Sequelize with SQLite
 const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: 'database.sqlite'
+    dialect: 'sqlite',
+    storage: './database.sqlite', // The file where the SQLite database will be stored
+    logging: false // Disable SQL query logging
 });
+
+// Test the SQLite connection
+sequelize.authenticate()
+  .then(() => console.log('Connected to SQLite database successfully.'))
+  .catch(err => console.error('Failed to connect to the database:', err));
 
 
 // Create HTTP server and Socket.IO instance
@@ -322,6 +328,10 @@ interests: {
   autoDownload: {
     type: DataTypes.STRING,
     defaultValue: 'wifi'
+  },
+  region: {
+  type: DataTypes.STRING,
+  allowNull: true
   },
   role: {
     type: DataTypes.STRING,
@@ -1308,110 +1318,141 @@ app.get('/api/unread-count', requireLogin, async (req, res) => {
     }
 });
 
-app.post('/api/send-message', requireLogin, async (req, res) => {
-    const { toUserId, content } = req.body;
-    const fromUserId = req.session.userId;
 
-    if (!toUserId || !content) {
-        return res.status(400).json({ error: 'Missing required parameters' });
-    }
+// --- Authenticated user endpoint ---
+app.get('/api/me', requireLogin, async (req, res) => {
+  try {
+    const me = await User.findByPk(req.session.userId, {
+      attributes: ['id', 'username', 'profilePicture', 'location'] // changed here
+    });
+    if (!me) return res.status(404).json({ error: 'User not found' });
+    res.json(me);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal server error');
+  }
+});
 
-    try {
-        // Check if the sender or recipient is blocked
-        const isBlocked = await Block.findOne({
-            where: {
-                [Op.or]: [
-                    { blockerId: fromUserId, blockedUserId: toUserId },
-                    { blockerId: toUserId, blockedUserId: fromUserId }
-                ]
-            }
-        });
-
-        if (isBlocked) {
-            return res.status(403).json({ error: 'Message not allowed. One of the users is blocked.' });
-        }
-
-        // Create the message if not blocked
-        const newMessage = await Message.create({
-            fromUserId,
-            toUserId,
-            content,
-            timestamp: new Date()
-        });
-
-        const senderUser = await User.findByPk(fromUserId, {
-            attributes: ['username']
-        });
-        const senderName = senderUser ? senderUser.username : 'Unknown User';
-
-        // Notify the recipient
-        await Notification.create({
-            userId: toUserId,
-            senderId: fromUserId,
-            message: `${senderName} sent you a message.`
-        });
-
-        res.status(201).json(newMessage);
-    } catch (error) {
-        console.error('Error sending message:', error);
-        res.status(500).send('Internal Server Error');
-    }
+// --- Fetch peer info ---
+app.get('/api/user/:id', requireLogin, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id, {
+      attributes: ['id', 'username', 'profilePicture', 'location'] // changed here
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal server error');
+  }
 });
 
 
-// Send a message
+// --- Get messages between me and peer ---
 app.get('/api/messages', requireLogin, async (req, res) => {
-    const userId = req.session.userId;
-    const chatUserId = req.query.chatUserId;
+  const userId = req.session.userId;
+  const chatUserId = parseInt(req.query.chatUserId, 10);
+  if (!chatUserId) return res.status(400).json({ error: 'chatUserId is required' });
 
-    if (!chatUserId) {
-        return res.status(400).json({ error: 'chatUserId is required' });
+  try {
+    // Block check
+    const isBlocked = await Block.findOne({
+      where: {
+        [Op.or]: [
+          { blockerId: userId, blockedUserId: chatUserId },
+          { blockerId: chatUserId, blockedUserId: userId }
+        ]
+      }
+    });
+    if (isBlocked) {
+      return res.status(403).json({ error: 'Access denied. One of the users is blocked.' });
     }
 
-    try {
-        // Check if the users are blocked
-        const isBlocked = await Block.findOne({
-            where: {
-                [Op.or]: [
-                    { blockerId: userId, blockedUserId: chatUserId },
-                    { blockerId: chatUserId, blockedUserId: userId }
-                ]
-            }
-        });
+    const messages = await Message.findAll({
+      where: {
+        [Op.or]: [
+          { fromUserId: userId, toUserId: chatUserId },
+          { fromUserId: chatUserId, toUserId: userId }
+        ]
+      },
+      order: [['timestamp', 'ASC']],
+      include: [{
+        model: User,
+        as: 'Sender',
+        attributes: ['username', 'profilePicture']
+      }]
+    });
 
-        if (isBlocked) {
-            return res.status(403).json({ error: 'Access denied. One of the users is blocked.' });
-        }
+    const enriched = messages.map(m => ({
+      id: m.id,
+      fromUserId: m.fromUserId,
+      toUserId: m.toUserId,
+      content: m.content,
+      timestamp: m.timestamp,
+      senderName: m.Sender.username,
+      senderProfilePicture: m.Sender.profilePicture
+    }));
 
-        const messages = await Message.findAll({
-            where: {
-                [Op.or]: [
-                    { fromUserId: userId, toUserId: chatUserId },
-                    { fromUserId: chatUserId, toUserId: userId }
-                ]
-            },
-            order: [['timestamp', 'ASC']],
-            include: [
-                {
-                    model: User,
-                    as: 'Sender',
-                    attributes: ['username', 'profilePicture']
-                }
-            ]
-        });
-
-        const enrichedMessages = messages.map(message => ({
-            ...message.toJSON(),
-            senderName: message.Sender.username,
-            senderProfilePicture: message.Sender.profilePicture
-        }));
-
-        res.json(enrichedMessages);
-    } catch (error) {
-        console.error('Error fetching messages:', error);
-        res.status(500).send('Internal Server Error');
-    }
+    res.json(enriched);
+  } catch (err) {
+    console.error('Error fetching messages:', err);
+    res.status(500).send('Internal server error');
+  }
 });
+
+// --- Send message ---
+app.post('/api/send-message', requireLogin, async (req, res) => {
+  const fromUserId = req.session.userId;
+  const { toUserId, content } = req.body;
+  if (!toUserId || !content) return res.status(400).json({ error: 'Missing required fields' });
+
+  try {
+    // Block check
+    const isBlocked = await Block.findOne({
+      where: {
+        [Op.or]: [
+          { blockerId: fromUserId, blockedUserId: toUserId },
+          { blockerId: toUserId, blockedUserId: fromUserId }
+        ]
+      }
+    });
+    if (isBlocked) {
+      return res.status(403).json({ error: 'Message not allowed. One of the users is blocked.' });
+    }
+
+    const newMsg = await Message.create({
+      fromUserId,
+      toUserId,
+      content,
+      timestamp: new Date()
+    });
+
+    const sender = await User.findByPk(fromUserId, {
+      attributes: ['username', 'profilePicture']
+    });
+
+    // Save notification
+    await Notification.create({
+      userId: toUserId,
+      senderId: fromUserId,
+      message: `${sender.username} sent you a message.`
+    });
+
+    res.status(201).json({
+      id: newMsg.id,
+      fromUserId,
+      toUserId,
+      content,
+      timestamp: newMsg.timestamp,
+      senderName: sender.username,
+      senderProfilePicture: sender.profilePicture
+    });
+  } catch (err) {
+    console.error('Error sending message:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
 
 
 // Fetch the chat list for a user with filters and unread message count
