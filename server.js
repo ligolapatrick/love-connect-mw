@@ -1623,6 +1623,9 @@ io.on('connection', (socket) => {
   });
 
   // Call offer
+
+
+  // Call answer
 socket.on('callOffer', async ({ to, offer, type }) => {
   const from = socket.handshake.session.userId;
 
@@ -1635,33 +1638,32 @@ socket.on('callOffer', async ({ to, offer, type }) => {
 
   socket.callLogId = log.id;
 
-  // Emit call offer
+  socket.join(from.toString());
+
   io.to(to.toString()).emit('callOffer', { from, offer, type });
 
-  // Create a notification
   await Notification.create({
     userId: to,
     senderId: from,
     message: `Incoming ${type} call`
   });
 
-  // Emit notification
   io.to(to.toString()).emit('newNotification', {
     senderId: from,
     message: `Incoming ${type} call`,
     type: 'call',
     timestamp: new Date()
   });
+
+  setTimeout(async () => {
+    const updated = await CallLog.findByPk(log.id);
+    if (updated.status === 'missed') {
+      io.to(from.toString()).emit('callMissed', { to });
+      io.to(to.toString()).emit('callMissed', { from });
+    }
+  }, 30000);
 });
 
-  // Call answer
-  socket.on('callAnswer', async ({ to, answer }) => {
-    await CallLog.update(
-      { status: 'received', startedAt: new Date() },
-      { where: { id: socket.callLogId } }
-    );
-    io.to(to.toString()).emit('callAnswer', { answer });
-  });
 
   // End call
   socket.on('endCall', async ({ to }) => {
