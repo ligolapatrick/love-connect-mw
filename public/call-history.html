@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Call History</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .call-history-list {
+      list-style: none;
+      padding: 0;
+    }
+    .call-history-list li {
+      border: 1px solid #ccc;
+      padding: 12px;
+      margin: 6px 0;
+      background-color: #f0f0f0;
+      cursor: pointer;
+    }
+    .call-history-list li:hover {
+      background-color: #e0e0e0;
+    }
+    .call-type {
+      font-weight: bold;
+    }
+    .call-status {
+      font-style: italic;
+      color: #555;
+    }
+    .filters {
+      margin-bottom: 10px;
+    }
+    .filters button {
+      margin-right: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <h2>Call History</h2>
+      <div class="filters">
+        <button onclick="filterCalls('all')">All</button>
+        <button onclick="filterCalls('missed')">Missed</button>
+        <button onclick="filterCalls('received')">Received</button>
+        <button onclick="filterCalls('declined')">Declined</button>
+      </div>
+      <ul id="call-history-list" class="call-history-list"></ul>
+    </section>
+  </main>
+
+  <script>
+    let CURRENT_USER_ID;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/session')
+        .then(res => res.json())
+        .then(data => {
+          CURRENT_USER_ID = data.userId;
+          loadCalls(); // initial load
+        });
+    });
+
+    function loadCalls() {
+      fetch('/api/calls')
+        .then(res => res.json())
+        .then(calls => {
+          renderCalls(calls);
+        })
+        .catch(err => console.error('Error loading call history:', err));
+    }
+
+    function filterCalls(status) {
+      fetch('/api/calls')
+        .then(res => res.json())
+        .then(calls => {
+          const filtered = status === 'all' ? calls : calls.filter(c => c.status === status);
+          renderCalls(filtered);
+        });
+    }
+
+    function renderCalls(calls) {
+      const list = document.getElementById('call-history-list');
+      list.innerHTML = '';
+      calls.forEach(call => {
+        const peerName = call.fromUserId === CURRENT_USER_ID ? call.toUsername : call.fromUsername;
+        const peerId = call.fromUserId === CURRENT_USER_ID ? call.toUserId : call.fromUserId;
+        const direction = call.fromUserId === CURRENT_USER_ID ? 'Outgoing' : 'Incoming';
+        const type = call.type === 'video' ? '📹 Video' : '🎙️ Voice';
+        const status = call.status.charAt(0).toUpperCase() + call.status.slice(1);
+        const time = new Date(call.startedAt || call.endedAt).toLocaleString();
+
+        let duration = '';
+        if (call.startedAt && call.endedAt) {
+          const diff = new Date(call.endedAt) - new Date(call.startedAt);
+          const mins = Math.floor(diff / 60000);
+          const secs = Math.floor((diff % 60000) / 1000);
+          duration = ` (${mins}m ${secs}s)`;
+        }
+
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div class="call-type">${type} ${direction} call with ${peerName || 'Unknown'}</div>
+          <div class="call-status">${status} at ${time}${duration}</div>
+        `;
+        li.addEventListener('click', () => {
+          window.location.href = `/messages.html?userId=${peerId}`;
+        });
+        list.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>

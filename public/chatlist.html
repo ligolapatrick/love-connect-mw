@@ -1,394 +1,409 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chats</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: #f5f5f5;
-        }
-
-        .chat-container {
-            max-width: 500px;
-            margin: auto;
-            padding: 10px;
-        }
-
-        header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px;
-            background: #075E54;
-            color: white;
-        }
-
-        header input {
-            flex-grow: 1;
-            padding: 5px;
-            border-radius: 5px;
-            border: none;
-            margin-left: 10px;
-        }
-
-        .chat-filters {
-            display: flex;
-            justify-content: space-around;
-            margin: 10px 0;
-        }
-
-        .chat-filters button {
-            padding: 5px 10px;
-            border: none;
-            cursor: pointer;
-        }
-
-        #chat-list {
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            background: white;
-            border-radius: 10px;
-            min-height: 400px;
-        }
-
-        .chat-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            cursor: pointer;
-        }
-
-        .chat-item img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-
-        .chat-info {
-            flex-grow: 1;
-        }
-
-        .timestamp {
-            font-size: 12px;
-            color: gray;
-        }
-
-        .unread {
-            background: red;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 50%;
-            font-size: 12px;
-        }
-
-        .favorite {
-            cursor: pointer;
-            font-size: 16px;
-            color: gray;
-        }
-
-        .favorite.active {
-            color: gold;
-        }
-
-        .bottom-nav {
-            display: flex;
-            justify-content: space-around;
-            background: #075E54;
-            padding: 10px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-        }
-
-        .bottom-nav a {
-            color: white;
-            text-align: center;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .bottom-nav a img {
-            display: block;
-            width: 20px;
-            height: 20px;
-            margin: 0 auto;
-        }
-
-        .bottom-nav a.active {
-            color: black;
-        }
-        /* Responsive Styles */
-@media (max-width: 600px) {
-    .filter-options button {
-        padding: 8px 10px;
-        font-size: 12px;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chats</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
     }
 
-    .chat-list-item img {
-        width: 40px;
-        height: 40px;
-    }
-
-    .chat-list-item strong {
-        font-size: 14px;
-    }
-
-    .chat-list-item small {
-        font-size: 11px;
-    }
-
-    .bottom-nav a {
-        font-size: 12px;
-    }
-
-    .bottom-nav a img {
-        width: 20px;
-        height: 20px;
-    }
-}
-#chat-list {
-    overflow-y: auto; /* Enables scroll if many chats */
-    max-height: calc(100vh - 140px); /* Ensures chats are visible above navbar */
-    padding-bottom: 60px; /* Prevents overlap with navbar */
-    scroll-behavior: smooth; /* Enables smooth scrolling */
-}
-/* General Mobile Adjustments */
-@media (max-width: 375px) {
     .chat-container {
-        max-width: 100%;
-        padding: 5px;
+      max-width: 500px;
+      margin: auto;
+      padding: 10px;
     }
 
     header {
-        padding: 8px;
-        font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      background: #075E54;
+      color: white;
     }
 
-    #search {
-        width: 70%;
-        padding: 5px;
-        font-size: 12px;
+    header input {
+      flex-grow: 1;
+      padding: 5px;
+      border-radius: 5px;
+      border: none;
+      margin-left: 10px;
+    }
+
+    .chat-filters {
+      display: flex;
+      justify-content: space-around;
+      margin: 10px 0;
     }
 
     .chat-filters button {
-        font-size: 12px;
-        padding: 4px;
+      padding: 5px 10px;
+      border: none;
+      cursor: pointer;
+    }
+
+    #chat-list {
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      background: white;
+      border-radius: 10px;
+      min-height: 400px;
+      overflow-y: auto;
+      max-height: calc(100vh - 140px);
+      padding-bottom: 60px;
+      scroll-behavior: smooth;
     }
 
     .chat-item {
-        padding: 8px;
-        flex-wrap: wrap;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+      background: white;
+      transition: transform 0.3s ease;
+      touch-action: pan-y;
     }
 
     .chat-item img {
-        width: 40px;
-        height: 40px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+
+    .chat-info {
+      flex-grow: 1;
     }
 
     .chat-info strong {
-        font-size: 12px;
-    }
-
-    .chat-info p {
-        font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .timestamp {
-        font-size: 10px;
+      font-size: 12px;
+      color: gray;
     }
 
     .unread {
-        padding: 4px;
-        font-size: 10px;
-        min-width: 16px;
+      background: red;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 50%;
+      font-size: 12px;
     }
 
     .favorite {
-        font-size: 16px;
+      cursor: pointer;
+      font-size: 16px;
+      color: gray;
     }
+
+    .favorite.active {
+      color: gold;
+    }
+
+    .chat-actions {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 120px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: #eee;
+      z-index: 1;
+    }
+
+    .chat-actions button {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
+.chat-actions-menu {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  display: none;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.chat-actions-menu button {
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.chat-actions-menu button:hover {
+  background: #f0f0f0;
+}
+
+.chat-item .timestamp {
+  margin-left: auto;
+  font-size: 12px;
+  color: gray;
+}
 
     .bottom-nav {
-        padding: 8px 0;
+      display: flex;
+      justify-content: space-around;
+      background: #075E54;
+      padding: 10px;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
     }
 
     .bottom-nav a {
-        font-size: 12px;
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      font-size: 14px;
     }
 
     .bottom-nav a img {
-        width: 18px;
-        height: 18px;
-    }
-}
-
-/* Older Device Specific Adjustments (iPhone 5/SE, etc.) */
-@media (max-width: 320px) {
-    .chat-container {
-        padding: 3px;
+      display: block;
+      width: 20px;
+      height: 20px;
+      margin: 0 auto;
     }
 
-    header {
-        font-size: 12px;
+    .bottom-nav a.active {
+      color: black;
     }
-
-    #search {
-        width: 65%;
-        font-size: 11px;
-    }
-
-    .chat-item img {
-        width: 35px;
-        height: 35px;
-    }
-
-    .chat-info strong {
-        font-size: 11px;
-    }
-
-    .chat-info p {
-        font-size: 10px;
-    }
-
-    .timestamp {
-        font-size: 9px;
-    }
-
-    .bottom-nav a {
-        font-size: 11px;
-    }
-
-    .bottom-nav a img {
-        width: 16px;
-        height: 16px;
-    }
-}
-    </style>
+  </style>
 </head>
 <body>
 
-    <div class="chat-container">
-        <header>
-            <h2>Chats</h2>
-            <input type="text" id="search" placeholder="Search users...">
-        </header>
+  <div class="chat-container">
+    <header>
+      <h2>Chats</h2>
+      <input type="text" id="search" placeholder="Search users..." />
+    </header>
 
-        <div class="chat-filters">
-            <button onclick="filterChats('all')">All</button>
-            <button onclick="filterChats('unread')">Unread</button>
-            <button onclick="filterChats('favorites')">Favorites</button>
-        </div>
-
-        <div id="chat-list">
-            <!-- Chat items will be loaded dynamically here -->
-        </div>
+    <div class="chat-filters">
+      <button onclick="filterChats('all')">All</button>
+      <button onclick="filterChats('unread')">Unread</button>
+      <button onclick="filterChats('favorites')">Favorites</button>
     </div>
 
-    <main>
-        <nav class="bottom-nav">
-            <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
-            <a href="/profile"><img src="icons/profile.png" alt="Profile"> Profile</a>
-            <a href="/matches"><img src="icons/matches.png" alt="Matches"> Matches</a>
-            <a href="/nearby"><img src="icons/nearby.png" alt="Nearby"> Nearby</a>
-            <a href="/chatlist"><img src="icons/message.png" alt="Messages"> Messages 
-                <span id="unreadCount" class="unread-count"></span>
-            </a>
-            <a href="/login"><img src="icons/logout.png" alt="Logout"> Logout</a>
-        </nav>
-    </main>
+    <div id="chat-list"></div>
+  </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", async () => {
-            loadChats('all');
+  <main>
+    <nav class="bottom-nav">
+      <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
+      <a href="/profile"><img src="icons/profile.png" alt="Profile"> Profile</a>
+      <a href="/matches"><img src="icons/matches.png" alt="Matches"> Matches</a>
+      <a href="/nearby"><img src="icons/nearby.png" alt="Nearby"> Nearby</a>
+      <a href="/chatlist"><img src="icons/message.png" alt="Messages"> Messages 
+        <span id="unreadCount" class="unread-count"></span>
+      </a>
+      <a href="/login"><img src="icons/logout.png" alt="Logout"> Logout</a>
+    </nav>
+  </main>
 
-            const searchInput = document.getElementById("search");
-            searchInput.addEventListener("input", () => {
-                filterChats(searchInput.value.toLowerCase());
-            });
+<script>
+  let startX = 0;
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    loadChats('all');
+    updateUnreadCount();
+
+    const searchInput = document.getElementById("search");
+    searchInput.addEventListener("input", () => {
+      filterChats(searchInput.value.toLowerCase());
+    });
+
+    // Close menus when clicking outside
+    document.addEventListener("click", () => {
+      document.querySelectorAll(".chat-actions-menu").forEach(menu => {
+        menu.style.display = "none";
+      });
+    });
+  });
+
+  async function loadChats(filter, searchQuery = "") {
+    const chatList = document.getElementById("chat-list");
+    chatList.innerHTML = "";
+
+    const response = await fetch("/api/chat-list");
+    let chats = await response.json();
+
+    chats.sort((a, b) => {
+      if (b.isFavorite && !a.isFavorite) return 1;
+      if (a.isFavorite && !b.isFavorite) return -1;
+      return new Date(b.lastMessageTime) - new Date(a.lastMessageTime);
+    });
+
+    let filteredChats = chats;
+
+    if (filter === "unread") {
+      filteredChats = chats.filter(chat => chat.unreadCount > 0);
+    } else if (filter === "favorites") {
+      filteredChats = chats.filter(chat => chat.isFavorite);
+    }
+
+    if (searchQuery) {
+      filteredChats = filteredChats.filter(chat =>
+        chat.username.toLowerCase().includes(searchQuery) ||
+        (chat.lastMessage || "").toLowerCase().includes(searchQuery)
+      );
+    }
+
+    filteredChats.forEach(chat => {
+      const chatItem = document.createElement("div");
+      chatItem.classList.add("chat-item");
+
+      const messagePreview = formatMessagePreview(chat.lastMessage);
+
+      chatItem.innerHTML = `
+        <img src="${chat.profilePicture}" alt="${chat.username}" class="chat-avatar" style="cursor:pointer;">
+        <div class="chat-info">
+          <strong class="chat-name" style="cursor:pointer;">${chat.username} ${chat.online ? '<span style="color:green;">●</span>' : ''}</strong>
+          <p>${messagePreview}</p>
+        </div>
+        <small class="timestamp">${chat.lastMessageTime ? new Date(chat.lastMessageTime).toLocaleTimeString() : ""}</small>
+        ${chat.unreadCount > 0 ? `<span class="unread">${chat.unreadCount}</span>` : ""}
+        <button class="menu-btn">⋮</button>
+        <div class="chat-actions-menu">
+          <button class="action-btn" data-action="favorite">⭐ ${chat.isFavorite ? 'Unfavorite' : 'Favorite'}</button>
+          <button class="action-btn" data-action="delete">🗑️ Delete</button>
+          <button class="action-btn" data-action="mute">🔕 Mute</button>
+        </div>
+      `;
+
+      // Redirect only when clicking username
+      chatItem.querySelector('.chat-name').addEventListener('click', async () => {
+        window.location.href = `messages.html?userId=${chat.id}&username=${encodeURIComponent(chat.username)}`;
+        await fetch(`/api/clear-unread`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: chat.id })
         });
+        chatItem.querySelector(".unread")?.remove();
+        updateUnreadCount();
+      });
 
-        async function loadChats(filter, searchQuery = "") {
-            const chatList = document.getElementById("chat-list");
-            chatList.innerHTML = "";
+      // Redirect only when clicking profile image
+      chatItem.querySelector('.chat-avatar').addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.location.href = `profileview.html?userId=${chat.id}`;
+      });
 
-            const response = await fetch("/api/chat-list");
-            const chats = await response.json();
+      // Toggle menu visibility
+      chatItem.querySelector('.menu-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.chat-actions-menu').forEach(menu => {
+          if (menu !== chatItem.querySelector('.chat-actions-menu')) menu.style.display = 'none';
+        });
+        const menu = chatItem.querySelector('.chat-actions-menu');
+        menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+      });
 
-            // Sort chats by most recent message first
-            chats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+      // Handle menu actions
+      chatItem.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const action = btn.dataset.action;
+          if (action === 'favorite') toggleFavorite(chat.id, btn);
+          if (action === 'delete') deleteChat(chat.id);
+          if (action === 'mute') muteChat(chat.id);
+        });
+      });
 
-            let filteredChats = chats;
+      // Optional swipe logic
+      chatItem.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+      chatItem.addEventListener('touchend', e => {
+        const endX = e.changedTouches[0].clientX;
+        if (startX - endX > 50) chatItem.classList.add('swiped');
+        else chatItem.classList.remove('swiped');
+      });
 
-            if (filter === "unread") {
-                filteredChats = chats.filter(chat => chat.unreadCount > 0);
-            } else if (filter === "favorites") {
-                filteredChats = chats.filter(chat => chat.isFavorite);
-            }
+      chatList.appendChild(chatItem);
+    });
+  }
 
-            if (searchQuery) {
-                filteredChats = filteredChats.filter(chat => chat.username.toLowerCase().includes(searchQuery));
-            }
+  function formatMessagePreview(message) {
+    if (!message) return "No messages yet";
+    if (message.includes("[voice]")) return "🎤 Voice note";
+    if (message.includes("[image]")) return "🖼️ Image";
+    if (message.includes("[call]")) return "📞 Call log";
+    if (message.includes("[emoji]")) return "😊 Emoji";
+    return message;
+  }
 
-            filteredChats.forEach(chat => {
-                const chatItem = document.createElement("div");
-                chatItem.classList.add("chat-item");
+  function toggleFavorite(userId, element) {
+    const isFavorite = element.classList.contains("active");
 
-                chatItem.innerHTML = `
-                    <img src="${chat.profilePicture}" alt="${chat.username}">
-                    <div class="chat-info">
-                        <strong>${chat.username}</strong>
-                        <p>${chat.lastMessage || "No messages yet"}</p>
-                    </div>
-                    <small class="timestamp">${chat.lastMessageTime ? new Date(chat.lastMessageTime).toLocaleTimeString() : ""}</small>
-                    ${chat.unreadCount > 0 ? `<span class="unread">${chat.unreadCount}</span>` : ""}
-                    <span class="favorite ${chat.isFavorite ? 'active' : ''}" onclick="toggleFavorite(${chat.id}, this)">★</span>
-                `;
+    fetch("/api/toggle-favorite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, isFavorite: !isFavorite })
+    }).then(() => {
+      element.classList.toggle("active");
+      element.style.color = isFavorite ? "gray" : "gold";
+      element.textContent = isFavorite ? "⭐ Favorite" : "⭐ Unfavorite";
+      updateUnreadCount();
+      const activeFilter = document.querySelector(".chat-filters .active")?.dataset.filter || "all";
+      loadChats(activeFilter);
+    });
+  }
 
-                chatItem.addEventListener("click", async () => {
-                    window.location.href = `messages.html?userId=${chat.id}&username=${encodeURIComponent(chat.username)}`;
+  function deleteChat(userId) {
+    fetch("/api/delete-chat", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatUserId: userId })
+    }).then(() => {
+      loadChats('all');
+      updateUnreadCount();
+    });
+  }
 
-                    // Clear unread count when chat is opened
-                    await fetch(`/api/clear-unread`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ userId: chat.id })
-                    });
+  function muteChat(userId) {
+    fetch("/api/mute-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatUserId: userId })
+    }).then(() => {
+      alert("Chat muted");
+    });
+  }
 
-                    chatItem.querySelector(".unread")?.remove();
-                });
+  function filterChats(filter) {
+    const searchQuery = document.getElementById("search").value.toLowerCase();
+    loadChats(filter, searchQuery);
+  }
 
-                chatList.appendChild(chatItem);
-            });
-        }
+  async function updateUnreadCount() {
+    const response = await fetch("/api/unread-count");
+    const { count } = await response.json();
+    const badge = document.getElementById("unreadCount");
+    badge.textContent = count > 0 ? count : "";
+  }
+</script>
 
-        function filterChats(filter) {
-            const searchQuery = document.getElementById("search").value.toLowerCase();
-            loadChats(filter, searchQuery);
-        }
 
-   
-        function toggleFavorite(userId, element) {
-            const isFavorite = element.classList.contains("active");
-
-            fetch("/api/toggle-favorite", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId, isFavorite: !isFavorite })
-            }).then(() => {
-                element.classList.toggle("active");
-                element.style.color = isFavorite ? "gold" : "gray";
-            });
-        }
-
-        
-    </script>
 
 </body>
 </html>

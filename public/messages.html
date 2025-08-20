@@ -1,171 +1,693 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Messages</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-<style>
-  :root {
-    --bg: #f0f2f5;
-    --card: #ffffff;
-    --me: #1877f2;
-    --them: #e4e6eb;
-    --text-on-me: #fff;
-    --text-on-them: #050505;
-  }
-  body { margin:0; font-family: Arial, sans-serif; background: var(--bg); height:100vh; display:flex; flex-direction:column; }
-  .header { background: var(--card); padding: 12px 16px; display:flex; align-items:center; gap:10px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
-  .header img { width:36px; height:36px; border-radius:50%; object-fit:cover; }
-  .header .name { font-weight: bold; }
-  .chat { flex:1; overflow-y:auto; padding: 12px; display:flex; flex-direction:column; gap:10px; }
-  .row { display:flex; }
-  .row.me { justify-content: flex-end; }
-  .row.them { justify-content: flex-start; }
-  .bubble {
-    max-width: 75%;
-    padding: 10px 12px;
-    border-radius: 18px;
-    word-wrap: break-word;
-    line-height: 1.3;
-    position: relative;
-  }
-  .me .bubble {
-    background: var(--me);
-    color: var(--text-on-me);
-    border-bottom-right-radius: 6px;
-  }
-  .them .bubble {
-    background: var(--them);
-    color: var(--text-on-them);
-    border-bottom-left-radius: 6px;
-  }
-  .time {
-    display:block;
-    margin-top: 4px;
-    font-size: 11px;
-    opacity: 0.8;
-  }
-  .composer {
-    background: var(--card);
-    padding: 10px;
-    display:flex;
-    gap:8px;
-    align-items:center;
-    box-shadow: 0 -2px 4px rgba(0,0,0,0.06);
-  }
-  .composer input {
-    flex:1; padding:10px; border-radius: 20px; border:1px solid #ddd; outline:none;
-    background:#fff;
-  }
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Messages</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+  --bg: #f0f2f5;
+  --card: #fff;
+  --me: #1877f2;
+  --them: #e4e6eb;
+  --text-on-me: #fff;
+  --text-on-them: #050505;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  z-index: 10;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-left img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.name {
+  font-weight: bold;
+}
+
+.header-right button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2em;
+  margin-left: 8px;
+}
+
+.chat {
+  flex: 1;
+  margin-top: 60px; /* height of header */
+  margin-bottom: 70px; /* height of composer */
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+.row {
+  display: flex;
+}
+
+.row.me {
+  justify-content: flex-end;
+}
+
+.row.them {
+  justify-content: flex-start;
+}
+
+.bubble {
+  max-width: 75%;
+  padding: 10px 12px;
+  border-radius: 18px;
+  line-height: 1.3;
+  word-wrap: break-word;
+}
+
+.me .bubble {
+  background: var(--me);
+  color: var(--text-on-me);
+  border-bottom-right-radius: 6px;
+}
+
+.them .bubble {
+  background: var(--them);
+  color: var(--text-on-them);
+  border-bottom-left-radius: 6px;
+}
+
+.time, .status {
+  display: block;
+  font-size: 11px;
+  opacity: 0.8;
+  margin-top: 4px;
+}
+
+.composer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 -1px 3px rgba(0,0,0,0.05);
+  border-top: 1px solid #ddd;
+  z-index: 10;
+}
+
+.composer button {
+  background: none;
+  color: var(--me);
+  border: none;
+  width: 36px;
+  height: 36px;
+  font-size: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.composer button:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+.composer input[type="text"] {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  outline: none;
+  font-size: 14px;
+}
+
+#recStatus {
+  font-size: 12px;
+  color: #777;
+  margin-left: 4px;
+}
+
+#callOverlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  color: #fff;
+  z-index: 999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+#callOverlay video {
+  border-radius: 10px;
+}
+
+#localVideo {
+  width: 120px;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+}
+
+#remoteVideo {
+  width: 80%;
+  max-height: 60vh;
+}
+
+#endCallBtn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+/* Hide native file input */
+.file-input {
+  display: none;
+}
+
+/* Ensure composer buttons and input wrap properly */
+.composer {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+/* Prevent overflow and keep send button visible */
+.composer input[type="text"] {
+  min-width: 0;
+  flex-grow: 1;
+}
+
+/* Optional: shrink icons slightly on very small screens */
+@media (max-width: 400px) {
   .composer button {
-    background: var(--me); color:#fff; border:none; border-radius: 20px; padding: 10px 14px; cursor:pointer;
+    width: 32px;
+    height: 32px;
+    font-size: 1em;
   }
-</style>
+}
+#scrollDownBtn {
+  position: fixed;
+  bottom: 80px; /* above composer */
+  right: 16px;
+  background: var(--me);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5em;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  cursor: pointer;
+  display: none;
+  z-index: 20;
+}
+.bubble img {
+  max-width: 200px;
+  border-radius: 12px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.bubble img:hover {
+  transform: scale(1.05);
+}
+
+/* Optional: make images full-width on very small screens */
+@media (max-width: 400px) {
+  .bubble img {
+    max-width: 100%;
+  }
+}
+
+/* Image viewer overlay */
+#imageViewer {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.9);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+
+#imageViewer img {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
+
+  </style>
 </head>
 <body>
+<button id="scrollDownBtn" title="Scroll to bottom">↓</button>
 
 <div class="header">
-  <img id="peerPic" src="default-avatar.png" alt="User">
-  <div>
-    <div class="name" id="peerName">Chat</div>
-    <div id="peerMeta" style="font-size:12px;color:#65676b;"></div>
+  <div class="header-left">
+    <img id="peerPic" src="default-avatar.png" alt="">
+    <div>
+      <div class="name" id="peerName"></div>
+      <div id="peerMeta" style="font-size:12px;color:#65676b;"></div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button id="voiceCallBtn" title="Voice Call"><i class="fa-solid fa-phone"></i></button>
+    <button id="videoCallBtn" title="Video Call"><i class="fa-solid fa-video"></i></button>
+    <button id="blockBtn" title="Block user"><i class="fa-solid fa-ban"></i></button>
   </div>
 </div>
 
 <div id="chat" class="chat"></div>
 
-<form id="composer" class="composer">
-  <input type="text" id="messageInput" placeholder="Write a message..." autocomplete="off" required />
-  <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
-</form>
+<div class="composer">
+  <button type="button" id="emojiBtn"><i class="fa-regular fa-face-smile"></i></button>
+<input type="file" id="fileUpload" class="file-input" />
+<button type="button" id="fileBtn"><i class="fa-solid fa-paperclip"></i></button>
+  <span id="recStatus"></span>
+  <button type="button" id="voiceBtn">🎙️</button>
+  <input type="text" id="messageInput" placeholder="Write a message..." autocomplete="off" />
+  <button type="button" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+</div>
+
+<div class="bubble sent">
+  <img src="your-image-url.jpg" onclick="openImageViewer('your-image-url.jpg')" />
+  <span class="timestamp">12:54 PM</span>
+</div>
+
+<div id="callOverlay">
+  <h2 id="callStatus">Calling...</h2>
+  <video id="remoteVideo" autoplay playsinline></video>
+  <video id="localVideo" autoplay muted playsinline></video>
+  <button id="endCallBtn">End Call</button>
+</div>
+<div id="imageViewer" onclick="this.style.display='none'">
+  <img id="viewerImg" />
+</div>
 
 <script>
-  const qs = new URLSearchParams(location.search);
-  const peerId = parseInt(qs.get('userId'), 10);
-  let meId = null;
+  function openImageViewer(url) {
+    const viewer = document.getElementById('imageViewer');
+    const img = document.getElementById('viewerImg');
+    img.src = url;
+    viewer.style.display = 'flex';
+  }
+</script>
 
-  const chatEl = document.getElementById('chat');
-  const inputEl = document.getElementById('messageInput');
-  const formEl = document.getElementById('composer');
-  const peerNameEl = document.getElementById('peerName');
-  const peerMetaEl = document.getElementById('peerMeta');
-  const peerPicEl = document.getElementById('peerPic');
+<style>
+#imageViewer {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
 
-  function fmtTime(ts) {
-    const d = new Date(ts);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+#imageViewer img {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 12px;
+}
+</style>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const qs = new URLSearchParams(location.search);
+const peerId = parseInt(qs.get('userId'), 10);
+let meId = null, pc, localStream;
+let callStartTime = null, currentCallType = null;
+const socket = io();
+
+const chatEl = document.getElementById('chat');
+const messageInput = document.getElementById('messageInput');
+const recStatus = document.getElementById('recStatus');
+const voiceBtn = document.getElementById('voiceBtn');
+const fileBtn = document.getElementById('fileBtn');
+const fileInput = document.getElementById('fileUpload');
+const emojiBtn = document.getElementById('emojiBtn');
+const blockBtn = document.getElementById('blockBtn');
+const callOverlay = document.getElementById('callOverlay');
+const callStatus = document.getElementById('callStatus');
+const localVideo = document.getElementById('localVideo');
+const remoteVideo = document.getElementById('remoteVideo');
+const endCallBtn = document.getElementById('endCallBtn');
+const voiceCallBtn = document.getElementById('voiceCallBtn');
+const videoCallBtn = document.getElementById('videoCallBtn');
+
+// Sound elements
+const ringingSound = new Audio('public/sounds/calling_sound.mp3');
+const incomingSound = new Audio('public/sounds/incoming.mp3');
+const connectedSound = new Audio('public/sounds/connected.mp3');
+const hangupSound = new Audio('public/sounds/hangup.mp3');
+const missedSound = new Audio('public/sounds/missed.mp3');
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderMessage(m) {
+  const row = document.createElement('div');
+  const isMe = m.fromUserId === meId;
+  row.className = 'row ' + (isMe ? 'me' : 'them');
+  let contentHtml = '';
+
+  if (m.isCallEvent) {
+    contentHtml = `<div class="call-log">${m.content}</div>`;
+  } else if (m.voiceUrl) {
+    contentHtml = `<audio controls src="${m.voiceUrl}" style="max-width:100%;"></audio>`;
+  } else if (m.fileUrl) {
+    const ext = m.fileUrl.split('.').pop().toLowerCase();
+   if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+  contentHtml = `<img src="${m.fileUrl}" style="max-width:150px;border-radius:10px;cursor:pointer;" onclick="openImageViewer('${m.fileUrl}')">`;
+  }  else {
+      contentHtml = `<a href="${m.fileUrl}" target="_blank">${m.filename || m.fileUrl}</a>`;
+    }
+  } else {
+    contentHtml = m.content;
   }
 
-  function appendMessage(m) {
-    const row = document.createElement('div');
-    const isMe = m.fromUserId === meId || m.senderId === meId;
-    row.className = 'row ' + (isMe ? 'me' : 'them');
-    row.innerHTML = `
-      <div class="bubble">
-        <div>${m.content}</div>
-        <span class="time">${fmtTime(m.timestamp || m.createdAt || Date.now())}</span>
-      </div>
-    `;
-    chatEl.appendChild(row);
+  row.innerHTML = `
+    <div class="bubble">
+      ${contentHtml}
+      <span class="time">${fmtTime(m.timestamp || Date.now())}</span>
+      ${isMe && m.status && !m.isCallEvent ? `<span class="status">${m.status}</span>` : ''}
+    </div>
+  `;
+
+  chatEl.appendChild(row);
+
+  // Auto-scroll only if user is near bottom
+  const nearBottom = chatEl.scrollHeight - chatEl.scrollTop <= chatEl.clientHeight + 100;
+  if (nearBottom) {
     chatEl.scrollTop = chatEl.scrollHeight;
   }
+}
 
-  async function loadMe() {
-    // assuming /api/me exists
-    const res = await fetch('/api/me');
-    if (!res.ok) { alert('Please login'); location.href = 'login.html'; return; }
-    const me = await res.json();
-    meId = me.id;
+function logCallEvent(type, status, durationMs = 0) {
+  const content = `${type === 'video' ? '📹' : '📞'} ${type} call ${status}` +
+    (durationMs ? ` (${Math.floor(durationMs / 60000)}m ${Math.floor((durationMs % 60000) / 1000)}s)` : '');
+  socket.emit('chatMessage', {
+    fromUserId: meId,
+    toUserId: peerId,
+    content,
+    timestamp: Date.now(),
+    isCallEvent: true
+  });
+}
+
+async function loadMe() {
+  const res = await fetch('/api/me');
+  const me = await res.json();
+  meId = me.id;
+}
+
+async function loadPeer() {
+  const res = await fetch('/api/user/' + peerId);
+  if (res.ok) {
+    const u = await res.json();
+    document.getElementById('peerName').textContent = u.username;
+    document.getElementById('peerMeta').textContent = u.location || '';
+    if (u.profilePicture) document.getElementById('peerPic').src = u.profilePicture;
+  }
+}
+
+async function loadHistory() {
+  const res = await fetch(`/api/messages?chatUserId=${peerId}`);
+  if (res.ok) {
+    (await res.json()).forEach(renderMessage);
+  }
+}
+
+document.getElementById('sendBtn').onclick = async () => {
+  const content = messageInput.value.trim();
+  if (!content) return;
+  const res = await fetch('/api/send-message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ toUserId: peerId, content })
+  });
+  if (res.ok) {
+    const m = await res.json();
+    m.status = 'Sent';
+    renderMessage(m);
+    messageInput.value = '';
+  }
+};
+
+fileBtn.onclick = () => fileInput.click();
+fileInput.onchange = async () => {
+  const file = fileInput.files[0];
+  if (!file || !file.type.startsWith('image/')) {
+    alert('Please select a valid image file');
+    return;
   }
 
-  async function loadPeer() {
-    const res = await fetch('/api/user/' + peerId);
-    if (res.ok) {
-      const u = await res.json();
-      peerNameEl.textContent = u.username || 'Chat';
-      peerMetaEl.textContent = u.region || '';
-      if (u.profilePicture || u.profilePic) peerPicEl.src = u.profilePicture || u.profilePic;
+  const fd = new FormData();
+  fd.append('image', file);
+  fd.append('toUserId', peerId);
+
+  const res = await fetch('/api/send-image', { method: 'POST', body: fd });
+  if (res.ok) {
+    const m = await res.json();
+    m.status = 'Sent';
+    renderMessage(m);
+    fileInput.value = '';
+  } else {
+    alert('Failed to send image');
+  }
+};
+
+
+emojiBtn.onclick = () => alert('Use your native emoji keyboard/picker 😉');
+blockBtn.onclick = () => fetch(`/api/block/${peerId}`, { method: 'POST' }).then(() => alert('User blocked'));
+
+let mediaRecorder, chunks = [], isCancelled = false, timerInt, startTime;
+voiceBtn.addEventListener('mousedown', startRecording);
+voiceBtn.addEventListener('touchstart', startRecording);
+voiceBtn.addEventListener('mouseup', stopRecording);
+voiceBtn.addEventListener('touchend', stopRecording);
+document.addEventListener('mousemove', detectCancel);
+document.addEventListener('touchmove', detectCancel);
+
+async function startRecording(e) {
+  e.preventDefault();
+  isCancelled = false;
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaRecorder = new MediaRecorder(stream);
+  chunks = [];
+  mediaRecorder.ondataavailable = ev => { if (ev.data.size) chunks.push(ev.data); };
+  mediaRecorder.start();
+  startTime = Date.now();
+  timerInt = setInterval(updateTimer, 500);
+  recStatus.textContent = 'Recording... 0:00 (slide up to cancel)';
+}
+
+function detectCancel(e) {
+  if (!mediaRecorder) return;
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  isCancelled = y < voiceBtn.getBoundingClientRect().top - 50;
+  recStatus.textContent = isCancelled ? 'Release to cancel ❌' : `Recording...`;
+}
+
+function updateTimer() {
+  const diff = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(diff / 60);
+  const s = diff % 60;
+  recStatus.textContent = `Recording... ${m}:${s.toString().padStart(2, '0')} (slide up to cancel)`;
+}
+
+function stopRecording(e) {
+  if (!mediaRecorder) return;
+  clearInterval(timerInt);
+  recStatus.textContent = '';
+  mediaRecorder.stop();
+mediaRecorder.onstop = async () => {
+  if (isCancelled) return;
+
+  const blob = new Blob(chunks, { type: 'audio/webm' });
+  const fd = new FormData();
+  fd.append('voiceNote', blob, `voice_${Date.now()}.webm`);
+  fd.append('toUserId', peerId);
+
+  const res = await fetch('/api/voice-message', { method: 'POST', body: fd });
+  if (res.ok) {
+    const m = await res.json();
+    m.status = 'Sent';
+    renderMessage(m);
+  } else {
+    alert('Voice note failed to send');
+  }
+};
+
+}
+
+// WebRTC Call Logic
+voiceCallBtn.onclick = () => startCall('voice');
+videoCallBtn.onclick = () => startCall('video');
+
+async function startCall(type) {
+  callOverlay.style.display = 'flex';
+  callStatus.textContent = 'Calling...';
+  callStartTime = Date.now();
+  currentCallType = type;
+  ringingSound.loop = true;
+  ringingSound.play();
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' });
+  localVideo.srcObject = localStream;
+  pc = createPeerConnection();
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  pc.onicecandidate = e => {
+    if (e.candidate) {
+      socket.emit('iceCandidate', { toUserId: peerId, candidate: e.candidate });
     }
-  }
+  };
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit('callOffer', {
+    toUserId: peerId,
+    fromUserId: meId,
+    offer,
+    callType: type
+  });
+}
 
-  async function loadHistory() {
-    const res = await fetch('/api/messages?chatUserId=' + peerId);
-    if (res.ok) {
-      const msgs = await res.json();
-      msgs.forEach(appendMessage);
-    }
-  }
+function createPeerConnection() {
+  const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+  const pc = new RTCPeerConnection(config);
+  pc.ontrack = e => {
+    remoteVideo.srcObject = e.streams[0];
+  };
+  return pc;
+}
 
-  async function init() {
-    if (!peerId || isNaN(peerId)) {
-      alert('No conversation selected'); 
-      location.href = 'index.html';
-      return;
-    }
-    await loadMe();
-    await loadPeer();
-    await loadHistory();
+endCallBtn.onclick = () => {
+  if (pc) pc.close();
+  if (localStream) localStream.getTracks().forEach(t => t.stop());
+  callOverlay.style.display = 'none';
+  const duration = Date.now() - callStartTime;
+  logCallEvent(currentCallType, 'ended', duration);
+  hangupSound.play();
+};
 
-    formEl.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const content = inputEl.value.trim();
-      if (!content) return;
+socket.on('incomingCall', async ({ fromUserId, offer, callType }) => {
+  callOverlay.style.display = 'flex';
+  callStatus.textContent = 'Incoming ' + callType + ' call...';
+  incomingSound.play();
+  currentCallType = callType;
+  callStartTime = Date.now();
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === 'video' });
+  localVideo.srcObject = localStream;
+  pc = createPeerConnection();
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  socket.emit('callAnswer', { toUserId: fromUserId, answer });
+  connectedSound.play();
+});
 
-      const res = await fetch('/api/send-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ toUserId: peerId, content })
-      });
-      if (res.ok) {
-        inputEl.value = '';
-        const saved = await res.json();
-        appendMessage(saved);
-      }
-    });
-  }
+socket.on('callAnswer', async ({ answer }) => {
+  await pc.setRemoteDescription(new RTCSessionDescription(answer));
+  connectedSound.play();
+});
 
-  init();
+socket.on('iceCandidate', ({ candidate }) => {
+  if (pc) pc.addIceCandidate(new RTCIceCandidate(candidate));
+});
+
+socket.on('callMissed', () => {
+  missedSound.play();
+  logCallEvent(currentCallType, 'missed');
+  callOverlay.style.display = 'none';
+});
+
+socket.on('chatMessage', m => {
+  renderMessage(m);
+});
+
+(async () => {
+  await loadMe();
+  await loadPeer();
+  await loadHistory();
+})();
+
+const scrollDownBtn = document.getElementById('scrollDownBtn');
+
+chatEl.addEventListener('scroll', () => {
+  const nearBottom = chatEl.scrollHeight - chatEl.scrollTop <= chatEl.clientHeight + 100;
+  scrollDownBtn.style.display = nearBottom ? 'none' : 'block';
+});
+
+scrollDownBtn.onclick = () => {
+  chatEl.scrollTop = chatEl.scrollHeight;
+};
+
+
 </script>
+
+
+<script>
+  function openImageViewer(url) {
+    document.getElementById('viewerImg').src = url;
+    document.getElementById('imageViewer').style.display = 'flex';
+  }
+  document.getElementById('imageViewer').onclick = () => {
+    document.getElementById('imageViewer').style.display = 'none';
+  };
+</script>
+
 </body>
 </html>

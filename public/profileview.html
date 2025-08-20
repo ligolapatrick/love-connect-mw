@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>User Profile</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    .profile-container {
+      max-width: 500px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .profile-container img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 10px;
+    }
+    .profile-container h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .profile-container p {
+      margin: 8px 0;
+      color: #555;
+    }
+    .back-btn {
+      display: inline-block;
+      margin-top: 20px;
+      text-decoration: none;
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-container" id="profile">
+    <p>Loading profile...</p>
+  </div>
+
+  <script>
+    async function loadProfile() {
+      const params = new URLSearchParams(window.location.search);
+      const userId = params.get("userId");
+
+      if (!userId) {
+        document.getElementById("profile").innerHTML = "<p>User ID not provided.</p>";
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/user/${userId}`);
+        if (!response.ok) throw new Error("User not found");
+
+        const user = await response.json();
+
+        document.getElementById("profile").innerHTML = `
+          <img src="${user.profilePicture}" alt="${user.username}" />
+          <h2>${user.username}</h2>
+          <p><strong>Age:</strong> ${user.age}</p>
+          <p><strong>Gender:</strong> ${user.gender}</p>
+          <p><strong>Location:</strong> ${user.location}</p>
+          <p><strong>Bio:</strong> ${user.bio || "No bio yet."}</p>
+          <p><strong>Interests:</strong> ${Array.isArray(user.interests) ? user.interests.join(', ') : "None listed"}</p>
+          <a href="/chatlist" class="back-btn">← Back to chats</a>
+        `;
+      } catch (error) {
+        document.getElementById("profile").innerHTML = `<p>Error loading profile.</p>`;
+        console.error(error);
+      }
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

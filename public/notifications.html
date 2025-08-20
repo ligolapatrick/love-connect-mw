@@ -1,19 +1,18 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Notifications</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
   <style>
     /* Notification Styles */
-    .notification-list {
+    .notification-list, .call-list {
       list-style-type: none;
       padding: 0;
     }
 
-    .notification-list li {
+    .notification-list li, .call-list li {
       border: 1px solid #ddd;
       padding: 10px;
       margin: 5px 0;
@@ -21,85 +20,192 @@
       cursor: pointer;
     }
 
-    .notification-list li:hover {
+    .notification-list li:hover, .call-list li:hover {
       background-color: #eee;
     }
+
     .loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: rgba(255, 255, 255, 0.8);
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 999;
-}
-.loading-logo {
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.8);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 999;
+    }
 
+    .loading-logo {
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
 
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      background-color: hsl(120, 19%, 31%);
+      padding: 10px 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+
+    .bottom-nav a {
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .bottom-nav a img {
+      display: block;
+      width: 20px;
+      height: 30px;
+      margin: 0 auto;
+    }
+
+    .bottom-nav a.active {
+      color: black;
+    }
+
+    .floating-notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
-      <!-- Loading Indicator HTML -->
-<div class="loading-container" id="loadingIndicator">
-  <img src="images/logo.png" alt="Loading" class="loading-logo">
-</div>
+  <div class="loading-container" id="loadingIndicator">
+    <img src="images/logo.png" alt="Loading" class="loading-logo" />
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="/" class="active"><img src="icons/home.png" alt="Home"> Home</a>
+    <a href="daily-discovery"><img src="icons/daily.png" alt="Day Discovery"> Discover</a>
+    <a href="fitness-buddies"><img src="icons/gym.png" alt="Fitness Buddies"> FitnessBuddies</a>
+    <a href="call-history.html"><img src="icons/quick.png" alt="Call History"> Call History</a>
+    <a href="/logout"><img src="icons/logout.png" alt="Logout"> Logout</a>
+    <a href="/chat"><img src="icons/ai.png" alt="AI"> AI</a>
+  </nav>
 
   <main>
     <section class="notifications-section">
       <h2>Notifications</h2>
-      <ul id="notification-list" class="notification-list">
-        <!-- Notifications will be dynamically loaded here -->
-      </ul>
+      <ul id="notification-list" class="notification-list"></ul>
+      <h2>Call History</h2>
+      <ul id="call-list" class="call-list"></ul>
     </section>
   </main>
-  
-  <script src="utilities.js" defer></script>
-  <script src="scripts.js" defer></script>
+
+  <script src="/socket.io/socket.io.js"></script>
   <script>
+    const socket = io();
+    let CURRENT_USER_ID;
+
     document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('loadingIndicator').style.display = 'flex';
+
+      fetch('/api/session')
+        .then(res => res.json())
+        .then(data => {
+          CURRENT_USER_ID = data.userId;
+          loadNotifications();
+          loadCallHistory();
+        });
+
+      window.addEventListener('load', () => {
+        document.getElementById('loadingIndicator').style.display = 'none';
+      });
+
+      socket.on('newNotification', ({ senderId, message, type }) => {
+        showFloatingNotification(senderId, message, type);
+      });
+    });
+
+    function loadNotifications() {
       fetch('/api/notifications')
         .then(response => response.json())
         .then(notifications => {
-          const notificationList = document.getElementById('notification-list');
-          notificationList.innerHTML = '';
+          const list = document.getElementById('notification-list');
+          list.innerHTML = '';
           notifications.forEach(notification => {
-            const notificationItem = document.createElement('li');
-            notificationItem.textContent = `${notification.sender.username} ${notification.message}`;
-            notificationItem.addEventListener('click', () => handleNotificationClick(notification.senderId, notification.message));
-            notificationList.appendChild(notificationItem);
+            const li = document.createElement('li');
+            const senderName = notification.sender?.username || 'Someone';
+            li.textContent = `${senderName} ${notification.message}`;
+            li.addEventListener('click', () => handleNotificationClick(notification.senderId, notification.message));
+            list.appendChild(li);
           });
         })
         .catch(error => console.error('Error fetching notifications:', error));
-    });
+    }
+
+    function loadCallHistory() {
+      fetch('/api/calls')
+        .then(response => response.json())
+        .then(calls => {
+          const list = document.getElementById('call-list');
+          list.innerHTML = '';
+          calls.forEach(call => {
+            const direction = call.fromUserId === CURRENT_USER_ID ? 'Outgoing' : 'Incoming';
+            const status = call.status.charAt(0).toUpperCase() + call.status.slice(1);
+            const type = call.type === 'video' ? '📹 Video' : '🎙️ Voice';
+            const time = new Date(call.startedAt || call.endedAt).toLocaleString();
+            const peerName = call.fromUserId === CURRENT_USER_ID ? call.toUsername : call.fromUsername;
+
+            const li = document.createElement('li');
+            li.textContent = `${type} ${direction} call with ${peerName} — ${status} at ${time}`;
+            li.addEventListener('click', () => {
+              const peerId = call.fromUserId === CURRENT_USER_ID ? call.toUserId : call.fromUserId;
+              window.location.href = `/messages.html?userId=${peerId}`;
+            });
+            list.appendChild(li);
+          });
+        })
+        .catch(error => console.error('Error fetching call history:', error));
+    }
 
     function handleNotificationClick(senderId, message) {
-      if (message.includes('sent a mood match request') || message.includes('sent a relationship goals match request')) {
-        window.location.href = `/messages.html?userId=${senderId}`;
-      } else if (message.includes('accepted your request')) {
+      if (message.includes('sent a mood match request') || message.includes('sent a relationship goals match request') || message.includes('accepted your request')) {
         window.location.href = `/messages.html?userId=${senderId}`;
       }
     }
-               // Show the loading indicator when the page starts loading
-               document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('loadingIndicator').style.display = 'flex';
-    });
 
-    // Hide the loading indicator once the page is fully loaded
-    window.addEventListener('load', () => {
-        document.getElementById('loadingIndicator').style.display = 'none';
-    });
+    function showFloatingNotification(senderId, message, type) {
+      const bar = document.createElement('div');
+      bar.className = 'floating-notification';
+      bar.innerHTML = `
+        <strong>${message}</strong>
+        <button onclick="acceptCall('${senderId}', '${type}')">Accept</button>
+        <button onclick="declineCall('${senderId}')">Decline</button>
+      `;
+      document.body.appendChild(bar);
 
+      setTimeout(() => {
+        bar.remove();
+      }, 10000); // auto-dismiss after 10 seconds
+    }
+
+    function acceptCall(from, type) {
+      window.location.href = `/messages.html?incomingCall=true&from=${from}&type=${type}`;
+    }
+
+    function declineCall(from) {
+      socket.emit('declineCall', { to: from });
+    }
   </script>
 </body>
 </html>
