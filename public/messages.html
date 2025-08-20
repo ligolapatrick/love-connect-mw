@@ -117,6 +117,11 @@ body {
   opacity: 0.8;
   margin-top: 4px;
 }
+.missedCallIcon {
+  margin-left: 6px;
+  color: red;
+  font-size: 1.2em;
+}
 
 .composer {
   position: fixed;
@@ -341,6 +346,10 @@ body {
     img.src = url;
     viewer.style.display = 'flex';
   }
+  if (lastCall.status === 'missed') {
+  chatItem.innerHTML += `<span class="missedCallIcon">📵</span>`;
+}
+
 </script>
 
 <style>
@@ -360,6 +369,19 @@ body {
   max-height: 90%;
   border-radius: 12px;
 }
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff4d4d;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  z-index: 9999;
+}
+
 </style>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -622,22 +644,36 @@ endCallBtn.onclick = () => {
   hangupSound.play();
 };
 
-socket.on('incomingCall', async ({ fromUserId, offer, callType }) => {
+socket.on('callOffer', async ({ from, offer, type }) => {
   callOverlay.style.display = 'flex';
-  callStatus.textContent = 'Incoming ' + callType + ' call...';
+  callStatus.textContent = 'Incoming ' + type + ' call...';
   incomingSound.play();
-  currentCallType = callType;
+  currentCallType = type;
   callStartTime = Date.now();
-  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === 'video' });
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' });
   localVideo.srcObject = localStream;
   pc = createPeerConnection();
   localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
   await pc.setRemoteDescription(new RTCSessionDescription(offer));
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
-  socket.emit('callAnswer', { toUserId: fromUserId, answer });
+  socket.emit('callAnswer', { toUserId: from, answer });
   connectedSound.play();
 });
+
+socket.on('callMissed', ({ from }) => {
+  missedSound.play();
+  showToast(`Missed call from ${getUsername(from)}`);
+  logCallEvent(currentCallType, 'missed');
+  callOverlay.style.display = 'none';
+});
+function showToast(msg) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
 
 socket.on('callAnswer', async ({ answer }) => {
   await pc.setRemoteDescription(new RTCSessionDescription(answer));
