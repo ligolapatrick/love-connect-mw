@@ -402,6 +402,11 @@ const Message = sequelize.define('Message', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   },
+  voiceNote: {
+  type: DataTypes.STRING, // Path to uploaded file
+  allowNull: true
+  },
+ 
   favorite: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
@@ -635,6 +640,20 @@ const Dislike = sequelize.define('Dislike', {
   }
 });
 
+
+const CallLog = sequelize.define('CallLog', {
+  fromUserId: { type: DataTypes.INTEGER, allowNull: false },
+  toUserId: { type: DataTypes.INTEGER, allowNull: false },
+  type: { type: DataTypes.ENUM('voice', 'video'), allowNull: false },
+  status: { type: DataTypes.ENUM('missed', 'received', 'declined', 'cancelled'), allowNull: false },
+  startedAt: { type: DataTypes.DATE },
+  endedAt: { type: DataTypes.DATE }
+});
+
+// Associations
+CallLog.belongsTo(User, { as: 'Caller', foreignKey: 'fromUserId' });
+CallLog.belongsTo(User, { as: 'Receiver', foreignKey: 'toUserId' });
+
   
   // Define the Notification model
 const Notification = sequelize.define('Notification', {
@@ -667,9 +686,7 @@ Notification.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
 User.hasMany(Like, { foreignKey: 'userId' });
 User.hasMany(Dislike, { foreignKey: 'userId' });
 
-sequelize.sync({ alter: true }).then(() => {
-  console.log('Database & tables updated!');
-});
+
 
 // Serve static files from the 'public' directory
 app.use(bodyParser.json());
@@ -712,6 +729,19 @@ app.post('/register', async (req, res) => {
     }
 });
 
+app.post('/check-username', async (req, res) => {
+    const { username } = req.body;
+    try {
+        const existing = await User.findOne({ where: { username } });
+        res.json({
+            success: !existing,
+            message: existing ? 'Username already taken.' : 'Username is available.'
+        });
+    } catch (error) {
+        console.error('Error checking username:', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
 
 app.post('/check-phone', async (req, res) => {
   const { fullPhoneNumber } = req.body;
@@ -1253,6 +1283,30 @@ app.get('/api/search-users', async (req, res) => {
   }
 });
 
+app.get('/api/user/:id', requireLogin, async (req, res) => {
+  const userId = req.params.id;
+  try {
+    const user = await User.findByPk(userId);
+    if (user) {
+      res.json({
+        id: user.id,
+        username: user.username,
+        age: user.age,
+        gender: user.gender,
+        location: user.location,
+        bio: user.bio,
+        interests: JSON.parse(user.interests || "[]"),
+        profilePicture: user.profilePicture
+      });
+    } else {
+      res.status(404).send("User not found");
+    }
+  } catch (err) {
+    console.error("Error fetching user profile:", err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
 // Route to get nearby users
 app.get('/api/nearby', async (req, res) => {
   const userId = req.session.userId;
@@ -1345,6 +1399,27 @@ app.get('/api/user/:id', requireLogin, async (req, res) => {
     console.error(err);
     res.status(500).send('Internal server error');
   }
+});
+
+io.on('connection', (socket) => {
+  const userId = socket.handshake.session?.userId;
+  if (!userId) return;
+
+  // Mark user online
+  User.update({ online: true }, { where: { id: userId } });
+
+  socket.on('disconnect', async () => {
+    await User.update(
+      { online: false, lastSeen: new Date() },
+      { where: { id: userId } }
+    );
+  });
+});
+app.get('/api/user/:id/presence', requireLogin, async (req, res) => {
+  const u = await User.findByPk(req.params.id, {
+    attributes: ['online', 'lastSeen']
+  });
+  res.json(u);
 });
 
 
@@ -1453,7 +1528,188 @@ app.post('/api/send-message', requireLogin, async (req, res) => {
   }
 });
 
+// Ensure multer already configured as `upload` for general file uploads
+app.post('/api/send-file', requireLogin, upload.single('file'), async (req, res) => {
+  try {
+    const fileUrl = `/uploads/${req.file.filename}`;
+    const msg = await Message.create({
+      fromUserId: req.session.userId,
+      toUserId: req.body.toUserId,
+      content: '[File]', // placeholder to satisfy NOT NULL
+      fileUrl,
+      filename: req.file.originalname,
+      timestamp: new Date()
+    });
+    res.json({
+      id: msg.id,
+      fromUserId: msg.fromUserId,
+      toUserId: msg.toUserId,
+      fileUrl,
+      filename: req.file.originalname,
+      timestamp: msg.timestamp
+    });
+  } catch (err) {
+    console.error('Error sending file:', err);
+    res.status(500).json({ error: 'Failed to send file' });
+  }
+});
 
+
+// --- Voice message upload endpoint ---
+app.post('/api/voice-message', requireLogin, upload.single('voiceNote'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No voice note uploaded' });
+
+    const voiceUrl = `/uploads/${req.file.filename}`;
+    const msg = await Message.create({
+      fromUserId: req.session.userId,
+      toUserId: req.body.toUserId,
+      content: '[Voice]',
+      voiceUrl,
+      filename: req.file.originalname,
+      timestamp: new Date()
+    });
+
+    res.json({
+      id: msg.id,
+      fromUserId: msg.fromUserId,
+      toUserId: msg.toUserId,
+      voiceUrl,
+      filename: msg.filename,
+      timestamp: msg.timestamp
+    });
+  } catch (err) {
+    console.error('Error sending voice note:', err);
+    res.status(500).json({ error: 'Failed to send voice note' });
+  }
+});
+
+
+// GET /api/calls?withUserId=123
+app.get('/api/calls', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const logs = await CallLog.findAll({
+    where: {
+      [Op.or]: [
+        { fromUserId: userId },
+        { toUserId: userId }
+      ]
+    },
+    order: [['startedAt', 'DESC']],
+    include: [
+      { model: User, as: 'Caller', attributes: ['username'] },
+      { model: User, as: 'Receiver', attributes: ['username'] }
+    ]
+  });
+
+  const enriched = logs.map(log => ({
+    ...log.toJSON(),
+    fromUsername: log.Caller?.username,
+    toUsername: log.Receiver?.username
+  }));
+
+  res.json(enriched);
+});
+
+io.on('connection', (socket) => {
+  const userId = socket.handshake.session?.userId;
+  if (!userId) return;
+
+  // Mark user online
+  User.update({ online: true }, { where: { id: userId } });
+
+  socket.on('disconnect', async () => {
+    await User.update({ online: false, lastSeen: new Date() }, { where: { id: userId } });
+  });
+
+  // Call offer
+socket.on('callOffer', async ({ to, offer, type }) => {
+  const from = socket.handshake.session.userId;
+
+  const log = await CallLog.create({
+    fromUserId: from,
+    toUserId: to,
+    type,
+    status: 'missed'
+  });
+
+  socket.callLogId = log.id;
+
+  // Emit call offer
+  io.to(to.toString()).emit('callOffer', { from, offer, type });
+
+  // Create a notification
+  await Notification.create({
+    userId: to,
+    senderId: from,
+    message: `Incoming ${type} call`
+  });
+
+  // Emit notification
+  io.to(to.toString()).emit('newNotification', {
+    senderId: from,
+    message: `Incoming ${type} call`,
+    type: 'call',
+    timestamp: new Date()
+  });
+});
+
+  // Call answer
+  socket.on('callAnswer', async ({ to, answer }) => {
+    await CallLog.update(
+      { status: 'received', startedAt: new Date() },
+      { where: { id: socket.callLogId } }
+    );
+    io.to(to.toString()).emit('callAnswer', { answer });
+  });
+
+  // End call
+  socket.on('endCall', async ({ to }) => {
+    await CallLog.update(
+      { endedAt: new Date() },
+      { where: { id: socket.callLogId } }
+    );
+    io.to(to.toString()).emit('endCall');
+  });
+
+  // Decline call
+  socket.on('declineCall', async ({ to }) => {
+    await CallLog.update(
+      { status: 'declined' },
+      { where: { id: socket.callLogId } }
+    );
+    io.to(to.toString()).emit('endCall');
+  });
+});
+
+
+app.post('/api/send-image', requireLogin, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    const msg = await Message.create({
+      fromUserId: req.session.userId,
+      toUserId: req.body.toUserId,
+      content: '[Image]',
+      fileUrl,
+      filename: req.file.originalname,
+      timestamp: new Date()
+    });
+
+    res.json({
+      id: msg.id,
+      fromUserId: msg.fromUserId,
+      toUserId: msg.toUserId,
+      fileUrl,
+      filename: msg.filename,
+      timestamp: msg.timestamp
+    });
+  } catch (err) {
+    console.error('Error sending image:', err);
+    res.status(500).json({ error: 'Failed to send image' });
+  }
+});
 
 // Fetch the chat list for a user with filters and unread message count
 app.get('/api/chat-list', requireLogin, async (req, res) => {
@@ -2233,13 +2489,6 @@ app.post('/api/send-notification', async (req, res) => {
   res.json({ message: 'Notification sent!' });
 });
 
-// Socket.IO event handling
-io.on('connection', (socket) => {
-  console.log('A user connected');
-  socket.on('disconnect', () => {
-    console.log('User disconnected');
-  });
-});
 
 // Route to fetch currently online users in the Instant Date feature
 app.get('/api/currently-online-users', async (req, res) => {
@@ -2496,6 +2745,8 @@ app.post('/api/send-message', requireLogin, async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
+
 
 // Fetch messages
 app.get('/api/messages', requireLogin, async (req, res) => {
@@ -5223,6 +5474,10 @@ app.post('/api/clear-unread', async (req, res) => {
         console.error("Error clearing unread messages:", error);
         res.status(500).send({ success: false, error: "Internal Server Error" });
     }
+});
+
+sequelize.sync({ alter: true }).then(() => {
+  console.log('Database & tables updated!');
 });
 
 // Start the server
